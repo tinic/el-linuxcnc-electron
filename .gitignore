@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+
+elle-app/dist
+elle-app/dist_electron
+elle-app/node_modules
+
