@@ -1,0 +1,4 @@
+{
+    "watch": ["elle-electron/*", "elle-frontend/*", "elle-frontend/*/*"],
+    "ext": "js,css,ts,json,vue"
+}
