@@ -6,17 +6,13 @@ import { number } from 'yargs';
 
 const selectedMenu = ref(0);
 
-const ipcXPos = ref(0);
-const ipcZPos = ref(0);
-const ipcAPos = ref(0);
-
 const xpos = ref(0);
 const zpos = ref(0);
 const apos = ref(0);
 const rpms = ref(5000);
 const xlock = ref(false);
 const zlock = ref(true);
-const unit = ref('mm');
+const metric = ref(true);
 
 const menuItems = ref([
     { separator: true },
@@ -45,8 +41,7 @@ setInterval(() => {
   xpos.value += 1.0;
   zpos.value -= 0.1;
   apos.value -= 33.3;
-  }, 33.33333);
-
+  }, 33.333333);
 </script>
 
 <template>
@@ -75,7 +70,7 @@ setInterval(() => {
           :rpms="rpms"
           :xlock="xlock"
           :zlock="zlock"
-          :unit="unit"
+          :metric="metric"
         />
       </div>
     </div>
@@ -104,7 +99,6 @@ setInterval(() => {
 
 <style scoped>
 
-
 .fixed-width-font {
   font-family: 'iosevka';
   font-weight: normal;
@@ -115,21 +109,10 @@ setInterval(() => {
     height: 100%;
     margin: 0;
 }
+
 .wrapper {
     display: flex;
     flex-direction: column;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
-}
 </style>

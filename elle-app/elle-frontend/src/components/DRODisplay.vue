@@ -7,7 +7,7 @@ export interface Props {
     zpos:number,
     apos:number,
     rpms:number,
-    unit:string,
+    metric:boolean,
     xlock:boolean,
     zlock:boolean
 };
@@ -17,35 +17,31 @@ const props = withDefaults(defineProps<Props>(), {
     zpos: -22.34452,
     apos: 275.32323323,
     rpms: 5433.23432432,
-    unit: 'mm',
+    metric: true,
     xlock: true,
     zlock: false
 });
 
 const xposFormatted = computed(() => {
-    let isMetric = (props.unit == 'mm') ? true : false;
     let xpos = props.xpos;
-    xpos = isMetric ? xpos : xpos / 25.4;
-    let xposStr = xpos.toFixed(isMetric ? 3 : 4);
+    xpos = props.metric ? xpos : xpos / 25.4;
+    let xposStr = xpos.toFixed(props.metric ? 3 : 4);
     return " ".repeat(10 - xposStr.length) + xposStr;
 });
 
 const xposUnitFormatted = computed(() => {
-    let isMetric = (props.unit == 'mm') ? true : false;
-    return (isMetric ? 'mm' : 'in') + " ".repeat(3);
+    return (props.metric ? 'mm' : 'in') + " ".repeat(3);
 });
 
 const zposFormatted = computed(() => {
-    let isMetric = props.unit == 'mm' ? true : false;
     let zpos = props.zpos;
-    zpos = isMetric ? zpos : zpos / 25.4;
-    let zposStr = zpos.toFixed(isMetric ? 3 : 4);
+    zpos = props.metric ? zpos : zpos / 25.4;
+    let zposStr = zpos.toFixed(props.metric ? 3 : 4);
     return " ".repeat(10 - zposStr.length) + zposStr;
 });
 
 const zposUnitFormatted = computed(() => {
-    let isMetric = (props.unit == 'mm') ? true : false;
-    return (isMetric ? 'mm' : 'in') + " ".repeat(3);
+    return (props.metric ? 'mm' : 'in') + " ".repeat(3);
 });
 
 const aposFormatted = computed(() => {
