@@ -8,7 +8,13 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 1000,
   },
   base: mode == 'development' ? '' : './',
-  plugins: [vue()],
+  plugins: [vue({
+    template: {
+      compilerOptions: {
+        isCustomElement: (tag) => ['font'].includes(tag),
+      }
+    }    
+  })],
   server: {
       port: 3000,
       fs: {

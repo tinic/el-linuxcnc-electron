@@ -1,11 +1,22 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import DRODisplay from './components/DRODisplay.vue';
+import font from 'vue';
+import { number } from 'yargs';
 
 const selectedMenu = ref(0);
 
 const ipcXPos = ref(0);
 const ipcZPos = ref(0);
 const ipcAPos = ref(0);
+
+const xpos = ref(0);
+const zpos = ref(0);
+const apos = ref(0);
+const rpms = ref(5000);
+const xlock = ref(false);
+const zlock = ref(true);
+const unit = ref('mm');
 
 const menuItems = ref([
     { separator: true },
@@ -28,10 +39,13 @@ const menuItems = ref([
       }
     },
     { separator: true }
-]);
+]); 
 
-const droDisplayText = computed(() => {
-});
+setInterval(() => {
+  xpos.value += 1.0;
+  zpos.value -= 0.1;
+  apos.value -= 33.3;
+  }, 33.33333);
 
 </script>
 
@@ -54,12 +68,15 @@ const droDisplayText = computed(() => {
     </Menu>
     <div v-if="selectedMenu==0" class="flex-grow-1 flex align-items-center justify-content-center bg-blue-500 ">
       <div>
-        <div class="bg-gray-900 dro-font p-2">
-         <font color='#aaaaaa'>X|</font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0.000mm&nbsp;&nbsp;<i class='pi pi-lock' style='color: #ff0000; font-size: 1.5rem'></i><br>
-         <font color='#aaaaaa'>Z|</font>&nbsp;&nbsp;&nbsp;-10.000mm&nbsp;&nbsp;<i class='pi pi-lock' style='color: #000000; font-size: 1.5rem'></i><br>
-         <font color='#aaaaaa'>A|</font>&nbsp;&nbsp;&nbsp;275.000deg&nbsp;<br>
-         <font color='#aaaaaa'>R|</font>&nbsp;&nbsp;5000.000rpm&nbsp;<br>        
-        </div>
+        <DRODisplay
+          :xpos="xpos"
+          :zpos="zpos"
+          :apos="apos"
+          :rpms="rpms"
+          :xlock="xlock"
+          :zlock="zlock"
+          :unit="unit"
+        />
       </div>
     </div>
     <div v-if="selectedMenu==1" class="flex-grow-1 flex align-items-center m-3 justify-content-center ">
@@ -86,13 +103,6 @@ const droDisplayText = computed(() => {
 </template>
 
 <style scoped>
-
-.dro-font {
-  font-family: 'iosevka';
-  font-weight: bold;
-  font-size: 2.25em;
-  text-align: left;
-}
 
 
 .fixed-width-font {
