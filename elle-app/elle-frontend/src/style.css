@@ -14,6 +14,45 @@
   -webkit-text-size-adjust: 100%;
 }
 
+@font-face {
+  font-family: 'iosevka';
+  font-weight: 400;
+  src: url('./assets/fonts/iosevka-ss11-regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'iosevka';
+  font-weight: 700;
+  src: url('./assets/fonts/iosevka-ss11-bold.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'iosevka';
+  font-weight: 200;
+  src: url('./assets/fonts/iosevka-ss11-thin.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'iosevka';
+  font-weight: 400;
+  font-style: italic;
+  src: url('./assets/fonts/iosevka-ss11-italic.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'iosevka';
+  font-weight: 700;
+  font-style: italic;
+  src: url('./assets/fonts/iosevka-ss11-bolditalic.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'iosevka';
+  font-weight: 200;
+  font-style: italic;
+  src: url('./assets/fonts/iosevka-ss11-thinitalic.ttf') format('truetype');
+}
+
 a {
   font-weight: 500;
   color: #646cff;

@@ -3,6 +3,10 @@ import { ref, computed } from 'vue';
 
 const selectedMenu = ref(0);
 
+const ipcXPos = ref(0);
+const ipcZPos = ref(0);
+const ipcAPos = ref(0);
+
 const menuItems = ref([
     { separator: true },
     { label: 'Home', 
@@ -25,6 +29,10 @@ const menuItems = ref([
     },
     { separator: true }
 ]);
+
+const droDisplayText = computed(() => {
+});
+
 </script>
 
 <template>
@@ -45,7 +53,14 @@ const menuItems = ref([
       </template>
     </Menu>
     <div v-if="selectedMenu==0" class="flex-grow-1 flex align-items-center justify-content-center bg-blue-500 ">
-      
+      <div>
+        <div class="bg-gray-900 dro-font p-2">
+         <font color='#aaaaaa'>X|</font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0.000mm&nbsp;&nbsp;<i class='pi pi-lock' style='color: #ff0000; font-size: 1.5rem'></i><br>
+         <font color='#aaaaaa'>Z|</font>&nbsp;&nbsp;&nbsp;-10.000mm&nbsp;&nbsp;<i class='pi pi-lock' style='color: #000000; font-size: 1.5rem'></i><br>
+         <font color='#aaaaaa'>A|</font>&nbsp;&nbsp;&nbsp;275.000deg&nbsp;<br>
+         <font color='#aaaaaa'>R|</font>&nbsp;&nbsp;5000.000rpm&nbsp;<br>        
+        </div>
+      </div>
     </div>
     <div v-if="selectedMenu==1" class="flex-grow-1 flex align-items-center m-3 justify-content-center ">
       <div class="flex flex-column w-full h-full">
@@ -58,7 +73,7 @@ const menuItems = ref([
             <Button label="Clear Output" class="" />
           </template>
         </Toolbar>
-        <ScrollPanel class="bg-gray-900 p-2 h-full text-left">
+        <ScrollPanel class="bg-gray-900 p-2 h-full text-left fixed-width-font">
           "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
 
         </ScrollPanel>
@@ -72,6 +87,18 @@ const menuItems = ref([
 
 <style scoped>
 
+.dro-font {
+  font-family: 'iosevka';
+  font-weight: bold;
+  font-size: 2.25em;
+  text-align: left;
+}
+
+
+.fixed-width-font {
+  font-family: 'iosevka';
+  font-weight: normal;
+}
 
 .wrapper, html, body {
     width: 100%;
