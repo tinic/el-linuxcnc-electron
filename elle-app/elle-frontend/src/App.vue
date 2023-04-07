@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import DRODisplay from './components/DRODisplay.vue';
+import Numpad from './components/Numpad.vue';
 import font from 'vue';
 import { number } from 'yargs';
 
@@ -10,9 +11,12 @@ const xpos = ref(0);
 const zpos = ref(0);
 const apos = ref(0);
 const rpms = ref(5000);
+const xpitch = ref(0.3);
+const zpitch = ref(0.3);
 const xlock = ref(false);
 const zlock = ref(true);
-const metric = ref(true);
+const xpitchactive = ref(false);
+const zpitchactive = ref(true);
 
 const menuItems = ref([
     { separator: true },
@@ -22,16 +26,22 @@ const menuItems = ref([
         selectedMenu.value = 0;
       }
     },
-    { label: 'HAL', 
+    { label: 'CC', 
       icon: 'pi pi-fw pi-link',
       command: () => {
         selectedMenu.value = 1;
       }
     },
+    { label: 'HAL', 
+      icon: 'pi pi-fw pi-link',
+      command: () => {
+        selectedMenu.value = 2;
+      }
+    },
     { label: 'Settings', 
       icon: 'pi pi-fw pi-cog',
       command: () => {
-        selectedMenu.value = 2;
+        selectedMenu.value = 3;
       }
     },
     { separator: true }
@@ -62,19 +72,25 @@ setInterval(() => {
       </template>
     </Menu>
     <div v-if="selectedMenu==0" class="flex-grow-1 flex align-items-center justify-content-center bg-blue-500 ">
-      <div>
-        <DRODisplay
+      <div class="flex flex-row">
+        <DRODisplay class="mr-2 h-min"
           :xpos="xpos"
           :zpos="zpos"
           :apos="apos"
           :rpms="rpms"
+          :xpitch="xpitch"
+          :zpitch="zpitch"
           :xlock="xlock"
           :zlock="zlock"
-          :metric="metric"
-        />
+          :xpitchactive="xpitchactive"
+          :zpitchactive="zpitchactive"/>
+          <Numpad class="h-min"/>
       </div>
     </div>
-    <div v-if="selectedMenu==1" class="flex-grow-1 flex align-items-center m-3 justify-content-center ">
+    <div v-if="selectedMenu==1" class="flex-grow-1 flex align-items-center justify-content-center bg-blue-500 ">
+      Canned cycles
+    </div>
+    <div v-if="selectedMenu==2" class="flex-grow-1 flex align-items-center m-3 justify-content-center ">
       <div class="flex flex-column w-full h-full">
         <Toolbar class="mb-2">
           <template #start>
@@ -86,12 +102,11 @@ setInterval(() => {
           </template>
         </Toolbar>
         <ScrollPanel class="bg-gray-900 p-2 h-full text-left fixed-width-font">
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-
+          "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."\
         </ScrollPanel>
       </div>
     </div>
-    <div v-if="selectedMenu==2" class="flex-grow-1 flex align-items-center justify-content-center bg-blue-500 ">
+    <div v-if="selectedMenu==3" class="flex-grow-1 flex align-items-center justify-content-center bg-blue-500 ">
       Settings
     </div>
   </div>
