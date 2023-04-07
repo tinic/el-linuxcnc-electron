@@ -3,11 +3,12 @@ import { computed } from 'vue';
 </script>
 
 <template>  
-    <div class="grid bg-gray-900 dro-font-numpad grid-nogutter p-1" style="width:350px">
+    <div class="bg-gray-900 align-content-center">
+    <div class="grid  dro-font-numpad grid-nogutter p-1" style="width:350px">
         <div class="col-3 p-1"><button class="w-full button-numpad p-3">ESC</button></div>
-        <div class="col-3 p-1"><button class="w-full button-numpad p-3">X</button></div>
-        <div class="col-3 p-1"><button class="w-full button-numpad p-3">Z</button></div>
-        <div class="col-3 p-1"><button class="w-full button-numpad p-3">A</button></div>
+        <div class="col-3 p-1"><button class="w-full button-numpad p-3">⅓</button></div>
+        <div class="col-3 p-1"><button class="w-full button-numpad p-3">½</button></div>
+        <div class="col-3 p-1"><button class="w-full button-numpad p-2"><span style="font-size:150%">⌫</span></button></div>
         <div class="col-9">
             <div class="grid grid-nogutter">
                 <div class="col-4 p-1"><button class="w-full button-numpad p-3">7</button></div>
@@ -29,6 +30,7 @@ import { computed } from 'vue';
             </div>
         </div>
         <div class="col-3 p-1"><button class="w-full h-full button-numpad p-3">ENT</button></div>
+    </div>
     </div>
 </template>
 

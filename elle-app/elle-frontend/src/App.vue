@@ -17,6 +17,7 @@ const xlock = ref(false);
 const zlock = ref(true);
 const xpitchactive = ref(false);
 const zpitchactive = ref(true);
+const numberentry = ref(0);
 
 const menuItems = ref([
     { separator: true },
@@ -52,6 +53,25 @@ setInterval(() => {
   zpos.value -= 0.1;
   apos.value -= 33.3;
   }, 33.333333);
+
+const numberClicked = (arg) => {
+  console.log("numberClicked" + arg);
+};
+
+const zeroClicked = (arg) => {
+  switch(arg) {
+      case 1:
+      xpos.value = 0;
+      break;
+      case 2:
+      zpos.value = 0;
+      break;
+      case 3:
+      apos.value = 0;
+      break;
+  }
+};
+
 </script>
 
 <template>
@@ -83,8 +103,11 @@ setInterval(() => {
           :xlock="xlock"
           :zlock="zlock"
           :xpitchactive="xpitchactive"
-          :zpitchactive="zpitchactive"/>
-          <Numpad class="h-min"/>
+          :zpitchactive="zpitchactive"
+          :numberentry="numberentry"
+          @numberClicked="numberClicked"
+          @zeroClicked="zeroClicked"/>
+          <Numpad class=""/>
       </div>
     </div>
     <div v-if="selectedMenu==1" class="flex-grow-1 flex align-items-center justify-content-center bg-blue-500 ">
