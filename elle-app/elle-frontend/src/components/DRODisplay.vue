@@ -3,7 +3,7 @@
 import { emit } from 'process';
 import { ref, computed } from 'vue';
 
-const emit = defineEmits(['numberClicked', 'zeroClicked', 'pitchSelect']);
+const emit = defineEmits(['numberClicked', 'zeroClicked', 'pitchClicked']);
 
 export interface Props {
     xpos:number,
@@ -16,6 +16,8 @@ export interface Props {
     zlock:boolean,
     xpitchactive:boolean,
     zpitchactive:boolean,
+    xpitchlabel:string,
+    zpitchlabel:string,
     numberentry:number,
 };
 
@@ -30,6 +32,8 @@ const props = withDefaults(defineProps<Props>(), {
     zlock: false,
     xpitchactive:false,
     zpitchactive:true,
+    xpitchlabel:"...",
+    zpitchlabel:"...",
     numberentry: 0
 });
 
@@ -63,7 +67,7 @@ const xposFormatted = computed(() => {
 });
 
 const xposUnitFormatted = computed(() => {
-    return (metric.value ? 'mm' : '\" ') + " ".repeat(4);
+    return (metric.value ? 'mm' : '″ ') + " ".repeat(4);
 });
 
 const zposFormatted = computed(() => {
@@ -74,7 +78,7 @@ const zposFormatted = computed(() => {
 });
 
 const zposUnitFormatted = computed(() => {
-    return (metric.value ? 'mm' : '\" ') + " ".repeat(4);
+    return (metric.value ? 'mm' : '″ ') + " ".repeat(4);
 });
 
 const aposFormatted = computed(() => {
@@ -105,7 +109,7 @@ const xpitchFormatted = computed(() => {
 });
 
 const xpitchUnitFormatted = computed(() => {
-    return (metric.value ? 'mm/rev' : '\"/rev ');
+    return (metric.value ? 'mm/rev' : '″/rev ');
 });
 
 const zpitchFormatted = computed(() => {
@@ -116,7 +120,7 @@ const zpitchFormatted = computed(() => {
 });
 
 const zpitchUnitFormatted = computed(() => {
-    return (metric.value ? 'mm/rev' : '\"/rev ');
+    return (metric.value ? 'mm/rev' : '″/rev ');
 });
 
 const rpmsUnitFormatted = computed(() => {
@@ -165,12 +169,12 @@ const zpitchClicked = () => {
 
 const xpitchSelectClicked = () => {
     entryActive.value = NumberEntry.none;
-    emit('pitchSelect', NumberEntry.xpitch)
+    emit('pitchClicked', 'x')
 }
 
 const zpitchSelectClicked = () => {
     entryActive.value = NumberEntry.none;
-    emit('pitchSelect', NumberEntry.zpitch)
+    emit('pitchClicked', 'z')
 }
 
 const rpmClicked = () => {
@@ -228,12 +232,12 @@ const zpitchLabel = computed(() => {
         <div @click="xpitchClicked" class="inline">
             <span v-html="xpitchLabel"/>{{ xpitchFormatted }}<font size="-1">&nbsp;</font><font color='#aaaaaa'>{{ xpitchUnitFormatted }}</font>
         </div>
-        <button @click="xpitchSelectClicked" class="dro-font-display-button align-content-center ml-5" style="width:6em; padding: 0.75rem;">Fine</button>
+        <button @click="xpitchSelectClicked" class="dro-font-display-button align-content-center ml-5" style="width:6em; padding: 0.75rem;">{{ props.xpitchlabel }}</button>
         <br/>
         <div @click="zpitchClicked" class="inline">
             <span v-html="zpitchLabel"/>{{ zpitchFormatted }}<font size="-1">&nbsp;</font><font color='#aaaaaa'>{{ zpitchUnitFormatted }}</font>
         </div>
-        <button @click="zpitchSelectClicked" class="dro-font-display-button align-content-center ml-5" style="width:6em; padding: 0.75rem;">Fine</button>
+        <button @click="zpitchSelectClicked" class="dro-font-display-button align-content-center ml-5" style="width:6em; padding: 0.75rem;">{{ props.zpitchlabel }}</button>
         <br/>
         <div @click="rpmClicked" class="inline">
             <font color='#aaaaaa'>&nbsp;R|</font>{{ rpmsFormatted }}<font size="-1">&nbsp;</font><font color='#aaaaaa'>{{ rpmsUnitFormatted }}</font>

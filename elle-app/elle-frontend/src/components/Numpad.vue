@@ -1,7 +1,3 @@
-<script setup lang="ts">
-import { computed } from 'vue';
-</script>
-
 <template>  
     <div class="bg-gray-900 align-content-center">
     <div class="grid  dro-font-numpad grid-nogutter p-1" style="width:350px">
@@ -35,7 +31,6 @@ import { computed } from 'vue';
 </template>
 
 <style>
-
 .button-numpad {
     background: #333;
 }
@@ -43,7 +38,7 @@ import { computed } from 'vue';
 .dro-font-numpad {
   font-family: 'iosevka';
   font-weight: bold;
-  font-size: 1.5em;
+  font-size: 1.6em;
   text-align: center;
 }
 </style>

@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { markRaw, ref, defineAsyncComponent } from 'vue';
+import { useDialog } from 'primevue/usedialog';
+
 import DRODisplay from './components/DRODisplay.vue';
 import Numpad from './components/Numpad.vue';
-import font from 'vue';
-import { number } from 'yargs';
+
+const PitchSelector = defineAsyncComponent(() => import('./components/PitchSelector.vue'));
 
 const selectedMenu = ref(0);
 
@@ -18,6 +20,8 @@ const zlock = ref(true);
 const xpitchactive = ref(false);
 const zpitchactive = ref(true);
 const numberentry = ref(0);
+const xpitchlabel = ref('…');
+const zpitchlabel = ref('…');
 
 const menuItems = ref([
     { separator: true },
@@ -54,11 +58,11 @@ setInterval(() => {
   apos.value -= 33.3;
   }, 33.333333);
 
-const numberClicked = (arg) => {
+const numberClicked = (arg:number) => {
   console.log("numberClicked" + arg);
 };
 
-const zeroClicked = (arg) => {
+const zeroClicked = (arg:number) => {
   switch(arg) {
       case 1:
       xpos.value = 0;
@@ -70,6 +74,47 @@ const zeroClicked = (arg) => {
       apos.value = 0;
       break;
   }
+};
+
+const dialog = useDialog();
+
+const pitchClicked = (axis:string) => {
+  const dialogRef = dialog.open(PitchSelector, {
+        props: {
+            header: 'Select Pitch',
+            style: {
+                width: '70vw',
+            },
+            breakpoints:{
+                '960px': '75vw',
+                '640px': '90vw'
+            },
+            position: 'top',
+            modal: true,
+        },
+        data: {
+          axis: axis
+        },
+        emits: {
+          onSelected: (axis:string, name:string, pitch:number) => {
+            console.log('sdfsd')
+            switch(axis) {
+              case 'z':
+                zpitch.value = pitch;
+                zpitchlabel.value = name;
+                break;
+              case 'x':
+                xpitch.value = pitch;
+                xpitchlabel.value = name;
+                break;
+            }
+          }
+        },
+        templates: {
+        },
+        onClose: (options) => {
+        }
+    });
 };
 
 </script>
@@ -91,7 +136,7 @@ const zeroClicked = (arg) => {
         </button>
       </template>
     </Menu>
-    <div v-if="selectedMenu==0" class="flex-grow-1 flex align-items-center justify-content-center bg-blue-500 ">
+    <div v-if="selectedMenu==0" class="m-5">
       <div class="flex flex-row">
         <DRODisplay class="mr-2 h-min"
           :xpos="xpos"
@@ -105,9 +150,13 @@ const zeroClicked = (arg) => {
           :xpitchactive="xpitchactive"
           :zpitchactive="zpitchactive"
           :numberentry="numberentry"
+          :xpitchlabel="xpitchlabel"
+          :zpitchlabel="zpitchlabel"
           @numberClicked="numberClicked"
-          @zeroClicked="zeroClicked"/>
+          @zeroClicked="zeroClicked"
+          @pitchClicked="pitchClicked"/>
           <Numpad class=""/>
+          <DynamicDialog/>
       </div>
     </div>
     <div v-if="selectedMenu==1" class="flex-grow-1 flex align-items-center justify-content-center bg-blue-500 ">

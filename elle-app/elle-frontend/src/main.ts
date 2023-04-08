@@ -12,11 +12,19 @@ import Button from "primevue/button"
 import Toolbar from "primevue/toolbar"
 import Menu from "primevue/menu"
 import ScrollPanel from 'primevue/scrollpanel';
+import DynamicDialog from 'primevue/dynamicdialog';
+import DialogService from 'primevue/dialogservice';
+import TabView from 'primevue/tabview';
+import TabPanel from 'primevue/tabpanel';
 
 const app = createApp(App);
 app.use(PrimeVue);
+app.use(DialogService);
 app.component('Button', Button);
 app.component('Toolbar', Toolbar);
 app.component('Menu', Menu);
 app.component('ScrollPanel', ScrollPanel);
+app.component('DynamicDialog', DynamicDialog);
+app.component('TabView', TabView);
+app.component('TabPanel', TabPanel);
 app.mount('#app')
