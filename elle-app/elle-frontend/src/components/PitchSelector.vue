@@ -23,8 +23,8 @@ for (var i:number = 0; i < json[axis].sections.length; i++) {
     headers.push(json[axis].sections[i].header);
 }
 
-const selectPitch = (name:string, pitch:number) => {
-    emit('selected',dialogRef.value.data.axis,name,pitch);
+const selectPitch = (name:string, pitch:number, type:string) => {
+    emit('selected',dialogRef.value.data.axis,name,pitch,type);
     dialogRef.value.close();
 };
 
@@ -38,7 +38,7 @@ onMounted(() => {
         <TabPanel v-for="(title, sindex) in headers" :header="title">
             <div class="grid dro-font-preset-button">
                 <div class="col-3 p-1" v-for="(pitch, pindex) in json[axis].sections[sindex].pitches">
-                    <button @click="selectPitch(pitch.name,pitch.pitch)" class="w-full h-full">{{ pitch.name }}</button>
+                    <button @click="selectPitch(pitch.name,pitch.value,pitch.type)" class="w-full h-full">{{ pitch.name }}</button>
                     <br/>
                 </div>            
             </div>

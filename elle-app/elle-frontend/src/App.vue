@@ -96,7 +96,7 @@ const pitchClicked = (axis:string) => {
           axis: axis
         },
         emits: {
-          onSelected: (axis:string, name:string, pitch:number) => {
+          onSelected: (axis:string, name:string, pitch:number, type:string) => {
             console.log('sdfsd')
             switch(axis) {
               case 'z':
