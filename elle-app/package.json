@@ -41,6 +41,7 @@
     "wait-on": "^7.0.1"
   },
   "dependencies": {
+    "@vitejs/plugin-vue": "^4.1.0",
     "electron-log": "^4.4.8",
     "electron-store": "^8.1.0",
     "electron-updater": "^5.3.0",
