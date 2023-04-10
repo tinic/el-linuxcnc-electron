@@ -164,7 +164,7 @@ const pitchClicked = (axis:string) => {
     </div>
     <div v-if="selectedMenu==2" class="flex-grow-1 flex align-items-center m-3 justify-content-center ">
       <div class="flex flex-column w-full h-full">
-        <Toolbar class="mb-2">
+        <Toolbar class="mb-2 bg-gray-900">
           <template #start>
               <Button label="Start HAL" icon="pi pi-play" class="mr-2" />
               <Button label="Stop HAL" icon="pi pi-stop" severity="success" />

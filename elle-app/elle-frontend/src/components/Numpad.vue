@@ -4,7 +4,7 @@
         <div class="col-3 p-1"><button class="w-full button-numpad p-3">ESC</button></div>
         <div class="col-3 p-1"><button class="w-full button-numpad p-3">⅓</button></div>
         <div class="col-3 p-1"><button class="w-full button-numpad p-3">½</button></div>
-        <div class="col-3 p-1"><button class="w-full button-numpad p-2"><span style="font-size:150%">⌫</span></button></div>
+        <div class="col-3 p-1"><button class="w-full button-numpad p-3">⌫</button></div>
         <div class="col-9">
             <div class="grid grid-nogutter">
                 <div class="col-4 p-1"><button class="w-full button-numpad p-3">7</button></div>

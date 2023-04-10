@@ -9,25 +9,25 @@ import { emit } from "process";
 import DialogRef from 'primevue/dialog'
 
 const emit = defineEmits(['selected']);
-const dialogRef = inject("dialogRef") as DialogRef;
+const dialogRef = inject("dialogRef") as any;
 const dialog = useDialog();
 
 var headers:string[] = [];
 
 var axis:number = 0;
 for (var i:number = 0; i < json.length; i++) {
-//    if (json[i].axis == dialogRef.value.data.axis) {
-//        axis = i;
-//        break;
-//    }
+    if (json[i].axis == dialogRef.value.data.axis) {
+        axis = i;
+        break;
+    }
 }
 for (var i:number = 0; i < json[axis].sections.length; i++) {
     headers.push(json[axis].sections[i].header);
 }
 
 const selectPitch = (name:string, pitch:number, type:string) => {
-//    emit('selected',dialogRef.value.data.axis,name,pitch,type);
-//    dialogRef.value.close();
+    emit('selected',dialogRef.value.data.axis,name,pitch,type);
+    dialogRef.value.close();
 };
 
 onMounted(() => {
@@ -40,7 +40,7 @@ onMounted(() => {
         <TabPanel v-for="(title, sindex) in headers" :header="title">
             <div class="grid dro-font-preset-button">
                 <div class="col-3 p-1" v-for="(pitch, pindex) in json[axis].sections[sindex].pitches">
-                    <button @click="selectPitch(pitch.name,pitch.value,pitch.type)" class="w-full h-full">{{ pitch.name }}</button>
+                    <button @click="selectPitch(pitch.name,pitch.value,pitch.type)" class="w-full h-full button-pitchselector">{{ pitch.name }}</button>
                     <br/>
                 </div>            
             </div>
@@ -49,6 +49,9 @@ onMounted(() => {
 </template>
 
 <style>
+.button-pitchselector {
+    background: #333;
+}
 
 .p-tabview {
 	height: 100%;
