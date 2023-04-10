@@ -1,27 +1,16 @@
 <script setup lang="ts">
-import { markRaw, ref, defineAsyncComponent } from 'vue';
+import { ref, defineAsyncComponent } from 'vue';
 import { useDialog } from 'primevue/usedialog';
 
-import DRODisplay from './components/DRODisplay.vue';
 import Numpad from './components/Numpad.vue';
+import DRODisplay from './components/DRODisplay.vue';
 
-const PitchSelector = defineAsyncComponent(() => import('./components/PitchSelector.vue'));
+const { ipcRenderer } = window.require('electron');
 
+////////////////////////////////////////////////////////
+// Main Menu
+//#region
 const selectedMenu = ref(0);
-
-const xpos = ref(0);
-const zpos = ref(0);
-const apos = ref(0);
-const rpms = ref(5000);
-const xpitch = ref(0.3);
-const zpitch = ref(0.3);
-const xlock = ref(false);
-const zlock = ref(true);
-const xpitchactive = ref(false);
-const zpitchactive = ref(true);
-const numberentry = ref(0);
-const xpitchlabel = ref('…');
-const zpitchlabel = ref('…');
 
 const menuItems = ref([
     { separator: true },
@@ -51,12 +40,24 @@ const menuItems = ref([
     },
     { separator: true }
 ]); 
+//#endregion
 
-setInterval(() => {
-  xpos.value += 1.0;
-  zpos.value -= 0.1;
-  apos.value -= 33.3;
-  }, 33.333333);
+////////////////////////////////////////////////////////
+// DRO
+//#region
+const xpos = ref(0);
+const zpos = ref(0);
+const apos = ref(0);
+const rpms = ref(5000);
+const xpitch = ref(0.3);
+const zpitch = ref(0.3);
+const xlock = ref(false);
+const zlock = ref(true);
+const xpitchactive = ref(false);
+const zpitchactive = ref(true);
+const numberentry = ref(0);
+const xpitchlabel = ref('…');
+const zpitchlabel = ref('…');
 
 const numberClicked = (arg:number) => {
   console.log("numberClicked" + arg);
@@ -75,9 +76,45 @@ const zeroClicked = (arg:number) => {
       break;
   }
 };
+//#endregion
+
+////////////////////////////////////////////////////////
+// HAL
+// #region
+const halStdoutText = ref('');
+
+const startHAL = () => {
+  ipcRenderer.send('startHAL');
+}
+
+const stopHAL = () => {
+  ipcRenderer.send('stopHAL');
+}
+
+var updateInterval:NodeJS.Timer;
+
+ipcRenderer.on('halStarted', () => {
+  updateInterval = setInterval(() => {
+    // TODO: Poll HAL
+  }, 33.333333);
+});
+
+ipcRenderer.on('halStopped', () => {
+  clearTimeout(updateInterval);
+});
+
+ipcRenderer.on('halStdout', (event:any, arg:any) => {
+    halStdoutText.value += arg as string;
+    event.returnValue = true;
+});
+//#endregion
+
+////////////////////////////////////////////////////////
+// Pitch selector 
+// #region
+const PitchSelector = defineAsyncComponent(() => import('./components/PitchSelector.vue'));
 
 const dialog = useDialog();
-
 const pitchClicked = (axis:string) => {
   const dialogRef = dialog.open(PitchSelector, {
         props: {
@@ -116,6 +153,9 @@ const pitchClicked = (axis:string) => {
         }
     });
 };
+//#endregion
+
+// testing
 
 </script>
 
@@ -166,15 +206,15 @@ const pitchClicked = (axis:string) => {
       <div class="flex flex-column w-full h-full">
         <Toolbar class="mb-2 bg-gray-900">
           <template #start>
-              <Button label="Start HAL" icon="pi pi-play" class="mr-2" />
-              <Button label="Stop HAL" icon="pi pi-stop" severity="success" />
+              <Button @click="startHAL" label="Start HAL" icon="pi pi-play" class="mr-2" />
+              <Button @click="stopHAL" label="Stop HAL" icon="pi pi-stop" severity="success" />
           </template>
           <template #end>
             <Button label="Clear Output" class="" />
           </template>
         </Toolbar>
         <ScrollPanel class="bg-gray-900 p-2 h-full text-left fixed-width-font">
-          "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."\
+          {{ halStdoutText }}
         </ScrollPanel>
       </div>
     </div>
@@ -185,7 +225,6 @@ const pitchClicked = (axis:string) => {
 </template>
 
 <style scoped>
-
 .fixed-width-font {
   font-family: 'iosevka';
   font-weight: normal;
@@ -203,5 +242,4 @@ const pitchClicked = (axis:string) => {
     display: flex;
     flex-direction: column;
 }
-
 </style>

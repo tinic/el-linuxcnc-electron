@@ -15,6 +15,8 @@ async function createWindow() {
         webPreferences: {
             preload: __dirname + "/preload.js",
             devTools: isDev,
+            nodeIntegration: true,
+            contextIsolation: false,
         },
         show: false,
         alwaysOnTop: true,
@@ -88,4 +90,12 @@ app.on("window-all-closed", () => {
     if (process.platform !== "darwin") {
         app.quit();
     }
+});
+
+ipcMain.on('startHAL', () => {
+    console.log('startHAL!!!!!')
+});
+
+ipcMain.on('stopHAL', () => {
+    console.log('stopHAL!!!!!')
 });
