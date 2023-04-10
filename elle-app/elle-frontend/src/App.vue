@@ -120,7 +120,7 @@ const pitchClicked = (axis:string) => {
 </script>
 
 <template>
-  <div class="flex flex-row flex-grow-1 absolute top-0 left-0 wrapper">
+  <div class="flex flex-row flex-grow-1 absolute top-0 left-0 wrapper bg-gray-800">
     <Menu v-model="selectedMenu" :model="menuItems" class="flex-none">
       <template #start>
         <button class="w-full p-link flex align-items-center p-2 pl-3 text-color hover:surface-200 border-noround">
@@ -195,6 +195,8 @@ const pitchClicked = (axis:string) => {
     width: 100%;
     height: 100%;
     margin: 0;
+    color: #ffffff;
+    background-color: #222222;
 }
 
 .wrapper {

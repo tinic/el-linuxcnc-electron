@@ -5,7 +5,7 @@ import { ref, computed } from 'vue';
 
 const emit = defineEmits(['numberClicked', 'zeroClicked', 'pitchClicked']);
 
-export interface Props {
+ interface Props {
     xpos:number,
     zpos:number,
     apos:number,

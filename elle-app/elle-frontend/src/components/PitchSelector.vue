@@ -1,31 +1,33 @@
 <script setup lang="ts">
-import { ref, onMounted, inject } from "vue";
+import { onMounted, inject } from "vue";
 import { useDialog } from "primevue/usedialog";
 
 import json from '../assets/presets.json';
 import { showCompletionScript } from "yargs";
 import { emit } from "process";
 
+import DialogRef from 'primevue/dialog'
+
 const emit = defineEmits(['selected']);
-const dialogRef = inject("dialogRef");
+const dialogRef = inject("dialogRef") as DialogRef;
 const dialog = useDialog();
 
 var headers:string[] = [];
 
 var axis:number = 0;
 for (var i:number = 0; i < json.length; i++) {
-    if (json[i].axis == dialogRef.value.data.axis) {
-        axis = i;
-        break;
-    }
+//    if (json[i].axis == dialogRef.value.data.axis) {
+//        axis = i;
+//        break;
+//    }
 }
 for (var i:number = 0; i < json[axis].sections.length; i++) {
     headers.push(json[axis].sections[i].header);
 }
 
 const selectPitch = (name:string, pitch:number, type:string) => {
-    emit('selected',dialogRef.value.data.axis,name,pitch,type);
-    dialogRef.value.close();
+//    emit('selected',dialogRef.value.data.axis,name,pitch,type);
+//    dialogRef.value.close();
 };
 
 onMounted(() => {
