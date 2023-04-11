@@ -81,3 +81,5 @@ async def write_enable_x(item:str, value:bool):
 async def write_enable_z(item:str, value:bool):
     if (item == "value"):
         hal_pin_enable_stepper_z.set(value)
+
+print("Python REST service ready!")

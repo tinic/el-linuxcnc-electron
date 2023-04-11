@@ -27,6 +27,7 @@ const xforward = ref(true)
 const numberentry = ref(0);
 const xpitchlabel = ref('…');
 const zpitchlabel = ref('…');
+const xpitchangle = ref(0);
 
 enum FeedMode {
   none=0,
@@ -154,8 +155,8 @@ function startPoll() {
     getHalIn().then(halIn => {
       zpos.value = (halIn as any).position_z;
       xpos.value = (halIn as any).position_x;
-      apos.value = (halIn as any).position_a;
-      rpms.value = (halIn as any).speed_rps;
+      apos.value = (halIn as any).position_a * 360;
+      rpms.value = (halIn as any).speed_rps * 60;
     });
     if (halOutScheduled) {
       halOutScheduled = false;
@@ -372,6 +373,10 @@ watch([zpitch, xpitch], () => {
 // #region
 const PitchSelector = defineAsyncComponent(() => import('./components/PitchSelector.vue'));
 
+function pitchForAngle(pitch:number, angle:number) {
+  return pitch * Math.tan(angle * (Math.PI / 180))
+}
+
 const dialog = useDialog();
 const pitchClicked = (axis:string) => {
   const dialogRef = dialog.open(PitchSelector, {
@@ -391,16 +396,27 @@ const pitchClicked = (axis:string) => {
           axis: axis
         },
         emits: {
-          onSelected: (axis:string, name:string, pitch:number, type:string) => {
-            console.log('sdfsd')
+          onSelected: (axis:string, name:string, value:number, type:string) => {
             switch(axis) {
               case 'z':
-                zpitch.value = pitch;
-                zpitchlabel.value = name;
+                if (type != 'angle') {
+                  zpitch.value = value;
+                  zpitchlabel.value = name;
+                  if (xpitchangle.value > 0) {
+                    xpitch.value = pitchForAngle(zpitch.value, xpitchangle.value);
+                  }
+                }
                 break;
               case 'x':
-                xpitch.value = pitch;
-                xpitchlabel.value = name;
+                if (type != 'angle') {
+                  xpitch.value = value;
+                  xpitchlabel.value = name;
+                  xpitchangle.value = 0;
+                } else {
+                  xpitch.value = pitchForAngle(zpitch.value, value);
+                  xpitchlabel.value = name;
+                  xpitchangle.value = value;
+                }
                 break;
             }
           }
