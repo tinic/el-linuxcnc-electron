@@ -209,7 +209,7 @@ const zpitchLabel = computed(() => {
 </script>
 
 <template>  
-    <div class="bg-gray-900 inline dro-font-display p-3 keep-spaces">
+    <div class="bg-gray-900 inline dro-font-display p-2 keep-spaces">
         <div @click="xposClicked" class="inline">
             <span v-html="xposLabel"/>{{ xposFormatted }}<font size="-1">&nbsp;</font><font color='#aaaaaa'>{{ xposUnitFormatted }}</font>
         </div>
@@ -258,7 +258,7 @@ const zpitchLabel = computed(() => {
 .dro-font-display {
   font-family: 'iosevka';
   font-weight: bold;
-  font-size: 2.25em;
+  font-size: 2.1em;
   text-align: left;
 }
 

@@ -6,6 +6,7 @@ import hal
 import math
 import time
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 halc = hal.component("lathe")
 hal_pin_position_z = halc.newpin("position_z", hal.HAL_FLOAT, hal.HAL_IN)
@@ -29,6 +30,44 @@ hal_pin_velocity_x_cmd = halc.newpin("velocity_x_cmd", hal.HAL_FLOAT, hal.HAL_OU
 halc.ready()
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {"status": "OK!"}
+
+@app.get("/hal/hal_in")
+async def read_hal_in():
+    return {"position_z": hal_pin_position_z.get(),
+            "position_x": hal_pin_position_x.get(),
+            "position_a": hal_pin_position_a.get(),
+            "speed_rps": hal_pin_speed_rps.get()}
+
+@app.put("/hal/hal_out/forward_z")
+async def write_forward_z(item:str, value:float):
+    if (str == "value"):
+        print("write_forward_z {%f}",format(value));
+        hal_pin_forward_z.set(value)
+
+@app.put("/hal/hal_out/forward_x")
+async def write_forward_x(item:str, value:float):
+    if (str == "value"):
+        print("write_forward_x {%f}",format(value));
+        hal_pin_forward_x.set(value)
+
+@app.put("/hal/hal_out/enable_z")
+async def write_enable_z(item:str, value:float):
+    if (str == "value"):
+        hal_pin_enable_z.set(value)
+
+@app.put("/hal/hal_out/enable_x")
+async def write_enable_x(item:str, value:float):
+    if (str == "value"):
+        hal_pin_enable_x.set(value)

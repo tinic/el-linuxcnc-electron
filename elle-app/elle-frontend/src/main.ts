@@ -16,6 +16,7 @@ import DynamicDialog from 'primevue/dynamicdialog';
 import DialogService from 'primevue/dialogservice';
 import TabView from 'primevue/tabview';
 import TabPanel from 'primevue/tabpanel';
+import SelectButton from 'primevue/selectbutton';
 
 const app = createApp(App);
 app.use(PrimeVue);
@@ -27,4 +28,5 @@ app.component('ScrollPanel', ScrollPanel);
 app.component('DynamicDialog', DynamicDialog);
 app.component('TabView', TabView);
 app.component('TabPanel', TabPanel);
+app.component('SelectButton', SelectButton);
 app.mount('#app')

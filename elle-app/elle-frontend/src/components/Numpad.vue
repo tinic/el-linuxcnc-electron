@@ -1,6 +1,6 @@
 <template>  
     <div class="bg-gray-900 align-content-center">
-    <div class="grid  dro-font-numpad grid-nogutter p-1" style="width:350px">
+    <div class="grid dro-font-numpad grid-nogutter p-1" style="width:350px">
         <div class="col-3 p-1"><button class="w-full button-numpad p-3">ESC</button></div>
         <div class="col-3 p-1"><button class="w-full button-numpad p-3">⅓</button></div>
         <div class="col-3 p-1"><button class="w-full button-numpad p-3">½</button></div>
@@ -38,7 +38,7 @@
 .dro-font-numpad {
   font-family: 'iosevka';
   font-weight: bold;
-  font-size: 1.6em;
+  font-size: 1.3em;
   text-align: center;
 }
 </style>
