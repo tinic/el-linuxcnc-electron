@@ -21,6 +21,7 @@ async function createWindow() {
         show: false,
         alwaysOnTop: true,
         frame: true,
+        fullscreen: true
     };
 
     if (appBounds !== undefined && appBounds !== null) Object.assign(BrowserWindowOptions, appBounds);
@@ -87,9 +88,7 @@ app.whenReady().then(async () => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on("window-all-closed", () => {
-    if (process.platform !== "darwin") {
-        app.quit();
-    }
+    app.quit();
 });
 
 ipcMain.on('startHAL', () => {
@@ -98,4 +97,8 @@ ipcMain.on('startHAL', () => {
 
 ipcMain.on('stopHAL', () => {
     console.log('stopHAL!!!!!')
+});
+
+ipcMain.on('quit', () => {
+    app.quit();
 });

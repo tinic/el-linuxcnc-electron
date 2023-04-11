@@ -7,16 +7,23 @@ import DRODisplay from './components/DRODisplay.vue';
 
 const selectedMenu = ref(0);
 
+// Polled over REST
 const xpos = ref(0);
 const zpos = ref(0);
 const apos = ref(0);
 const rpms = ref(0);
-const xpitch = ref(0);
-const zpitch = ref(0);
+
+// Pushed over REST
+const xpitch = ref(0.1);
+const zpitch = ref(0.1);
 const xlock = ref(false);
 const zlock = ref(false);
 const xpitchactive = ref(false);
 const zpitchactive = ref(false);
+const zforward = ref(true)
+const xforward = ref(true)
+
+// Internal
 const numberentry = ref(0);
 const xpitchlabel = ref('…');
 const zpitchlabel = ref('…');
@@ -116,6 +123,15 @@ const stopHAL = () => {
   }
 }
 
+const quitApplication = () => {
+  var userAgent = navigator.userAgent.toLowerCase();
+  if (userAgent.indexOf(' electron/') > -1) {
+    const { ipcRenderer } = window.require('electron');
+    ipcRenderer.send('quit');
+  }
+};
+
+var halOutScheduled:boolean = false;
 var updateInterval:NodeJS.Timer;
 
 interface HalIn {
@@ -141,7 +157,18 @@ function startPoll() {
       apos.value = (halIn as any).position_a;
       rpms.value = (halIn as any).speed_rps;
     });
-  }, 100);
+    if (halOutScheduled) {
+      halOutScheduled = false;
+      let halOut = {
+          "forward_z" : zpitch.value,
+          "forward_x" : xpitch.value,
+          "enable_z" : zpitchactive.value,
+          "enable_x" : xpitchactive.value,
+          "enable_stepper_z" : zlock.value,
+          "enable_stepper_x" : xlock.value
+      };
+    }
+  }, 66);
 }
 
 function endPoll() {
@@ -212,18 +239,132 @@ const directionModeIdleClicked = () => {
   selectedDirectionMode.value = DirectionMode.idle;
 }
 
+function scheduleHALOut() {
+  halOutScheduled = true;
+}
+
+function updateHALOut() {
+  switch(selectedFeedMode.value) {
+    case FeedMode.longitudinal:
+    switch(selectedDirectionMode.value) {
+      case DirectionMode.forward:
+        zpitchactive.value = true;
+        xpitchactive.value = false;
+        zlock.value = true;
+        xlock.value = false;
+        zforward.value = true;
+        xforward.value = true;
+      break;
+      case DirectionMode.reverse:
+        zpitchactive.value = true;
+        xpitchactive.value = false;
+        zlock.value = true;
+        xlock.value = false;
+        zforward.value = false;
+        xforward.value = false;
+      break;
+      case DirectionMode.hold:
+        zpitchactive.value = false;
+        xpitchactive.value = false;
+        zlock.value = true;
+        xlock.value = false;
+        zforward.value = true;
+        xforward.value = true;
+      break;
+      case DirectionMode.idle:
+        zpitchactive.value = false;
+        xpitchactive.value = false;
+        zlock.value = false;
+        xlock.value = false;
+        zforward.value = true;
+        xforward.value = true;
+      break;
+    }
+    break;
+    case FeedMode.cross:
+    switch(selectedDirectionMode.value) {
+      case DirectionMode.forward:
+        zpitchactive.value = false;
+        xpitchactive.value = true;
+        zlock.value = false;
+        xlock.value = true;
+        zforward.value = true;
+        xforward.value = true;
+      break;
+      case DirectionMode.reverse:
+        zpitchactive.value = false;
+        xpitchactive.value = true;
+        zlock.value = false;
+        xlock.value = true;
+        zforward.value = false;
+        xforward.value = false;
+      break;
+      case DirectionMode.hold:
+        zpitchactive.value = false;
+        xpitchactive.value = false;
+        zlock.value = false;
+        xlock.value = true;
+        zforward.value = true;
+        xforward.value = true;
+      break;
+      case DirectionMode.idle:
+        zpitchactive.value = false;
+        xpitchactive.value = false;
+        zlock.value = false;
+        xlock.value = false;
+        zforward.value = true;
+        xforward.value = true;
+      break;
+    }
+    break;
+    case FeedMode.compound:
+    switch(selectedDirectionMode.value) {
+      case DirectionMode.forward:
+        zpitchactive.value = true;
+        xpitchactive.value = true;
+        zlock.value = true;
+        xlock.value = true;
+        zforward.value = true;
+        xforward.value = true;
+      break;
+      case DirectionMode.reverse:
+        zpitchactive.value = true;
+        xpitchactive.value = true;
+        zlock.value = true;
+        xlock.value = true;
+        zforward.value = false;
+        xforward.value = false;
+      break;
+      case DirectionMode.hold:
+        zpitchactive.value = false;
+        xpitchactive.value = false;
+        zlock.value = true;
+        xlock.value = true;
+        zforward.value = true;
+        xforward.value = true;
+      break;
+      case DirectionMode.idle:
+        zpitchactive.value = false;
+        xpitchactive.value = false;
+        zlock.value = false;
+        xlock.value = false;
+        zforward.value = false;
+        xforward.value = false;
+      break;
+    }
+    break;
+  }
+  scheduleHALOut();
+}
+
 watch([selectedFeedMode, selectedDirectionMode], () => {
-  zlock.value = 
-    (selectedFeedMode.value == FeedMode.longitudinal &&
-     selectedDirectionMode.value != DirectionMode.idle) ||
-     (selectedFeedMode.value == FeedMode.compound &&
-     selectedDirectionMode.value != DirectionMode.idle);
-  xlock.value = 
-    (selectedFeedMode.value == FeedMode.cross &&
-     selectedDirectionMode.value != DirectionMode.idle) ||
-     (selectedFeedMode.value == FeedMode.compound &&
-     selectedDirectionMode.value != DirectionMode.idle);
+  updateHALOut();
 });
+
+watch([zpitch, xpitch], () => {
+  updateHALOut();
+})
+
 //#endregion
 
 ////////////////////////////////////////////////////////
@@ -287,7 +428,7 @@ const pitchClicked = (axis:string) => {
         </button>
       </template>
       <template #end>
-        <button class="w-full p-link bottom-0flex align-items-center p-2 pl-4 text-color hover:surface-200 border-noround ">
+        <button @click="quitApplication" class="w-full p-link bottom-0flex align-items-center p-2 pl-4 text-color hover:surface-200 border-noround ">
           <i class="pi pi-sign-out" />
           <span class="ml-2">Exit</span>
         </button>

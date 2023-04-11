@@ -52,22 +52,32 @@ async def read_hal_in():
 
 @app.put("/hal/hal_out/forward_z")
 async def write_forward_z(item:str, value:float):
-    if (str == "value"):
+    if (item == "value"):
         print("write_forward_z {%f}",format(value));
         hal_pin_forward_z.set(value)
 
 @app.put("/hal/hal_out/forward_x")
 async def write_forward_x(item:str, value:float):
-    if (str == "value"):
+    if (item == "value"):
         print("write_forward_x {%f}",format(value));
         hal_pin_forward_x.set(value)
 
 @app.put("/hal/hal_out/enable_z")
 async def write_enable_z(item:str, value:float):
-    if (str == "value"):
+    if (item == "value"):
         hal_pin_enable_z.set(value)
 
 @app.put("/hal/hal_out/enable_x")
 async def write_enable_x(item:str, value:float):
-    if (str == "value"):
+    if (item == "value"):
         hal_pin_enable_x.set(value)
+
+@app.put("/hal/hal_out/enable_stepper_x")
+async def write_enable_x(item:str, value:bool):
+    if (item == "value"):
+        hal_pin_enable_stepper_x.set(value)
+
+@app.put("/hal/hal_out/enable_stepper_z")
+async def write_enable_z(item:str, value:bool):
+    if (item == "value"):
+        hal_pin_enable_stepper_z.set(value)
