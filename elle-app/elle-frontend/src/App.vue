@@ -161,8 +161,8 @@ function startPoll() {
     if (halOutScheduled) {
       halOutScheduled = false;
       let halOut = {
-          "forward_z" : zforward.value ? zpitch.value : -zpitch.value,
-          "forward_x" : xforward.value ? xpitch.value : -xpitch.value,
+          "forward_z" : zforward.value ? -zpitch.value : zpitch.value,
+          "forward_x" : xforward.value ? -xpitch.value : xpitch.value,
           "enable_z" : zpitchactive.value,
           "enable_x" : xpitchactive.value,
           "enable_stepper_z" : zlock.value,

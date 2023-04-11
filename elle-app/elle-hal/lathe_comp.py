@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
-import sys
-import os
-import linuxcnc
 import hal
-import math
-import time
-import json
+
 from fastapi import FastAPI
-from fastapi.middleware import Middleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Request
-from fastapi import Response
 
 halc = hal.component("lathe")
 
@@ -66,17 +59,15 @@ async def write_hal_out(request: Request):
     if ("enable_stepper_x" in jsonData and isinstance(jsonData["enable_stepper_x"], bool)):
         hal_pin_enable_stepper_x.set(jsonData["enable_stepper_x"])
 
-    hal_pin_offset_z_encoder.set(-hal_pin_position_a.get())
-    hal_pin_offset_x_encoder.set(-hal_pin_position_a.get())
-    hal_pin_offset_z_stepper.set(+hal_pin_position_z.get())
-    hal_pin_offset_x_stepper.set(+hal_pin_position_x.get())
-
     if ("forward_z" in jsonData and isinstance(jsonData["forward_z"], float)):
+        hal_pin_offset_z_encoder.set(-hal_pin_position_a.get())
+        hal_pin_offset_z_stepper.set(+hal_pin_position_z.get())
         hal_pin_forward_z.set(jsonData["forward_z"])
     if ("enable_z" in jsonData and isinstance(jsonData["enable_z"], bool)):
         hal_pin_enable_z.set(jsonData["enable_z"])
-
     if ("forward_x" in jsonData and isinstance(jsonData["forward_x"], float)):
+        hal_pin_offset_x_encoder.set(-hal_pin_position_a.get())
+        hal_pin_offset_x_stepper.set(+hal_pin_position_x.get())
         hal_pin_forward_x.set(jsonData["forward_x"])
     if ("enable_x" in jsonData and isinstance(jsonData["enable_x"], bool)):
         hal_pin_enable_x.set(jsonData["enable_x"])
