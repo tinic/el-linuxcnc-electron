@@ -33,7 +33,8 @@ enum FeedMode {
   none=0,
   longitudinal=1,
   cross=2,
-  compound=3
+  frontCompound=3,
+  backCompound=4,
 }
 const selectedFeedMode = ref(FeedMode.longitudinal);
 
@@ -45,10 +46,6 @@ enum DirectionMode {
   idle=4
 }
 const selectedDirectionMode = ref(DirectionMode.forward);
-
-////////////////////////////////////////////////////////
-// Main Menu
-//#region
 
 const menuItems = ref([
     { separator: true },
@@ -78,11 +75,6 @@ const menuItems = ref([
     },
     { separator: true }
 ]); 
-//#endregion
-
-////////////////////////////////////////////////////////
-// DRO
-//#region
 
 const numberClicked = (arg:number) => {
   console.log("numberClicked" + arg);
@@ -101,11 +93,7 @@ const zeroClicked = (arg:number) => {
       break;
   }
 };
-//#endregion
 
-////////////////////////////////////////////////////////
-// HAL
-// #region
 const halStdoutText = ref('');
 
 const startHAL = () => {
@@ -152,14 +140,17 @@ function getHalIn(): Promise<HalIn[]> {
 
 function startPoll() {
   updateInterval = setInterval(() => {
-    getHalIn().then(halIn => {
-      zpos.value = (halIn as any).position_z;
-      xpos.value = (halIn as any).position_x;
-      apos.value = (halIn as any).position_a * 360;
-      rpms.value = (halIn as any).speed_rps * 60;
-    });
+    try {
+      getHalIn().then(halIn => {
+        zpos.value = (halIn as any).position_z;
+        xpos.value = (halIn as any).position_x;
+        apos.value = (halIn as any).position_a * 360;
+        rpms.value = (halIn as any).speed_rps * 60;
+      });
+    } catch {
+      // nop
+    }
     if (halOutScheduled) {
-      halOutScheduled = false;
       let halOut = {
           "forward_z" : zpitch.value,
           "forward_x" : xpitch.value,
@@ -168,6 +159,11 @@ function startPoll() {
           "enable_stepper_z" : zlock.value,
           "enable_stepper_x" : xlock.value
       };
+      try {
+        // TODO: PUT fetch
+        halOutScheduled = false;
+      } catch {
+      }
     }
   }, 66);
 }
@@ -201,8 +197,10 @@ const forwardIcon = computed(() => {
     return '⬅'
     case FeedMode.cross:
     return '⬆'
-    case FeedMode.compound:
+    case FeedMode.frontCompound:
     return '⬋'
+    case FeedMode.backCompound:
+    return '⬉'
   }
 });
 
@@ -212,8 +210,10 @@ const reverseIcon = computed(() => {
     return '⮕'
     case FeedMode.cross:
     return '⬇'
-    case FeedMode.compound:
+    case FeedMode.frontCompound:
     return '⬈'
+    case FeedMode.backCompound:
+    return '⬊'
   }
 });
 
@@ -223,8 +223,12 @@ const feedModeLongitudinalClicked = () => {
 const feedModeCrossClicked = () => {
   selectedFeedMode.value = FeedMode.cross;
 }
-const feedModeCompoundClicked = () => {
-  selectedFeedMode.value = FeedMode.compound;
+const feedModeFrontCompoundClicked = () => {
+  selectedFeedMode.value = FeedMode.frontCompound;
+}
+
+const feedModeBackCompoundClicked = () => {
+  selectedFeedMode.value = FeedMode.backCompound;
 }
 
 const directionModeForwardClicked = () => {
@@ -318,7 +322,8 @@ function updateHALOut() {
       break;
     }
     break;
-    case FeedMode.compound:
+    case FeedMode.backCompound:
+    case FeedMode.frontCompound:
     switch(selectedDirectionMode.value) {
       case DirectionMode.forward:
         zpitchactive.value = true;
@@ -366,11 +371,6 @@ watch([zpitch, xpitch], () => {
   updateHALOut();
 })
 
-//#endregion
-
-////////////////////////////////////////////////////////
-// Pitch selector 
-// #region
 const PitchSelector = defineAsyncComponent(() => import('./components/PitchSelector.vue'));
 
 function pitchForAngle(pitch:number, angle:number) {
@@ -427,9 +427,8 @@ const pitchClicked = (axis:string) => {
         }
     });
 };
-//#endregion
 
-// testing
+updateHALOut();
 
 </script>
 
@@ -472,55 +471,61 @@ const pitchClicked = (axis:string) => {
           <Numpad class=""/>
         </div>
         <div class="flex flex-row">
-          <div class="grid dro-font-mode grid-nogutter p-3 pr-4 m-0 mt-2 bg-gray-900" style="width:15em">
+          <div class="grid dro-font-mode grid-nogutter p-3 pr-4 m-0 mt-2 bg-gray-900" style="width:16em">
             <div class="col-12 align-content-center">Feed</div>
-            <button @click="feedModeLongitudinalClicked" label="Longitudinal" size="large" class="col-12 dro-font-mode button-mode p-3 m-1">
+            <button @click="feedModeLongitudinalClicked" size="large" class="col-12 dro-font-mode button-mode p-3 m-1">
               <span class="flex flex-row align-items-center">
                 <i v-if="selectedFeedMode == FeedMode.longitudinal" class="pi pi-circle-fill mr-3" style="color:#ff0000"/>
                 <i v-else class="pi pi-circle mr-3"/>
                 ⬌ Longitudinal
               </span>
             </button>
-            <button @click="feedModeCrossClicked" label="Cross" size="large" class="col-12 dro-font-mode button-mode p-3 m-1">
+            <button @click="feedModeCrossClicked" size="large" class="col-12 dro-font-mode button-mode p-3 m-1">
               <span class="flex flex-row align-items-center">
                 <i v-if="selectedFeedMode == FeedMode.cross" class="pi pi-circle-fill mr-3" style="color:#ff0000"/>
                 <i v-else class="pi pi-circle mr-3"/>
                 ⬍ Cross
               </span>
             </button>
-            <button @click="feedModeCompoundClicked" label="Compound" size="large" class="col-12 dro-font-mode button-mode p-3 m-1">
+            <button @click="feedModeFrontCompoundClicked" size="large" class="col-12 dro-font-mode button-mode p-3 m-1">
               <span class="flex flex-row align-items-center">
-                <i v-if="selectedFeedMode == FeedMode.compound" class="pi pi-circle-fill mr-3" style="color:#ff0000"/>
+                <i v-if="selectedFeedMode == FeedMode.frontCompound" class="pi pi-circle-fill mr-3" style="color:#ff0000"/>
                 <i v-else class="pi pi-circle mr-3"/>
-                ⬋ Compound
+                ⬋ Front Compound
               </span>
             </button>
-            <div class="col-12 h-full"/>
+            <button @click="feedModeBackCompoundClicked" size="large" class="col-12 dro-font-mode button-mode p-3 m-1">
+              <span class="flex flex-row align-items-center">
+                <i v-if="selectedFeedMode == FeedMode.backCompound" class="pi pi-circle-fill mr-3" style="color:#ff0000"/>
+                <i v-else class="pi pi-circle mr-3"/>
+                ⬉ Back Compound
+              </span>
+            </button>
           </div>
           <div class="grid dro-font-mode grid-nogutter p-3 pr-4 m-0 mt-2 bg-gray-900" style="width:15em">
             <div class="col-12 align-content-center">Direction</div>
-            <button @click="directionModeForwardClicked" label="Longitudinal" size="large" class="col-12 dro-font-mode button-mode p-3 m-1">
+            <button @click="directionModeForwardClicked" size="large" class="col-12 dro-font-mode button-mode p-3 m-1">
               <span class="flex flex-row align-items-center">
                 <i v-if="selectedDirectionMode == DirectionMode.forward" class="pi pi-circle-fill mr-3" style="color:#ff0000"/>
                 <i v-else class="pi pi-circle mr-3"/>
                 {{ forwardIcon }} Forward
               </span>
             </button>
-            <button @click="directionModeReverseClicked" label="Cross"  size="large" class="col-12 dro-font-mode button-mode p-3 m-1">
+            <button @click="directionModeReverseClicked" size="large" class="col-12 dro-font-mode button-mode p-3 m-1">
               <span class="flex flex-row align-items-center">
                 <i v-if="selectedDirectionMode == DirectionMode.reverse" class="pi pi-circle-fill mr-3" style="color:#ff0000"/>
                 <i v-else class="pi pi-circle mr-3"/>
                 {{ reverseIcon }} Reverse
               </span>
             </button>
-            <button @click="directionModeHoldClicked" label="Compound" size="large" class="col-12 dro-font-mode button-mode p-3 m-1">
+            <button @click="directionModeHoldClicked" size="large" class="col-12 dro-font-mode button-mode p-3 m-1">
               <span class="flex flex-row align-items-center">
                 <i v-if="selectedDirectionMode == DirectionMode.hold" class="pi pi-circle-fill mr-3" style="color:#ff0000"/>
                 <i v-else class="pi pi-circle mr-3"/>
                 ⏸ Hold
               </span>
             </button>
-            <button @click="directionModeIdleClicked" label="Compound" size="large" class="col-12 dro-font-mode button-mode p-3 m-1">
+            <button @click="directionModeIdleClicked" size="large" class="col-12 dro-font-mode button-mode p-3 m-1">
               <span class="flex flex-row align-items-center">
                 <i v-if="selectedDirectionMode == DirectionMode.idle" class="pi pi-circle-fill mr-3" style="color:#ff0000"/>
                 <i v-else class="pi pi-circle mr-3"/>
@@ -583,6 +588,7 @@ const pitchClicked = (axis:string) => {
   font-size: 1.1em;
   text-align: center;
 }
+
 .fixed-width-font {
   font-family: 'iosevka';
   font-weight: normal;
