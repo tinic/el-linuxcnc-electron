@@ -5,6 +5,9 @@ import { useDialog } from 'primevue/usedialog';
 import Numpad from './components/Numpad.vue';
 import DRODisplay from './components/DRODisplay.vue';
 
+const halOutURL = 'http://localhost:8000/hal/hal_out';
+const halInURL = 'http://localhost:8000/hal/hal_in';
+
 const selectedMenu = ref(0);
 
 // Polled over REST
@@ -28,6 +31,9 @@ const numberentry = ref(0);
 const xpitchlabel = ref('…');
 const zpitchlabel = ref('…');
 const xpitchangle = ref(0);
+const zaxiszero = ref(0)
+const xaxiszero = ref(0)
+const aaxiszero = ref(0)
 
 enum FeedMode {
   none=0,
@@ -80,20 +86,6 @@ const numberClicked = (arg:number) => {
   console.log("numberClicked" + arg);
 };
 
-const zeroClicked = (arg:number) => {
-  switch(arg) {
-      case 1:
-      xpos.value = 0;
-      break;
-      case 2:
-      zpos.value = 0;
-      break;
-      case 3:
-      apos.value = 0;
-      break;
-  }
-};
-
 const halStdoutText = ref('');
 
 const startHAL = () => {
@@ -130,8 +122,24 @@ interface HalIn {
   speed_rps:number
 };
 
+async function putHalOut(halOut:Object) {
+  try {
+    const response = await fetch(halOutURL, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(halOut),
+    });
+    const result = await response.json();
+    console.log("Success:", result);
+  } catch (error) {
+    console.error("Error:", error);
+  }
+}
+
 function getHalIn(): Promise<HalIn[]> {
-  return fetch('http://localhost:8000/hal/hal_in')
+  return fetch(halInURL)
                 .then(res => res.json())
                 .then(res => {
                   return res as HalIn[]
@@ -142,28 +150,25 @@ function startPoll() {
   updateInterval = setInterval(() => {
     try {
       getHalIn().then(halIn => {
-        zpos.value = (halIn as any).position_z;
-        xpos.value = (halIn as any).position_x;
-        apos.value = (halIn as any).position_a * 360;
-        rpms.value = (halIn as any).speed_rps * 60;
+        zpos.value = (halIn as any).position_z - zaxiszero.value;
+        xpos.value = (halIn as any).position_x - xaxiszero.value;
+        apos.value = Math.abs((((halIn as any).position_a - aaxiszero.value) % 1) * 360);
+        rpms.value = Math.abs((halIn as any).speed_rps * 60);
       });
     } catch {
       // nop
     }
     if (halOutScheduled) {
+      halOutScheduled = false;
       let halOut = {
-          "forward_z" : zpitch.value,
-          "forward_x" : xpitch.value,
+          "forward_z" : zforward.value ? zpitch.value : -zpitch.value,
+          "forward_x" : xforward.value ? xpitch.value : -xpitch.value,
           "enable_z" : zpitchactive.value,
           "enable_x" : xpitchactive.value,
           "enable_stepper_z" : zlock.value,
           "enable_stepper_x" : xlock.value
       };
-      try {
-        // TODO: PUT fetch
-        halOutScheduled = false;
-      } catch {
-      }
+      putHalOut(halOut);
     }
   }, 66);
 }
@@ -362,6 +367,23 @@ function updateHALOut() {
   }
   scheduleHALOut();
 }
+
+const zeroClicked = (arg:number) => {
+  switch(arg) {
+      case 1:
+      xaxiszero.value = xpos.value;
+      scheduleHALOut();
+      break;
+      case 2:
+      zaxiszero.value = zpos.value;
+      scheduleHALOut();
+      break;
+      case 3:
+      aaxiszero.value = apos.value;
+      scheduleHALOut();
+      break;
+  }
+};
 
 watch([selectedFeedMode, selectedDirectionMode], () => {
   updateHALOut();
