@@ -156,7 +156,7 @@ function startPoll() {
         }
         if (xaxissetscheduled) {
           xaxissetscheduled = false;
-          xaxisoffset = (halIn as any).position_x + xaxisset;
+          xaxisoffset = (-(halIn as any).position_x) + xaxisset;
           xaxisset = 0;
         }
         if (aaxissetscheduled) {
@@ -165,7 +165,7 @@ function startPoll() {
           aaxisset = 0;
         }
         zpos.value = (halIn as any).position_z - zaxisoffset;
-        xpos.value = (halIn as any).position_x - xaxisoffset;
+        xpos.value = (-(halIn as any).position_x) - xaxisoffset;
         apos.value = Math.abs((((halIn as any).position_a - aaxisoffset) % 1) * 360);
         rpms.value = Math.abs((halIn as any).speed_rps * 60);
       });
