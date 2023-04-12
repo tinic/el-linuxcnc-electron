@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import hal
+import sys
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -84,3 +85,5 @@ async def write_hal_out(request: Request):
 halc.ready()
 
 print("Python REST service ready!")
+
+sys.stdout.flush()

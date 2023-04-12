@@ -1,31 +1,36 @@
-import { app, BrowserWindow, BrowserWindowConstructorOptions, Menu, ipcMain, screen } from "electron";
+import { app, BrowserWindow, BrowserWindowConstructorOptions, ipcMain, screen } from "electron";
 import path from "path";
+import fs from 'fs';
 import { isDev } from "./config";
 import { appConfig } from "./electron-store/configuration";
 import AppUpdater from "./auto-update";
+
+const { spawn } = require('node:child_process');
+
+let mainWindow:BrowserWindow;
 
 async function createWindow() {
     const { width, height } = screen.getPrimaryDisplay().workAreaSize;
     const appBounds: any = appConfig.get("setting.appBounds");
     const BrowserWindowOptions: BrowserWindowConstructorOptions = {
-        width: 1200,
-        minWidth: 1200,
-        height: 700,
-        minHeight: 700,
+        width: 1366,
+        minWidth: 1366,
+        height: 768,
+        minHeight: 768,
         webPreferences: {
             preload: __dirname + "/preload.js",
             devTools: isDev,
-            nodeIntegration: true,
-            contextIsolation: false,
+            nodeIntegration: false,
+            contextIsolation: true,
         },
         show: false,
         alwaysOnTop: true,
         frame: true,
-        fullscreen: true
+        fullscreen: true,
     };
 
     if (appBounds !== undefined && appBounds !== null) Object.assign(BrowserWindowOptions, appBounds);
-    const mainWindow = new BrowserWindow(BrowserWindowOptions);
+    mainWindow = new BrowserWindow(BrowserWindowOptions);
 
     // auto updated
     if (!isDev) AppUpdater();
@@ -84,21 +89,66 @@ app.whenReady().then(async () => {
     });
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
+var halrun:any = null;
+var halstop:any = null;
+
+function stopHAL() {
+    if (halrun == null) {
+        return;
+    }
+    let hal_path = process.cwd() + "/elle-hal";
+    try {
+        let env = process.env; env.PATH += ":" + hal_path;
+        halstop = spawn('halrun', ['-U'], { cwd: process.cwd() + "/elle-hal", env: env });
+        halstop.stdout.on('data', (stdout:Buffer) => {
+            mainWindow.webContents.send('halStdout', stdout.toString() + "<br>");
+        });
+        halstop.stderr.on('data', (stderr:Buffer) => {
+            mainWindow.webContents.send('halStdout', stderr.toString() + "<br>");
+        });
+        halstop.on('close', (code:any) => {
+            //console.log(`child process exited with code ${code}`);
+        });
+        mainWindow.webContents.send('halStopped');
+        halrun = null;
+        } catch {
+    }
+}
+
 app.on("window-all-closed", () => {
+    stopHAL();
     app.quit();
-});
+}); 
 
 ipcMain.on('startHAL', () => {
-    console.log('startHAL!!!!!')
+    let hal_path = process.cwd() + "/elle-hal";
+    let halfile_path = process.cwd() + "/elle-hal/lathe.hal";
+    if (fs.existsSync(halfile_path)) {
+        try {
+            let env = process.env; env.PATH += ":" + hal_path;
+            halrun = spawn('halrun', ['lathe.hal'], { cwd: hal_path, env: env});
+            halrun.stdout.on('data', (stdout:Buffer) => {
+                mainWindow.webContents.send('halStdout', stdout.toString() + "\n");
+                if (stdout.toString().startsWith("Python REST service ready!")) {
+                    mainWindow.webContents.send('halStarted');
+                }
+            });
+            halrun.stderr.on('data', (stderr:Buffer) => {
+                mainWindow.webContents.send('halStdout', stderr.toString() + "\n");
+            });
+            halrun.on('close', (code:any) => {
+                mainWindow.webContents.send('halStopped');
+            });
+        } catch {
+        }
+    }
 });
 
 ipcMain.on('stopHAL', () => {
-    console.log('stopHAL!!!!!')
+    stopHAL();
 });
 
 ipcMain.on('quit', () => {
+    stopHAL();
     app.quit();
 });

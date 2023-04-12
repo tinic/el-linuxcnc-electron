@@ -89,27 +89,15 @@ const numberClicked = (arg:number) => {
 const halStdoutText = ref('');
 
 const startHAL = () => {
-  var userAgent = navigator.userAgent.toLowerCase();
-  if (userAgent.indexOf(' electron/') > -1) {
-    const { ipcRenderer } = window.require('electron');
-    ipcRenderer.send('startHAL');
-  }
+  window.api.send('startHAL');
 }
 
 const stopHAL = () => {
-  var userAgent = navigator.userAgent.toLowerCase();
-  if (userAgent.indexOf(' electron/') > -1) {
-    const { ipcRenderer } = window.require('electron');
-    ipcRenderer.send('stopHAL');
-  }
+  window.api.send('stopHAL');
 }
 
 const quitApplication = () => {
-  var userAgent = navigator.userAgent.toLowerCase();
-  if (userAgent.indexOf(' electron/') > -1) {
-    const { ipcRenderer } = window.require('electron');
-    ipcRenderer.send('quit');
-  }
+  window.api.send('quit');
 };
 
 var halOutScheduled:boolean = false;
@@ -163,37 +151,18 @@ function startPoll() {
       let halOut = {
           "forward_z" : zforward.value ? -zpitch.value : zpitch.value,
           "forward_x" : xforward.value ? -xpitch.value : xpitch.value,
-          "enable_z" : zpitchactive.value,
-          "enable_x" : xpitchactive.value,
-          "enable_stepper_z" : zlock.value,
-          "enable_stepper_x" : xlock.value
+          "enable_z" : zlock.value,
+          "enable_x" : xlock.value,
+          "enable_stepper_z" : zpitchactive.value,
+          "enable_stepper_x" : xpitchactive.value
       };
       putHalOut(halOut);
     }
-  }, 66);
+  }, 50);
 }
 
 function endPoll() {
   clearTimeout(updateInterval);
-}
-
-var userAgent = navigator.userAgent.toLowerCase();
-if (userAgent.indexOf(' electron/') > -1) {
-  const { ipcRenderer } = window.require('electron');
-  ipcRenderer.on('halStarted', () => {
-    startPoll();
-  });
-
-  ipcRenderer.on('halStopped', () => {
-    endPoll();
-  });
-
-  ipcRenderer.on('halStdout', (event:any, arg:any) => {
-      halStdoutText.value += arg as string;
-      event.returnValue = true;
-  });
-} else {
-  startPoll();
 }
 
 const forwardIcon = computed(() => {
@@ -299,7 +268,7 @@ function updateHALOut() {
         zlock.value = false;
         xlock.value = true;
         zforward.value = true;
-        xforward.value = true;
+        xforward.value = false;
       break;
       case DirectionMode.reverse:
         zpitchactive.value = false;
@@ -307,7 +276,7 @@ function updateHALOut() {
         zlock.value = false;
         xlock.value = true;
         zforward.value = false;
-        xforward.value = false;
+        xforward.value = true;
       break;
       case DirectionMode.hold:
         zpitchactive.value = false;
@@ -327,7 +296,6 @@ function updateHALOut() {
       break;
     }
     break;
-    case FeedMode.backCompound:
     case FeedMode.frontCompound:
     switch(selectedDirectionMode.value) {
       case DirectionMode.forward:
@@ -359,7 +327,43 @@ function updateHALOut() {
         xpitchactive.value = false;
         zlock.value = false;
         xlock.value = false;
+        zforward.value = true;
+        xforward.value = true;
+      break;
+    }
+    break;
+    case FeedMode.backCompound:
+    switch(selectedDirectionMode.value) {
+      case DirectionMode.forward:
+        zpitchactive.value = true;
+        xpitchactive.value = true;
+        zlock.value = true;
+        xlock.value = true;
+        zforward.value = true;
+        xforward.value = false;
+      break;
+      case DirectionMode.reverse:
+        zpitchactive.value = true;
+        xpitchactive.value = true;
+        zlock.value = true;
+        xlock.value = true;
         zforward.value = false;
+        xforward.value = true;
+      break;
+      case DirectionMode.hold:
+        zpitchactive.value = false;
+        xpitchactive.value = false;
+        zlock.value = true;
+        xlock.value = true;
+        zforward.value = true;
+        xforward.value = false;
+      break;
+      case DirectionMode.idle:
+        zpitchactive.value = false;
+        xpitchactive.value = false;
+        zlock.value = false;
+        xlock.value = false;
+        zforward.value = true;
         xforward.value = false;
       break;
     }
@@ -450,7 +454,27 @@ const pitchClicked = (axis:string) => {
     });
 };
 
-updateHALOut();
+window.api.receive('halStarted', () => {
+  console.log("receive:halStarted");
+  startPoll();
+  updateHALOut();
+});
+
+window.api.receive('halStopped', () => {
+  console.log("receive:halStopped");
+  endPoll();
+});
+
+window.api.receive('halStdout', (event:any, arg:any) => {
+  console.log("receive:halStdout");
+  halStdoutText.value += event as string;
+});
+
+startHAL();
+
+</script>
+
+<script lang="ts">
 
 </script>
 

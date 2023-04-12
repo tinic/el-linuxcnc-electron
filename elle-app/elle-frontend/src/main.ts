@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
 import PrimeVue from 'primevue/config';
+import { createWebHistory, createRouter } from "vue-router";
 
 import 'primevue/resources/primevue.min.css'            // core 
 import 'primevue/resources/themes/md-dark-indigo/theme.css'  // theme
@@ -18,9 +19,24 @@ import TabView from 'primevue/tabview';
 import TabPanel from 'primevue/tabpanel';
 import SelectButton from 'primevue/selectbutton';
 
+const routes = [
+    {
+      path: "/",
+      name: "Home",
+      component: App,
+    }
+];
+  
+const router = createRouter({
+    history: createWebHistory(),
+    routes
+});
+
 const app = createApp(App);
 app.use(PrimeVue);
 app.use(DialogService);
+app.use(router)
+
 app.component('Button', Button);
 app.component('Toolbar', Toolbar);
 app.component('Menu', Menu);

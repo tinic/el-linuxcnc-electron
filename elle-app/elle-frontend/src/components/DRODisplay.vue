@@ -216,6 +216,8 @@ const zpitchLabel = computed(() => {
         <button @click="xpos0Clicked" class="dro-font-display-button align-content-center ml-5" style="width:6em; padding: 0.75rem;">X₀</button>
         <i class='pi pi-lock ml-4' style='color: #ff0000; font-size: 1.5rem' v-if='props.xlock'/>
         <i class='pi pi-lock ml-4' style='color: #000000; font-size: 1.5rem' v-else/>
+        <i class='pi pi-cog ml-4' style='color: #ff0000; font-size: 1.5rem' v-if='props.xpitchactive'/>
+        <i class='pi pi-cog ml-4' style='color: #000000; font-size: 1.5rem' v-else/>
         <br/>
         <div @click="zposClicked" class="inline">
             <span v-html="zposLabel"/>{{ zposFormatted }}<font size="-1">&nbsp;</font><font color='#aaaaaa'>{{ zposUnitFormatted }}</font>
@@ -223,6 +225,8 @@ const zpitchLabel = computed(() => {
         <button @click="zpos0Clicked" class="dro-font-display-button align-content-center ml-5" style="width:6em; padding: 0.75rem;">Z₀</button>
         <i class='pi pi-lock ml-4' style='color: #ff0000; font-size: 1.5rem' v-if='props.zlock'/>
         <i class='pi pi-lock ml-4' style='color: #000000; font-size: 1.5rem' v-else/>
+        <i class='pi pi-cog ml-4' style='color: #ff0000; font-size: 1.5rem' v-if='props.zpitchactive'/>
+        <i class='pi pi-cog ml-4' style='color: #000000; font-size: 1.5rem' v-else/>
         <br/>
         <div @click="aposClicked" class="inline">
             <span v-html="aposLabel"/>{{ aposFormatted }}<font size="-1">&nbsp;</font><font color='#aaaaaa'>{{ aposUnitFormatted }}</font>
