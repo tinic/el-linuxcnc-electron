@@ -353,8 +353,8 @@ function updateHALOut() {
         xstepperactive.value = false;
         zpitchactive.value = false;
         xpitchactive.value = false;
-        zforward.value = true;
-        xforward.value = true;
+        zforward = true;
+        xforward = true;
       break;
     }
     break;
