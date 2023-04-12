@@ -29,6 +29,7 @@ const numberentry = ref(0);
 const xpitchlabel = ref('…');
 const zpitchlabel = ref('…');
 const xpitchangle = ref(0);
+const metric = ref(true);
 
 let zforward:boolean = true;
 let xforward:boolean = true;
@@ -89,22 +90,189 @@ const menuItems = ref([
     { separator: true }
 ]); 
 
-const numberClicked = (arg:number) => {
-  console.log("numberClicked" + arg);
+enum NumpadInputStage {
+  none = 0,
+  start = 1,
+  entry = 2
+};
+
+const entryActive = ref(0);
+let numpadInputStage = NumpadInputStage.none;
+let numbersClicked = new Array<string>();
+let numbersNegative = false;
+let numbersPrevious:number = 0;
+
+function treatOffClickAsEnter() {
+  if (numpadInputStage == NumpadInputStage.start) {
+    numberentry.value = numbersPrevious;
+    setFinalNumber(numbersPrevious);
+  } else if (numpadInputStage == NumpadInputStage.entry) {
+    numberentry.value = calcNumber();
+    setFinalNumber(numberentry.value);
+  }
+}
+
+const numberClicked = (entry:number, value:number) => {
+  treatOffClickAsEnter();
+  numbersClicked.length = 0;
+  numpadInputStage = NumpadInputStage.start;
+  numberentry.value = numbersPrevious = metric.value ? value : (value / 25.4);
+  entryActive.value = entry;
+  numbersNegative = false;
+};
+
+function calcNumber():number {
+  const dotIndex = numbersClicked.indexOf('.');
+  let integerSize = 0;
+  let fractionSize = 0;
+  if (dotIndex >= 0) {
+    integerSize = dotIndex;
+    fractionSize = numbersClicked.length - dotIndex - 1;
+  } else {
+    integerSize = numbersClicked.length;
+  }
+  let value:number = 0;
+  for (let i = 0; i < integerSize; i++) {
+    value += (numbersClicked[i].charCodeAt(0)-0x30) * Math.pow(10,integerSize-i-1);
+  }
+  for (let i = 0; i < fractionSize; i++) {
+    value += (numbersClicked[i+integerSize+1].charCodeAt(0)-0x30) * Math.pow(10,-i-1);
+  }
+  return value * (numbersNegative ? (-1) : (+1));;
+}
+
+function setFinalNumber(value:number) {
+  if (!metric.value) {
+    value = value * 25.4;
+  }
+  switch(entryActive.value) {
+    case 1:
+      xaxisset = value;
+      xaxissetscheduled = true;
+      xpos.value = value;
+    break;
+    case 2:
+      zaxisset = value;
+      zaxissetscheduled = true;
+      zpos.value = value;
+    break;
+    case 3:
+      aaxisset = value;
+      aaxissetscheduled = true;
+      apos.value = value;
+    break;
+    case 4:
+      xpitch.value = Math.abs(value);
+    break;
+    case 5:
+      zpitch.value = Math.abs(value);
+    break;
+  }
+  numpadInputStage = NumpadInputStage.none;
+  numbersClicked.length = 0;
+  entryActive.value = 0;
+}
+
+const numPadClicked = (key:string) => {
+  if (numpadInputStage == NumpadInputStage.none) {
+    return;
+  }
+  switch(key) {
+    case 'Escape':
+      numpadInputStage = NumpadInputStage.none;
+      numberentry.value = numbersPrevious;
+      numbersClicked.length = 0;
+      entryActive.value = 0;
+    break;
+    case 'Enter':
+      if (numpadInputStage == NumpadInputStage.start) {
+        numberentry.value = numbersPrevious;
+        setFinalNumber(numbersPrevious);
+      } else if (numpadInputStage == NumpadInputStage.entry) {
+        numberentry.value = calcNumber();
+        setFinalNumber(numberentry.value);
+      }
+    break;
+    case 'Backspace':
+      numpadInputStage = NumpadInputStage.entry;
+      if (numbersClicked.at(-1) == '.') {
+        numbersClicked.pop();
+      }
+      numbersClicked.pop();
+      numberentry.value = calcNumber();
+    break;
+    case 'PlusMinus':
+      if (numpadInputStage == NumpadInputStage.start) {
+        numbersNegative = !numbersNegative;
+        numberentry.value = numbersPrevious * (numbersNegative ? (-1) : (+1));
+        setFinalNumber(numberentry.value);
+      } else {
+        numbersNegative = !numbersNegative;
+        numberentry.value = calcNumber();
+      }
+    break;
+    case 'Third':
+      if (numpadInputStage == NumpadInputStage.start) {
+        numberentry.value = numberentry.value / 3;
+        setFinalNumber(numberentry.value);
+      }
+    break;
+    case 'Half':
+      if (numpadInputStage == NumpadInputStage.start) {
+        numberentry.value = numberentry.value / 2;
+        setFinalNumber(numberentry.value);
+      }
+    break;
+    default:
+      numpadInputStage = NumpadInputStage.entry;
+      numbersClicked.push(key);
+      numberentry.value = calcNumber();
+    break;
+  }
+}
+
+const zeroClicked = (entry:number) => {
+  treatOffClickAsEnter();
+  entryActive.value = 0;
+  switch(entry) {
+    case 1:
+      xaxisset = 0;
+      xaxissetscheduled = true;
+      scheduleHALOut();
+    break;
+    case 2:
+      zaxisset = 0;
+      zaxissetscheduled = true;
+      scheduleHALOut();
+    break;
+    case 3:
+      aaxisset = 0;
+      aaxissetscheduled = true;
+      scheduleHALOut();
+    break;
+  }
+};
+
+const metricClicked = () => {
+  treatOffClickAsEnter();
+  metric.value = !metric.value;
+};
+
+const otherClicked = () => {
+  treatOffClickAsEnter();
+  entryActive.value = 0;
 };
 
 const halStdoutText = ref('');
 
 const startHAL = () => {
+  halStdoutText.value = '';
   window.api.send('startHAL');
 }
 
 const stopHAL = () => {
-  window.api.send('stopHAL');
-}
-
-const clearOutput = () => {
   halStdoutText.value = '';
+  window.api.send('stopHAL');
 }
 
 const quitApplication = () => {
@@ -131,9 +299,7 @@ async function putHalOut(halOut:Object) {
       body: JSON.stringify(halOut),
     });
     const result = await response.json();
-    console.log("Success:", result);
   } catch (error) {
-    console.error("Error:", error);
   }
 }
 
@@ -149,19 +315,19 @@ function startPoll() {
   updateInterval = setInterval(() => {
     try {
       getHalIn().then(halIn => {
-        if (zaxissetscheduled) {
-          zaxissetscheduled = false;
-          zaxisoffset = (halIn as any).position_z + zaxisset;
-          zaxisset = 0;
-        }
         if (xaxissetscheduled) {
           xaxissetscheduled = false;
-          xaxisoffset = (-(halIn as any).position_x) + xaxisset;
+          xaxisoffset = (-(halIn as any).position_x) - xaxisset;
           xaxisset = 0;
+        }
+        if (zaxissetscheduled) {
+          zaxissetscheduled = false;
+          zaxisoffset = (halIn as any).position_z - zaxisset;
+          zaxisset = 0;
         }
         if (aaxissetscheduled) {
           aaxissetscheduled = false;
-          aaxisoffset = (halIn as any).position_a + aaxisset;
+          aaxisoffset = (halIn as any).position_a - ((aaxisset / 360) % 1);
           aaxisset = 0;
         }
         zpos.value = (halIn as any).position_z - zaxisoffset;
@@ -183,6 +349,7 @@ function startPoll() {
           "enable_stepper_x" : xstepperactive.value
       };
       putHalOut(halOut);
+      console.log(" xpitch.value " + xpitch.value + " zpitch.value " + zpitch.value)
     }
   }, 33.33333);
 }
@@ -226,11 +393,9 @@ const feedModeCrossClicked = () => {
 const feedModeFrontCompoundClicked = () => {
   selectedFeedMode.value = FeedMode.frontCompound;
 }
-
 const feedModeBackCompoundClicked = () => {
   selectedFeedMode.value = FeedMode.backCompound;
 }
-
 const directionModeForwardClicked = () => {
   selectedDirectionMode.value = DirectionMode.forward;
 }
@@ -398,26 +563,6 @@ function updateHALOut() {
   scheduleHALOut();
 }
 
-const zeroClicked = (arg:number) => {
-  switch(arg) {
-      case 1:
-      xaxisset = 0;
-      xaxissetscheduled = true;
-      scheduleHALOut();
-      break;
-      case 2:
-      zaxisset = 0;
-      zaxissetscheduled = true;
-      scheduleHALOut();
-      break;
-      case 3:
-      aaxisset = 0;
-      aaxissetscheduled = true;
-      scheduleHALOut();
-      break;
-  }
-};
-
 watch([selectedFeedMode, selectedDirectionMode], () => {
   updateHALOut();
 });
@@ -434,6 +579,8 @@ function pitchForAngle(pitch:number, angle:number) {
 
 const dialog = useDialog();
 const pitchClicked = (axis:string) => {
+  treatOffClickAsEnter();
+  entryActive.value = 0;
   const dialogRef = dialog.open(PitchSelector, {
         props: {
             header: 'Select Pitch',
@@ -484,19 +631,19 @@ const pitchClicked = (axis:string) => {
 };
 
 window.api.receive('halStarted', () => {
-  console.log("receive:halStarted");
+  //console.log("receive:halStarted");
   selectedMenu.value = 0;
   startPoll();
   updateHALOut();
 });
 
 window.api.receive('halStopped', () => {
-  console.log("receive:halStopped");
+  //console.log("receive:halStopped");
   endPoll();
 });
 
 window.api.receive('halStdout', (event:any, arg:any) => {
-  console.log("receive:halStdout");
+  //console.log("receive:halStdout");
   halStdoutText.value += event as string;
 });
 
@@ -529,6 +676,7 @@ startHAL();
     <div v-if="selectedMenu==0" class="m-2">
       <div class="flex flex-row">
         <DRODisplay class="mr-2 h-min"
+          :entryActive="entryActive"
           :xpos="xpos"
           :zpos="zpos"
           :apos="apos"
@@ -542,10 +690,14 @@ startHAL();
           :numberentry="numberentry"
           :xpitchlabel="xpitchlabel"
           :zpitchlabel="zpitchlabel"
+          :metric="metric"
           @numberClicked="numberClicked"
           @zeroClicked="zeroClicked"
-          @pitchClicked="pitchClicked"/>
-          <Numpad class=""/>
+          @pitchClicked="pitchClicked"
+          @metricClicked="metricClicked"
+          @otherClicked="otherClicked"/>
+          <Numpad class=""
+          @numPadClicked="numPadClicked"/>
         </div>
         <div class="flex flex-row">
           <div class="grid dro-font-mode grid-nogutter p-3 pr-4 m-0 mt-2 bg-gray-900" style="width:16em">
@@ -633,9 +785,6 @@ startHAL();
           <template #start>
               <Button @click="startHAL" label="Start HAL" icon="pi pi-play" class="mr-2" />
               <Button @click="stopHAL" label="Stop HAL" icon="pi pi-stop" severity="success" />
-          </template>
-          <template #end>
-            <Button @click="clearOutput" label="Clear Output" />
           </template>
         </Toolbar>
         <Textarea v-model="halStdoutText" autoScroll="true" rows="30" cols="30" />

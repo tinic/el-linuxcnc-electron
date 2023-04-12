@@ -55,9 +55,9 @@ async def read_hal_in():
 async def write_hal_out(request: Request):
     jsonData = await request.json();
 
-    if ("enable_stepper_z" in jsonData and isinstance(jsonData["enable_stepper_z"], bool)):
+    if ("enable_stepper_z" in jsonData):
         hal_pin_enable_stepper_z.set(jsonData["enable_stepper_z"])
-    if ("enable_stepper_x" in jsonData and isinstance(jsonData["enable_stepper_x"], bool)):
+    if ("enable_stepper_x" in jsonData):
         hal_pin_enable_stepper_x.set(jsonData["enable_stepper_x"])
 
     hal_pin_offset_z_encoder.set(-hal_pin_position_a.get())
@@ -65,22 +65,22 @@ async def write_hal_out(request: Request):
     hal_pin_offset_x_encoder.set(-hal_pin_position_a.get())
     hal_pin_offset_x_stepper.set(+hal_pin_position_x.get())
 
-    if ("forward_z" in jsonData and isinstance(jsonData["forward_z"], float)):
+    if ("forward_z" in jsonData):
         hal_pin_forward_z.set(jsonData["forward_z"])
-    if ("enable_z" in jsonData and isinstance(jsonData["enable_z"], bool)):
+    if ("enable_z" in jsonData):
         hal_pin_enable_z.set(jsonData["enable_z"])
-    if ("forward_x" in jsonData and isinstance(jsonData["forward_x"], float)):
+    if ("forward_x" in jsonData):
         hal_pin_forward_x.set(jsonData["forward_x"])
-    if ("enable_x" in jsonData and isinstance(jsonData["enable_x"], bool)):
+    if ("enable_x" in jsonData):
         hal_pin_enable_x.set(jsonData["enable_x"])
 
-    if ("control_z_type" in jsonData and isinstance(jsonData["control_z_type"], bool)):
+    if ("control_z_type" in jsonData):
         hal_pin_control_z_type.set(jsonData["control_z_type"])
-    if ("control_x_type" in jsonData and isinstance(jsonData["control_x_type"], bool)):
+    if ("control_x_type" in jsonData):
         hal_pin_control_x_type.set(jsonData["control_x_type"])
-    if ("velocity_z_cmd" in jsonData and isinstance(jsonData["velocity_z_cmd"], float)):
+    if ("velocity_z_cmd" in jsonData):
         hal_pin_velocity_z_cmd.set(jsonData["velocity_z_cmd"])
-    if ("velocity_x_cmd" in jsonData and isinstance(jsonData["velocity_x_cmd"], float)):
+    if ("velocity_x_cmd" in jsonData):
         hal_pin_velocity_x_cmd.set(jsonData["velocity_x_cmd"])
 
 halc.ready()

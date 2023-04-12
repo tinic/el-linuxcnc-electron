@@ -25,23 +25,8 @@
             "type": "pitch"
         },
         { 
-            "name": "0.010",
-            "value": 0.02,
-            "type": "pitch"
-        },
-        { 
-            "name": "0.020",
-            "value": 0.020,
-            "type": "pitch"
-        },
-        { 
-            "name": "0.040",
-            "value": 0.040,
-            "type": "pitch"
-        },
-        { 
-            "name": "0.080",
-            "value": 0.080,
+            "name": "Hold",
+            "value": 0.0,
             "type": "pitch"
         }
         ]
@@ -199,23 +184,8 @@
             "type": "pitch"
         },
         { 
-            "name": "0.010",
-            "value": 0.02,
-            "type": "pitch"
-        },
-        { 
-            "name": "0.020",
-            "value": 0.020,
-            "type": "pitch"
-        },
-        { 
-            "name": "0.040",
-            "value": 0.040,
-            "type": "pitch"
-        },
-        { 
-            "name": "0.080",
-            "value": 0.080,
+            "name": "Hold",
+            "value": 0.0,
             "type": "pitch"
         }
         ]

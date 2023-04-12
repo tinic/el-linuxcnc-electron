@@ -78,7 +78,6 @@ app.whenReady().then(async () => {
             console.log("Can not install extension!");
         }
     }
-
     createWindow();
 });
 

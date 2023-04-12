@@ -1,11 +1,19 @@
 
 <script setup lang="ts">
-import { emit } from 'process';
 import { ref, computed } from 'vue';
 
-const emit = defineEmits(['numberClicked', 'zeroClicked', 'pitchClicked']);
+const emit = defineEmits(['numberClicked', 'zeroClicked', 'pitchClicked', 'otherClicked', 'metricClicked']);
 
- interface Props {
+enum NumberEntry {
+    none = 0,
+    xpos = 1,
+    zpos = 2,
+    apos = 3,
+    xpitch = 4,
+    zpitch = 5,
+};
+
+interface Props {
     xpos:number,
     zpos:number,
     apos:number,
@@ -19,6 +27,8 @@ const emit = defineEmits(['numberClicked', 'zeroClicked', 'pitchClicked']);
     xpitchlabel:string,
     zpitchlabel:string,
     numberentry:number,
+    entryActive:number,
+    metric:boolean
 };
 
 const props = withDefaults(defineProps<Props>(), {
@@ -34,19 +44,10 @@ const props = withDefaults(defineProps<Props>(), {
     zpitchactive:true,
     xpitchlabel:"...",
     zpitchlabel:"...",
-    numberentry: 0
+    numberentry: 0,
+    entryActive: 0,
+    metric:true
 });
-
-const metric = ref(true);
-
-enum NumberEntry {
-    none = 0,
-    xpos = 1,
-    zpos = 2,
-    apos = 3,
-    xpitch = 4,
-    zpitch = 5,
-};
 
 enum ZeroEntry {
     none = 0,
@@ -55,38 +56,48 @@ enum ZeroEntry {
     apos0 = 3,
 };
 
-const entryActive = ref(NumberEntry.none);
-
 const numberTotalLength:number = 10;
 
 const xposFormatted = computed(() => {
-    let xpos = entryActive.value == NumberEntry.xpos ? props.numberentry : props.xpos;
-    xpos = metric.value ? xpos : xpos / 25.4;
-    let xposStr = xpos.toFixed(metric.value ? 3 : 4);
+    let xpos = props.xpos;
+    if (props.entryActive == NumberEntry.xpos) {
+        xpos = props.numberentry
+    } else {
+        xpos = props.metric ? xpos : xpos / 25.4;
+    }
+    let xposStr = xpos.toFixed(props.metric ? 3 : 4);
     return " ".repeat(numberTotalLength - xposStr.length) + xposStr;
 });
 
 const xposUnitFormatted = computed(() => {
-    return (metric.value ? 'mm' : '″ ') + " ".repeat(4);
+    return (props.metric ? 'mm' : '″ ') + " ".repeat(4);
 });
 
 const zposFormatted = computed(() => {
-    let zpos = entryActive.value == NumberEntry.zpos ? props.numberentry : props.zpos;
-    zpos = metric.value ? zpos : zpos / 25.4;
-    let zposStr = zpos.toFixed(metric.value ? 3 : 4);
+    let zpos = props.zpos;
+    if (props.entryActive == NumberEntry.zpos) {
+        zpos = props.numberentry
+    } else {
+        zpos = props.metric ? zpos : zpos / 25.4;
+    }
+    let zposStr = zpos.toFixed(props.metric ? 3 : 4);
     return " ".repeat(numberTotalLength - zposStr.length) + zposStr;
 });
 
 const zposUnitFormatted = computed(() => {
-    return (metric.value ? 'mm' : '″ ') + " ".repeat(4);
+    return (props.metric ? 'mm' : '″ ') + " ".repeat(4);
 });
 
 const aposFormatted = computed(() => {
-    let apos = entryActive.value == NumberEntry.apos ? props.numberentry : props.apos;
-    if (apos >= 0) {
-        apos %= 360;
+    let apos = props.apos;
+    if (props.entryActive == NumberEntry.apos) {
+        apos = props.numberentry;
     } else {
-        apos  = (360 + apos % 360)
+        if (apos >= 0) {
+            apos %= 360;
+        } else {
+            apos  = (360 + apos % 360)
+        }
     }
     let aposStr = apos.toFixed(3);
     return " ".repeat(numberTotalLength - aposStr.length) + aposStr;
@@ -102,25 +113,33 @@ const rpmsFormatted = computed(() => {
 });
 
 const xpitchFormatted = computed(() => {
-    let xpitch = entryActive.value == NumberEntry.xpitch ? props.numberentry : props.xpitch;
-    xpitch = metric.value ? xpitch : xpitch / 25.4;
-    let xpitchStr = xpitch.toFixed(metric.value ? 3 : 4);
+    let xpitch = props.xpitch;
+    if (props.entryActive == NumberEntry.xpitch) {
+        xpitch = props.numberentry;
+    } else {
+        xpitch = props.metric ? xpitch : xpitch / 25.4;
+    }
+    let xpitchStr = xpitch.toFixed(props.metric ? 3 : 4);
     return " ".repeat(numberTotalLength - xpitchStr.length) + xpitchStr;
 });
 
 const xpitchUnitFormatted = computed(() => {
-    return (metric.value ? 'mm/rev' : '″/rev ');
+    return (props.metric ? 'mm/rev' : '″/rev ');
 });
 
 const zpitchFormatted = computed(() => {
-    let zpitch = entryActive.value == NumberEntry.zpitch ? props.numberentry : props.zpitch;
-    zpitch = metric.value ? zpitch : zpitch / 25.4;
-    let zpitchStr = zpitch.toFixed(metric.value ? 3 : 4);
+    let zpitch = props.zpitch;
+    if (props.entryActive == NumberEntry.zpitch) {
+        zpitch = props.numberentry;
+    } else {
+        zpitch = props.metric ? zpitch : zpitch / 25.4;
+    }
+    let zpitchStr = zpitch.toFixed(props.metric ? 3 : 4);
     return " ".repeat(numberTotalLength - zpitchStr.length) + zpitchStr;
 });
 
 const zpitchUnitFormatted = computed(() => {
-    return (metric.value ? 'mm/rev' : '″/rev ');
+    return (props.metric ? 'mm/rev' : '″/rev ');
 });
 
 const rpmsUnitFormatted = computed(() => {
@@ -128,82 +147,71 @@ const rpmsUnitFormatted = computed(() => {
 });
 
 const xposClicked = () => {
-    entryActive.value = NumberEntry.xpos;
-    emit('numberClicked', NumberEntry.xpos)
+    emit('numberClicked', NumberEntry.xpos, props.xpos)
 }
 
 const xpos0Clicked = () => {
-    entryActive.value = NumberEntry.none;
     emit('zeroClicked', ZeroEntry.xpos0);
 }
 
 const zposClicked = () => {
-    entryActive.value = NumberEntry.zpos;
-    emit('numberClicked', NumberEntry.zpos)
+    emit('numberClicked', NumberEntry.zpos, props.zpos)
 }
 
 const zpos0Clicked = () => {
-    entryActive.value = NumberEntry.none;
     emit('zeroClicked', ZeroEntry.zpos0);
 }
 
 const aposClicked = () => {
-    entryActive.value = NumberEntry.apos;
-    emit('numberClicked', NumberEntry.apos)
+    emit('numberClicked', NumberEntry.apos, props.apos)
 }
 
 const apos0Clicked = () => {
-    entryActive.value = NumberEntry.none;
     emit('zeroClicked', ZeroEntry.apos0);
 }
 
 const xpitchClicked = () => {
-    entryActive.value = NumberEntry.xpitch;
-    emit('numberClicked', NumberEntry.xpitch)
+    emit('numberClicked', NumberEntry.xpitch, props.xpitch)
 }
 
 const zpitchClicked = () => {
-    entryActive.value = NumberEntry.zpitch;
-    emit('numberClicked', NumberEntry.zpitch)
+    emit('numberClicked', NumberEntry.zpitch, props.zpitch)
 }
 
 const xpitchSelectClicked = () => {
-    entryActive.value = NumberEntry.none;
     emit('pitchClicked', 'x')
 }
 
 const zpitchSelectClicked = () => {
-    entryActive.value = NumberEntry.none;
     emit('pitchClicked', 'z')
 }
 
 const rpmClicked = () => {
-    entryActive.value = NumberEntry.none;
+    emit('otherClicked')
 }
 
 const unitClicked = () => {
-    metric.value = !metric.value;
-    entryActive.value = NumberEntry.none;
+    emit('metricClicked')
 };
 
 const xposLabel = computed(() => {
-    return entryActive.value == NumberEntry.xpos ? '<span style="color:#ff0000"> X|</span>' : '<span style="color:#aaaaaa"> X|</span>';
+    return props.entryActive == NumberEntry.xpos ? '<span style="color:#ff0000"> X|</span>' : '<span style="color:#aaaaaa"> X|</span>';
 });
 
 const zposLabel = computed(() => {
-    return entryActive.value == NumberEntry.zpos ? '<span style="color:#ff0000"> Z|</span>' : '<span style="color:#aaaaaa"> Z|</span>';
+    return props.entryActive == NumberEntry.zpos ? '<span style="color:#ff0000"> Z|</span>' : '<span style="color:#aaaaaa"> Z|</span>';
 });
 
 const aposLabel = computed(() => {
-    return entryActive.value == NumberEntry.apos ? '<span style="color:#ff0000"> A|</span>' : '<span style="color:#aaaaaa"> A|</span>';
+    return props.entryActive == NumberEntry.apos ? '<span style="color:#ff0000"> A|</span>' : '<span style="color:#aaaaaa"> A|</span>';
 });
 
 const xpitchLabel = computed(() => {
-    return entryActive.value == NumberEntry.xpitch ? '<span style="color:#ff0000">PX|</span>' : '<span style="color:#aaaaaa">PX|</span>';
+    return props.entryActive == NumberEntry.xpitch ? '<span style="color:#ff0000">PX|</span>' : '<span style="color:#aaaaaa">PX|</span>';
 });
 
 const zpitchLabel = computed(() => {
-    return entryActive.value == NumberEntry.zpitch ? '<span style="color:#ff0000">PZ|</span>' : '<span style="color:#aaaaaa">PZ|</span>';
+    return props.entryActive == NumberEntry.zpitch ? '<span style="color:#ff0000">PZ|</span>' : '<span style="color:#aaaaaa">PZ|</span>';
 });
 
 </script>
