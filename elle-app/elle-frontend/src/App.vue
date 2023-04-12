@@ -19,12 +19,10 @@ const rpms = ref(0);
 // Pushed over REST
 const xpitch = ref(0.1);
 const zpitch = ref(0.1);
-const xlock = ref(false);
-const zlock = ref(false);
 const xpitchactive = ref(false);
 const zpitchactive = ref(false);
-const zforward = ref(true)
-const xforward = ref(true)
+const xstepperactive = ref(false);
+const zstepperactive = ref(false);
 
 // Internal
 const numberentry = ref(0);
@@ -32,6 +30,8 @@ const xpitchlabel = ref('…');
 const zpitchlabel = ref('…');
 const xpitchangle = ref(0);
 
+let zforward:boolean = true;
+let xforward:boolean = true;
 let xaxisoffset:number = 0;
 let zaxisoffset:number = 0;
 let aaxisoffset:number = 0;
@@ -175,12 +175,12 @@ function startPoll() {
     if (halOutScheduled) {
       halOutScheduled = false;
       let halOut = {
-          "forward_z" : zforward.value ? -zpitch.value : zpitch.value,
-          "forward_x" : xforward.value ? -xpitch.value : xpitch.value,
-          "enable_z" : zlock.value,
-          "enable_x" : xlock.value,
-          "enable_stepper_z" : zpitchactive.value,
-          "enable_stepper_x" : xpitchactive.value
+          "forward_z" : zforward ? -zpitch.value : zpitch.value,
+          "forward_x" : xforward ? -xpitch.value : xpitch.value,
+          "enable_z" : zpitchactive.value,
+          "enable_x" : xpitchactive.value,
+          "enable_stepper_z" : zstepperactive.value,
+          "enable_stepper_x" : xstepperactive.value
       };
       putHalOut(halOut);
     }
@@ -253,106 +253,106 @@ function updateHALOut() {
     case FeedMode.longitudinal:
     switch(selectedDirectionMode.value) {
       case DirectionMode.forward:
+        zstepperactive.value = true;
+        xstepperactive.value = false;
         zpitchactive.value = true;
         xpitchactive.value = false;
-        zlock.value = true;
-        xlock.value = false;
-        zforward.value = true;
-        xforward.value = true;
+        zforward = true;
+        xforward = true;
       break;
       case DirectionMode.reverse:
+        zstepperactive.value = true;
+        xstepperactive.value = false;
         zpitchactive.value = true;
         xpitchactive.value = false;
-        zlock.value = true;
-        xlock.value = false;
-        zforward.value = false;
-        xforward.value = false;
+        zforward = false;
+        xforward = false;
       break;
       case DirectionMode.hold:
-        zpitchactive.value = false;
+        zstepperactive.value = false;
+        xstepperactive.value = false;
+        zpitchactive.value = true;
         xpitchactive.value = false;
-        zlock.value = true;
-        xlock.value = false;
-        zforward.value = true;
-        xforward.value = true;
+        zforward = true;
+        xforward = true;
       break;
       case DirectionMode.idle:
+        zstepperactive.value = false;
+        xstepperactive.value = false;
         zpitchactive.value = false;
         xpitchactive.value = false;
-        zlock.value = false;
-        xlock.value = false;
-        zforward.value = true;
-        xforward.value = true;
+        zforward = true;
+        xforward = true;
       break;
     }
     break;
     case FeedMode.cross:
     switch(selectedDirectionMode.value) {
       case DirectionMode.forward:
+        zstepperactive.value = false;
+        xstepperactive.value = true;
         zpitchactive.value = false;
         xpitchactive.value = true;
-        zlock.value = false;
-        xlock.value = true;
-        zforward.value = true;
-        xforward.value = false;
+        zforward = true;
+        xforward = false;
       break;
       case DirectionMode.reverse:
+        zstepperactive.value = false;
+        xstepperactive.value = true;
         zpitchactive.value = false;
         xpitchactive.value = true;
-        zlock.value = false;
-        xlock.value = true;
-        zforward.value = false;
-        xforward.value = true;
+        zforward = false;
+        xforward = true;
       break;
       case DirectionMode.hold:
+        zstepperactive.value = false;
+        xstepperactive.value = false;
         zpitchactive.value = false;
-        xpitchactive.value = false;
-        zlock.value = false;
-        xlock.value = true;
-        zforward.value = true;
-        xforward.value = true;
+        xpitchactive.value = true;
+        zforward = true;
+        xforward = true;
       break;
       case DirectionMode.idle:
+        zstepperactive.value = false;
+        xstepperactive.value = false;
         zpitchactive.value = false;
         xpitchactive.value = false;
-        zlock.value = false;
-        xlock.value = false;
-        zforward.value = true;
-        xforward.value = true;
+        zforward = true;
+        xforward = true;
       break;
     }
     break;
     case FeedMode.frontCompound:
     switch(selectedDirectionMode.value) {
       case DirectionMode.forward:
+        zstepperactive.value = true;
+        xstepperactive.value = true;
         zpitchactive.value = true;
         xpitchactive.value = true;
-        zlock.value = true;
-        xlock.value = true;
-        zforward.value = true;
-        xforward.value = true;
+        zforward = true;
+        xforward = true;
       break;
       case DirectionMode.reverse:
+        zstepperactive.value = true;
+        xstepperactive.value = true;
         zpitchactive.value = true;
         xpitchactive.value = true;
-        zlock.value = true;
-        xlock.value = true;
-        zforward.value = false;
-        xforward.value = false;
+        zforward = false;
+        xforward = false;
       break;
       case DirectionMode.hold:
-        zpitchactive.value = false;
-        xpitchactive.value = false;
-        zlock.value = true;
-        xlock.value = true;
-        zforward.value = true;
-        xforward.value = true;
+        zstepperactive.value = false;
+        xstepperactive.value = false;
+        zpitchactive.value = true;
+        xpitchactive.value = true;
+        zforward = true;
+        xforward = true;
       break;
       case DirectionMode.idle:
+        zstepperactive.value = false;
+        xstepperactive.value = false;
         zpitchactive.value = false;
         xpitchactive.value = false;
-        zlock.value = false;
-        xlock.value = false;
         zforward.value = true;
         xforward.value = true;
       break;
@@ -361,36 +361,36 @@ function updateHALOut() {
     case FeedMode.backCompound:
     switch(selectedDirectionMode.value) {
       case DirectionMode.forward:
+        zstepperactive.value = true;
+        xstepperactive.value = true;
         zpitchactive.value = true;
         xpitchactive.value = true;
-        zlock.value = true;
-        xlock.value = true;
-        zforward.value = true;
-        xforward.value = false;
+        zforward = true;
+        xforward = false;
       break;
       case DirectionMode.reverse:
+        zstepperactive.value = true;
+        xstepperactive.value = true;
         zpitchactive.value = true;
         xpitchactive.value = true;
-        zlock.value = true;
-        xlock.value = true;
-        zforward.value = false;
-        xforward.value = true;
+        zforward = false;
+        xforward = true;
       break;
       case DirectionMode.hold:
-        zpitchactive.value = false;
-        xpitchactive.value = false;
-        zlock.value = true;
-        xlock.value = true;
-        zforward.value = true;
-        xforward.value = false;
+        zstepperactive.value = false;
+        xstepperactive.value = false;
+        zpitchactive.value = true;
+        xpitchactive.value = true;
+        zforward = true;
+        xforward = false;
       break;
       case DirectionMode.idle:
+        zstepperactive.value = false;
+        xstepperactive.value = false;
         zpitchactive.value = false;
         xpitchactive.value = false;
-        zlock.value = false;
-        xlock.value = false;
-        zforward.value = true;
-        xforward.value = false;
+        zforward = true;
+        xforward = false;
       break;
     }
     break;
@@ -535,10 +535,10 @@ startHAL();
           :rpms="rpms"
           :xpitch="xpitch"
           :zpitch="zpitch"
-          :xlock="xlock"
-          :zlock="zlock"
-          :xpitchactive="xpitchactive"
-          :zpitchactive="zpitchactive"
+          :xlock="xpitchactive"
+          :zlock="zpitchactive"
+          :xpitchactive="xstepperactive"
+          :zpitchactive="zstepperactive"
           :numberentry="numberentry"
           :xpitchlabel="xpitchlabel"
           :zpitchlabel="zpitchlabel"
