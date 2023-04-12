@@ -8,9 +8,8 @@ import AppUpdater from "./auto-update";
 const { spawn } = require('node:child_process');
 
 let mainWindow:BrowserWindow;
-
-var halrun:any = null;
-var halstop:any = null;
+let halrun:any = null;
+let halstop:any = null;
 
 async function createWindow() {
     const { width, height } = screen.getPrimaryDisplay().workAreaSize;

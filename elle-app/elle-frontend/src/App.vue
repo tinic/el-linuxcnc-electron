@@ -31,9 +31,16 @@ const numberentry = ref(0);
 const xpitchlabel = ref('…');
 const zpitchlabel = ref('…');
 const xpitchangle = ref(0);
-const zaxiszero = ref(0)
-const xaxiszero = ref(0)
-const aaxiszero = ref(0)
+
+let xaxisoffset:number = 0;
+let zaxisoffset:number = 0;
+let aaxisoffset:number = 0;
+let xaxisset:number = 0;
+let zaxisset:number = 0;
+let aaxisset:number = 0;
+let xaxissetscheduled:boolean = false;
+let zaxissetscheduled:boolean = false;
+let aaxissetscheduled:boolean = false;
 
 enum FeedMode {
   none=0,
@@ -104,8 +111,8 @@ const quitApplication = () => {
   window.api.send('quit');
 };
 
-var halOutScheduled:boolean = false;
-var updateInterval:NodeJS.Timer;
+let halOutScheduled:boolean = false;
+let updateInterval:NodeJS.Timer;
 
 interface HalIn {
   position_z:number,
@@ -142,9 +149,24 @@ function startPoll() {
   updateInterval = setInterval(() => {
     try {
       getHalIn().then(halIn => {
-        zpos.value = (halIn as any).position_z - zaxiszero.value;
-        xpos.value = (halIn as any).position_x - xaxiszero.value;
-        apos.value = Math.abs((((halIn as any).position_a - aaxiszero.value) % 1) * 360);
+        if (zaxissetscheduled) {
+          zaxissetscheduled = false;
+          zaxisoffset = (halIn as any).position_z + zaxisset;
+          zaxisset = 0;
+        }
+        if (xaxissetscheduled) {
+          xaxissetscheduled = false;
+          xaxisoffset = (halIn as any).position_x + xaxisset;
+          xaxisset = 0;
+        }
+        if (aaxissetscheduled) {
+          aaxissetscheduled = false;
+          aaxisoffset = (halIn as any).position_a + aaxisset;
+          aaxisset = 0;
+        }
+        zpos.value = (halIn as any).position_z - zaxisoffset;
+        xpos.value = (halIn as any).position_x - xaxisoffset;
+        apos.value = Math.abs((((halIn as any).position_a - aaxisoffset) % 1) * 360);
         rpms.value = Math.abs((halIn as any).speed_rps * 60);
       });
     } catch {
@@ -379,15 +401,18 @@ function updateHALOut() {
 const zeroClicked = (arg:number) => {
   switch(arg) {
       case 1:
-      xaxiszero.value = xpos.value;
+      xaxisset = 0;
+      xaxissetscheduled = true;
       scheduleHALOut();
       break;
       case 2:
-      zaxiszero.value = zpos.value;
+      zaxisset = 0;
+      zaxissetscheduled = true;
       scheduleHALOut();
       break;
       case 3:
-      aaxiszero.value = apos.value;
+      aaxisset = 0;
+      aaxissetscheduled = true;
       scheduleHALOut();
       break;
   }
