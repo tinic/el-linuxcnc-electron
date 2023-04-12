@@ -96,6 +96,10 @@ const stopHAL = () => {
   window.api.send('stopHAL');
 }
 
+const clearOutput = () => {
+  halStdoutText.value = '';
+}
+
 const quitApplication = () => {
   window.api.send('quit');
 };
@@ -158,7 +162,7 @@ function startPoll() {
       };
       putHalOut(halOut);
     }
-  }, 50);
+  }, 33.33333);
 }
 
 function endPoll() {
@@ -456,6 +460,7 @@ const pitchClicked = (axis:string) => {
 
 window.api.receive('halStarted', () => {
   console.log("receive:halStarted");
+  selectedMenu.value = 0;
   startPoll();
   updateHALOut();
 });
@@ -470,6 +475,7 @@ window.api.receive('halStdout', (event:any, arg:any) => {
   halStdoutText.value += event as string;
 });
 
+selectedMenu.value = 2;
 startHAL();
 
 </script>
@@ -604,12 +610,10 @@ startHAL();
               <Button @click="stopHAL" label="Stop HAL" icon="pi pi-stop" severity="success" />
           </template>
           <template #end>
-            <Button label="Clear Output" class="" />
+            <Button @click="clearOutput" label="Clear Output" />
           </template>
         </Toolbar>
-        <ScrollPanel class="bg-gray-900 p-2 h-full text-left fixed-width-font">
-          {{ halStdoutText }}
-        </ScrollPanel>
+        <Textarea v-model="halStdoutText" autoScroll="true" rows="30" cols="30" />
       </div>
     </div>
     <div v-if="selectedMenu==3" class="flex-grow-1 flex align-items-center justify-content-center bg-blue-500 ">

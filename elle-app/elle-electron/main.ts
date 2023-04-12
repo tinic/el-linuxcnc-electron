@@ -9,6 +9,9 @@ const { spawn } = require('node:child_process');
 
 let mainWindow:BrowserWindow;
 
+var halrun:any = null;
+var halstop:any = null;
+
 async function createWindow() {
     const { width, height } = screen.getPrimaryDisplay().workAreaSize;
     const appBounds: any = appConfig.get("setting.appBounds");
@@ -67,11 +70,7 @@ async function createWindow() {
     });
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app.whenReady().then(async () => {
-    // if dev
     if (isDev) {
         try {
             const { installExt } = await import("./installDevTool");
@@ -82,15 +81,7 @@ app.whenReady().then(async () => {
     }
 
     createWindow();
-    app.on("activate", function () {
-        // On macOS it's common to re-create a window in the app when the
-        // dock icon is clicked and there are no other windows open.
-        if (BrowserWindow.getAllWindows().length === 0) createWindow();
-    });
 });
-
-var halrun:any = null;
-var halstop:any = null;
 
 function stopHAL() {
     if (halrun == null) {
@@ -99,15 +90,14 @@ function stopHAL() {
     let hal_path = process.cwd() + "/elle-hal";
     try {
         let env = process.env; env.PATH += ":" + hal_path;
-        halstop = spawn('halrun', ['-U'], { cwd: process.cwd() + "/elle-hal", env: env });
+        halstop = spawn('unbuffer', ['halrun','-U'], { cwd: process.cwd() + "/elle-hal", env: env });
         halstop.stdout.on('data', (stdout:Buffer) => {
-            mainWindow.webContents.send('halStdout', stdout.toString() + "<br>");
+            mainWindow.webContents.send('halStdout', stdout.toString());
         });
         halstop.stderr.on('data', (stderr:Buffer) => {
-            mainWindow.webContents.send('halStdout', stderr.toString() + "<br>");
+            mainWindow.webContents.send('halStdout', stderr.toString());
         });
         halstop.on('close', (code:any) => {
-            //console.log(`child process exited with code ${code}`);
         });
         mainWindow.webContents.send('halStopped');
         halrun = null;
@@ -126,15 +116,15 @@ ipcMain.on('startHAL', () => {
     if (fs.existsSync(halfile_path)) {
         try {
             let env = process.env; env.PATH += ":" + hal_path;
-            halrun = spawn('halrun', ['lathe.hal'], { cwd: hal_path, env: env});
+            halrun = spawn('unbuffer', ['halrun', 'lathe.hal'], { cwd: hal_path, env: env});
             halrun.stdout.on('data', (stdout:Buffer) => {
-                mainWindow.webContents.send('halStdout', stdout.toString() + "\n");
+                mainWindow.webContents.send('halStdout', stdout.toString());
                 if (stdout.toString().startsWith("Python REST service ready!")) {
                     mainWindow.webContents.send('halStarted');
                 }
             });
             halrun.stderr.on('data', (stderr:Buffer) => {
-                mainWindow.webContents.send('halStdout', stderr.toString() + "\n");
+                mainWindow.webContents.send('halStdout', stderr.toString());
             });
             halrun.on('close', (code:any) => {
                 mainWindow.webContents.send('halStopped');
