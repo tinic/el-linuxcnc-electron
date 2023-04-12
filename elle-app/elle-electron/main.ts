@@ -101,7 +101,7 @@ function stopHAL() {
         });
         mainWindow.webContents.send('halStopped');
         halrun = null;
-        } catch {
+    } catch {
     }
 }
 
