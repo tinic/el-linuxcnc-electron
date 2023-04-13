@@ -5,7 +5,7 @@ import { isDev } from "./config";
 import { appConfig } from "./electron-store/configuration";
 import AppUpdater from "./auto-update";
 
-const { spawn } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
 
 let mainWindow:BrowserWindow;
 let halrun:any = null;
@@ -87,17 +87,14 @@ function stopHAL() {
     }
     let hal_path = process.cwd() + "/elle-hal";
     try {
+        console.log("stopHAL trying0!!!")
         let env = process.env; env.PATH += ":" + hal_path;
-        halstop = spawn('unbuffer', ['halrun','-U'], { cwd: process.cwd() + "/elle-hal", env: env });
-        halstop.stdout.on('data', (stdout:Buffer) => {
-            mainWindow.webContents.send('halStdout', stdout.toString());
-        });
-        halstop.stderr.on('data', (stderr:Buffer) => {
-            mainWindow.webContents.send('halStdout', stderr.toString());
-        });
-        halstop.on('close', (code:any) => {
-        });
+        halstop = spawnSync('halrun', ['-U'], { cwd: process.cwd() + "/elle-hal", env: env });
+        console.log("stopHAL trying1!!!")
+        mainWindow.webContents.send('halStdout', halstop.stdout.toString());
+        mainWindow.webContents.send('halStdout', halstop.stderr.toString());
         mainWindow.webContents.send('halStopped');
+        console.log("stopHAL trying2!!!")
         halrun = null;
     } catch {
     }

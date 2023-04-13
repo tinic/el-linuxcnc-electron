@@ -299,7 +299,8 @@ async function putHalOut(halOut:Object) {
       body: JSON.stringify(halOut),
     });
     const result = await response.json();
-  } catch (error) {
+  } catch {
+    // nop
   }
 }
 
