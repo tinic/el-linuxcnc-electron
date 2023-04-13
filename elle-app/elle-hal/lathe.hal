@@ -2,6 +2,9 @@
 ###############################################
 ## utility modules
 
+#loadrt homemod
+#loadrt tpmod
+
 loadrt constant count=2
 setp constant.0.value 0
 setp constant.1.value 1
@@ -33,8 +36,6 @@ setp scale.5.gain 1
 ## create real-time thread using motion
 ##################################################
 
-loadrt homemod
-loadrt tpmod
 loadrt trivkins coordinates=XZ
 loadrt motmod servo_period_nsec=1000000 num_joints=2
 loadrt pid names=pid.z,pid.x
@@ -169,8 +170,7 @@ addf hm2_7i96.0.write servo-thread
 
 ###############################################
 ## load python component, make connections and launch REST server
-loadusr -Wn lathe lathe_comprun.sh
-loadusr halshow
+loadusr -Wn lathe lathe_halcomp.py
 
 ############################################################
 # set up muxer so we can switch between manual and motd
@@ -233,6 +233,7 @@ net jnt-z-stepper-enbl  => mux-gen.03.in-bit-01 # hm2_7i96.0.stepgen.01.enable
 
 net control-source      => mux-gen.00.in-bit-01 # control-source will be true, use that as a 1
 net control-source      => mux-gen.01.in-bit-01 # control-source will be true, use that as a 1
+net control-source      => iocontrol.0.emc-enable-in
 
 net pid-z-output        => mux2.2.in1 # hm2_7i96.0.stepgen.00.velocity-cmd
 net pid-x-output        => mux2.3.in1 # hm2_7i96.0.stepgen.01.velocity-cmd
@@ -315,10 +316,4 @@ net x-control-type => mux-gen.01.in-bit-00 # hm2_7i96.0.stepgen.01.control-type
 net x-velocity-cmd <= lathe.velocity_x_cmd
 net x-velocity-cmd => mux2.3.in0 # hm2_7i96.0.stepgen.01.velocity-cmd
 
-start
-
-waitusr lathe
-
-stop
-
-unloadrt all
+#loadusr halshow

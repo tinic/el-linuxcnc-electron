@@ -279,6 +279,9 @@ const quitApplication = () => {
   window.api.send('quit');
 };
 
+const testProgram = () => {
+}
+
 let halOutScheduled:boolean = false;
 let updateInterval:NodeJS.Timer;
 
@@ -299,9 +302,11 @@ async function putHalOut(halOut:Object) {
       body: JSON.stringify(halOut),
     });
     const result = await response.json();
+    return result;
   } catch {
     // nop
   }
+  return {};
 }
 
 function getHalIn(): Promise<HalIn[]> {
@@ -342,6 +347,7 @@ function startPoll() {
     if (halOutScheduled) {
       halOutScheduled = false;
       let halOut = {
+          "control_source" : false,
           "forward_z" : zforward ? -zpitch.value : zpitch.value,
           "forward_x" : xforward ? -xpitch.value : xpitch.value,
           "enable_z" : zpitchactive.value,
@@ -778,7 +784,9 @@ startHAL();
         <DynamicDialog/>
     </div>
     <div v-if="selectedMenu==1" class="flex-grow-1 flex align-items-center justify-content-center bg-blue-500 ">
-      Canned cycles
+      <button @click="testProgram" size="large" class="col-12 dro-font-mode button-mode p-3 m-1">
+          Test Program
+      </button>
     </div>
     <div v-if="selectedMenu==2" class="flex-grow-1 flex align-items-center m-2 justify-content-center ">
       <div class="flex flex-column w-full h-full">

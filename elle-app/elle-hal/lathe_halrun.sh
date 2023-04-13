@@ -1,4 +1,5 @@
 #!/bin/sh
 export PATH=${PATH}:./
-halrun lathe.hal
-
+export HOME=./
+#halrun lathe.hal
+linuxcnc lathe.ini

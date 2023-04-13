@@ -1,15 +1,15 @@
-import { app, BrowserWindow, BrowserWindowConstructorOptions, ipcMain, screen } from "electron";
-import path from "path";
 import fs from 'fs';
-import { isDev } from "./config";
-import { appConfig } from "./electron-store/configuration";
+import path from "path";
 import AppUpdater from "./auto-update";
 
-const { spawn, spawnSync } = require('node:child_process');
+import { app, BrowserWindow, BrowserWindowConstructorOptions, ipcMain, screen } from "electron";
+import { isDev } from "./config";
+import { appConfig } from "./electron-store/configuration";
+import { spawn, spawnSync, ChildProcess } from 'node:child_process';
 
 let mainWindow:BrowserWindow;
-let halrun:any = null;
-let halstop:any = null;
+let halrun:ChildProcess;
+let halquit:boolean = false;
 
 async function createWindow() {
     const { width, height } = screen.getPrimaryDisplay().workAreaSize;
@@ -69,6 +69,12 @@ async function createWindow() {
     });
 }
 
+// Silence Intel GPU dmesg noise 
+app.commandLine.appendSwitch('ignore-gpu-blacklist');
+app.commandLine.appendSwitch('disable-gpu');
+app.commandLine.appendSwitch('disable-gpu-compositing');
+app.disableHardwareAcceleration()
+
 app.whenReady().then(async () => {
     if (isDev) {
         try {
@@ -81,56 +87,61 @@ app.whenReady().then(async () => {
     createWindow();
 });
 
-function stopHAL() {
-    if (halrun == null) {
-        return;
-    }
-    let hal_path = process.cwd() + "/elle-hal";
+function cleanMess() {
+    // LinuxCNC shutdowns are never clean not matter what 
+    // we try it seems. So, clean up the mess ourselves.
+    spawnSync('halrun', ['-U']);
+    spawnSync('rm', ['/tmp/linuxcnc.lock']);
+}
+
+function stopHAL(quit:boolean) {
     try {
-        let env = process.env; env.PATH += ":" + hal_path;
-        halstop = spawnSync('halrun', ['-U'], { cwd: process.cwd() + "/elle-hal", env: env });
-        mainWindow.webContents.send('halStdout', halstop.stdout.toString());
-        mainWindow.webContents.send('halStdout', halstop.stderr.toString());
-        mainWindow.webContents.send('halStopped');
-        halrun = null;
+        halquit = quit;
+        if (!halrun.kill('SIGINT')) {
+            if (quit) {
+                app.quit();
+            }
+        }
     } catch {
     }
 }
 
 app.on("window-all-closed", () => {
-    stopHAL();
-    app.quit();
+    stopHAL(true);
 }); 
 
-ipcMain.on('startHAL', () => {
+ipcMain.on('stopHAL', () => {
+    stopHAL(false);
+});
+
+ipcMain.on('quit', () => {
+    stopHAL(true);
+});
+
+ipcMain.on('startHAL', () => { 
     let hal_path = process.cwd() + "/elle-hal";
     let halfile_path = process.cwd() + "/elle-hal/lathe.hal";
     if (fs.existsSync(halfile_path)) {
         try {
+            cleanMess();
             let env = process.env; env.PATH += ":" + hal_path;
-            halrun = spawn('unbuffer', ['halrun', 'lathe.hal'], { cwd: hal_path, env: env});
-            halrun.stdout.on('data', (stdout:Buffer) => {
+            halrun = spawn('unbuffer', ['linuxcnc', 'lathe.ini'], { cwd: hal_path, env: env });
+            halrun.stdout?.on('data', (stdout:Buffer) => {
                 mainWindow.webContents.send('halStdout', stdout.toString());
-                if (stdout.toString().startsWith("Python REST service ready!")) {
+                if (stdout.toString().startsWith("{REST_API_READY}")) {
                     mainWindow.webContents.send('halStarted');
                 }
             });
-            halrun.stderr.on('data', (stderr:Buffer) => {
+            halrun.stderr?.on('data', (stderr:Buffer) => {
                 mainWindow.webContents.send('halStdout', stderr.toString());
             });
             halrun.on('close', (code:any) => {
                 mainWindow.webContents.send('halStopped');
-            });
+                if (halquit) {
+                    app.quit();
+                }
+            }); 
         } catch {
         }
     }
-});
-
-ipcMain.on('stopHAL', () => {
-    stopHAL();
-});
-
-ipcMain.on('quit', () => {
-    stopHAL();
-    app.quit();
 });
