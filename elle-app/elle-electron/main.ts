@@ -137,8 +137,8 @@ ipcMain.on('startHAL', () => {
             });
             halrun.on('exit', (code:any) => {
                 mainWindow.webContents.send('halStopped');
+                cleanMess()
                 if (halquit) {
-                    cleanMess()
                     app.quit();
                 }
             }); 
