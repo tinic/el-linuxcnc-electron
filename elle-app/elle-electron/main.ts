@@ -87,14 +87,11 @@ function stopHAL() {
     }
     let hal_path = process.cwd() + "/elle-hal";
     try {
-        console.log("stopHAL trying0!!!")
         let env = process.env; env.PATH += ":" + hal_path;
         halstop = spawnSync('halrun', ['-U'], { cwd: process.cwd() + "/elle-hal", env: env });
-        console.log("stopHAL trying1!!!")
         mainWindow.webContents.send('halStdout', halstop.stdout.toString());
         mainWindow.webContents.send('halStdout', halstop.stderr.toString());
         mainWindow.webContents.send('halStopped');
-        console.log("stopHAL trying2!!!")
         halrun = null;
     } catch {
     }
