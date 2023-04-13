@@ -33,11 +33,16 @@ setp scale.5.gain 1
 ## create real-time thread using motion
 ##################################################
 
-loadrt trivkins coordinates=XZ
 loadrt homemod
 loadrt tpmod
+loadrt trivkins coordinates=XZ
 loadrt motmod servo_period_nsec=1000000 num_joints=2
 loadrt pid names=pid.z,pid.x
+
+addf motion-command-handler servo-thread
+addf motion-controller servo-thread
+addf pid.x.do-pid-calcs servo-thread
+addf pid.z.do-pid-calcs servo-thread
 
 setp pid.z.Pgain     1000.0
 setp pid.z.Igain     0.0
@@ -133,9 +138,6 @@ setp hm2_7i96.0.dpll.base-freq-khz 1
 ###############################################
 ## add functions to servo-thread
 
-addf motion-command-handler servo-thread
-addf motion-controller servo-thread
-
 addf hm2_7i96.0.read servo-thread
 
 addf constant.0 servo-thread
@@ -168,6 +170,7 @@ addf hm2_7i96.0.write servo-thread
 ###############################################
 ## load python component, make connections and launch REST server
 loadusr -Wn lathe lathe_comprun.sh
+loadusr halshow
 
 ############################################################
 # set up muxer so we can switch between manual and motd
