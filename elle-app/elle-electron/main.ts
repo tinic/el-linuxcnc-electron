@@ -135,9 +135,10 @@ ipcMain.on('startHAL', () => {
             halrun.stderr?.on('data', (stderr:Buffer) => {
                 mainWindow.webContents.send('halStdout', stderr.toString());
             });
-            halrun.on('close', (code:any) => {
+            halrun.on('exit', (code:any) => {
                 mainWindow.webContents.send('halStopped');
                 if (halquit) {
+                    cleanMess()
                     app.quit();
                 }
             }); 
