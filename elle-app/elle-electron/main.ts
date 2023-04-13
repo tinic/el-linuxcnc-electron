@@ -90,8 +90,16 @@ app.whenReady().then(async () => {
 function cleanMess() {
     // LinuxCNC shutdowns are never clean not matter what 
     // we try it seems. So, clean up the mess ourselves.
-    spawnSync('halrun', ['-U']);
-    spawnSync('rm', ['/tmp/linuxcnc.lock']);
+    let hr = spawnSync('halrun', ['-U']);
+    if(!halquit) {
+        mainWindow.webContents.send('halStdout', hr.stdout.toString());
+        mainWindow.webContents.send('halStdout', hr.stderr.toString());
+    }
+    let rm = spawnSync('rm', ['/tmp/linuxcnc.lock']);
+    if(!halquit) {
+        mainWindow.webContents.send('halStdout', rm.stdout.toString());
+        mainWindow.webContents.send('halStdout', rm.stderr.toString());
+    }
 }
 
 function stopHAL(quit:boolean) {
