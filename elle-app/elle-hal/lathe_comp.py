@@ -8,6 +8,8 @@ from fastapi import Request
 
 halc = hal.component("lathe")
 
+hal_pin_control_source = halc.newpin("control_source", hal.HAL_BIT, hal.HAL_OUT)
+
 hal_pin_position_z = halc.newpin("position_z", hal.HAL_FLOAT, hal.HAL_IN)
 hal_pin_position_x = halc.newpin("position_x", hal.HAL_FLOAT, hal.HAL_IN)
 hal_pin_position_a = halc.newpin("position_a", hal.HAL_FLOAT, hal.HAL_IN)
@@ -54,6 +56,8 @@ async def read_hal_in():
 @app.put("/hal/hal_out")
 async def write_hal_out(request: Request):
     jsonData = await request.json();
+
+    hal_pin_control_source.set(0)
 
     if ("enable_stepper_z" in jsonData):
         hal_pin_enable_stepper_z.set(jsonData["enable_stepper_z"])

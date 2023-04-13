@@ -1,12 +1,25 @@
-###############################################
-## create real-time thread
-
-loadrt threads name1=servo-thread period1=1000000
 
 ###############################################
 ## utility modules
 
+loadrt constant count=2
+setp constant.0.value 0
+setp constant.1.value 1
+
 loadrt not count=2
+loadrt mux2 count=6
+setp mux2.0.sel 0
+setp mux2.1.sel 0
+setp mux2.2.sel 0
+setp mux2.3.sel 0
+setp mux2.4.sel 0
+setp mux2.5.sel 0
+
+loadrt mux_generic config="bb2,bb2,bb2,bb2"
+setp mux-gen.00.sel-bit-00 0
+setp mux-gen.01.sel-bit-00 0
+setp mux-gen.02.sel-bit-00 0
+setp mux-gen.03.sel-bit-00 0
 
 loadrt scale count=6
 setp scale.0.gain 1
@@ -16,9 +29,60 @@ setp scale.3.gain 1
 setp scale.4.gain 1
 setp scale.5.gain 1
 
+##################################################
+## create real-time thread using motion
+##################################################
+
+loadrt trivkins coordinates=XZ
+loadrt homemod
+loadrt tpmod
+loadrt motmod servo_period_nsec=1000000 num_joints=2
+loadrt pid names=pid.z,pid.x
+
+setp pid.z.Pgain     1000.0
+setp pid.z.Igain     0.0
+setp pid.z.Dgain     0.0
+setp pid.z.bias      0.0
+setp pid.z.FF0       0.0
+setp pid.z.FF1       1.0
+setp pid.z.FF2       0.0
+setp pid.z.deadband  0.0
+setp pid.z.maxoutput 0.0
+setp pid.z.error-previous-target true
+setp pid.z.maxerror .0005
+
+net pid-z-index-enable  <=> pid.z.index-enable
+net jnt-z-stepper-enbl  =>  pid.z.enable
+net jnt-z-pos-cmd       =>  pid.z.command
+net mux-z-position-fb   =>  pid.z.feedback
+net pid-z-output        <=  pid.z.output
+
+setp pid.x.Pgain     1000.0
+setp pid.x.Igain     0.0
+setp pid.x.Dgain     0.0
+setp pid.x.bias      0.0
+setp pid.x.FF0       0.0
+setp pid.x.FF1       1.0
+setp pid.x.FF2       0.0
+setp pid.x.deadband  0.0
+setp pid.x.maxoutput 0.0
+setp pid.x.error-previous-target true
+setp pid.x.maxerror .0005
+
+net pid-x-index-enable  <=> pid.x.index-enable
+net jnt-x-stepper-enbl  =>  pid.x.enable
+net jnt-x-pos-cmd       =>  pid.x.command
+net mux-x-position-fb   =>  pid.x.feedback
+net pid-x-output        <=  pid.x.output
+
+##################################################
+## alternative to motmod:
+##################################################
+#loadrt threads name1=servo-thread period1=1000000
+##################################################
+
 ###############################################
 ## hostmot2 and 7i96 specific
-
 loadrt hostmot2
 loadrt hm2_eth board_ip="10.10.10.10" config=" num_encoders=1 num_pwmgens=0 num_stepgens=5 sserial_port_0=00xxxx"
 
@@ -69,37 +133,123 @@ setp hm2_7i96.0.dpll.base-freq-khz 1
 ###############################################
 ## add functions to servo-thread
 
+addf motion-command-handler servo-thread
+addf motion-controller servo-thread
+
 addf hm2_7i96.0.read servo-thread
+
+addf constant.0 servo-thread
+addf constant.1 servo-thread
+
 addf scale.0 servo-thread
 addf scale.1 servo-thread
 addf scale.2 servo-thread
 addf scale.3 servo-thread
 addf scale.4 servo-thread
 addf scale.5 servo-thread
+
+addf mux2.0 servo-thread
+addf mux2.1 servo-thread
+addf mux2.2 servo-thread
+addf mux2.3 servo-thread
+addf mux2.4 servo-thread
+addf mux2.5 servo-thread
+
+addf mux-gen.00 servo-thread
+addf mux-gen.01 servo-thread
+addf mux-gen.02 servo-thread
+addf mux-gen.03 servo-thread
+
 addf not.0 servo-thread
 addf not.1 servo-thread
+
 addf hm2_7i96.0.write servo-thread
 
 ###############################################
 ## load python component, make connections and launch REST server
 loadusr -Wn lathe lathe_comprun.sh
 
+############################################################
+# set up muxer so we can switch between manual and motd
+############################################################
+
+net control-source <= lathe.control_source
+net control-source => mux2.0.sel 
+net control-source => mux2.1.sel 
+net control-source => mux2.2.sel 
+net control-source => mux2.3.sel 
+net control-source => mux2.4.sel 
+net control-source => mux2.5.sel 
+net control-source => mux-gen.00.sel-bit-00 
+net control-source => mux-gen.01.sel-bit-00
+net control-source => mux-gen.02.sel-bit-00 
+net control-source => mux-gen.03.sel-bit-00
+
+net mux-z-position-cmd <= mux2.0.out
+net mux-z-position-cmd => hm2_7i96.0.stepgen.00.position-cmd
+net mux-x-position-cmd <= mux2.1.out
+net mux-x-position-cmd => hm2_7i96.0.stepgen.01.position-cmd
+
+net mux-z-velocity-cmd <= mux2.2.out
+net mux-z-velocity-cmd => hm2_7i96.0.stepgen.00.velocity-cmd
+net mux-x-velocity-cmd <= mux2.3.out
+net mux-x-velocity-cmd => hm2_7i96.0.stepgen.01.velocity-cmd
+
+net mux-z-position-fb  <= hm2_7i96.0.stepgen.00.position-fb
+net mux-x-position-fb  <= hm2_7i96.0.stepgen.01.position-fb
+
+net mux-a-position-rv  <= hm2_7i96.0.encoder.00.position
+
+net mux-z-control-type <= mux-gen.00.out-bit
+net mux-z-control-type => hm2_7i96.0.stepgen.00.control-type
+net mux-x-control-type <= mux-gen.01.out-bit
+net mux-x-control-type => hm2_7i96.0.stepgen.01.control-type
+
+net mux-z-stepper-enbl <= mux-gen.02.out-bit
+net mux-z-stepper-enbl => hm2_7i96.0.stepgen.00.enable
+net mux-x-stepper-enbl <= mux-gen.03.out-bit
+net mux-x-stepper-enbl => hm2_7i96.0.stepgen.01.enable
+
+############################################################
+# Set up joints for motmod
+############################################################
+
+net mux-z-position-fb   => joint.1.motor-pos-fb
+net mux-x-position-fb   => joint.0.motor-pos-fb
+net mux-a-position-rv   => spindle.0.revs
+
+net jnt-z-pos-cmd       <= joint.1.motor-pos-cmd
+net jnt-z-vel-cmd       <= joint.1.vel-cmd
+net jnt-x-pos-cmd       <= joint.0.motor-pos-cmd
+net jnt-x-vel-cmd       <= joint.0.vel-cmd
+
+net jnt-z-stepper-enbl  <= joint.1.amp-enable-out
+net jnt-z-stepper-enbl  => mux-gen.02.in-bit-01 # hm2_7i96.0.stepgen.00.enable
+net jnt-x-stepper-enbl  <= joint.0.amp-enable-out
+net jnt-z-stepper-enbl  => mux-gen.03.in-bit-01 # hm2_7i96.0.stepgen.01.enable
+
+net control-source      => mux-gen.00.in-bit-01 # control-source will be true, use that as a 1
+net control-source      => mux-gen.01.in-bit-01 # control-source will be true, use that as a 1
+
+net pid-z-output        => mux2.2.in1 # hm2_7i96.0.stepgen.00.velocity-cmd
+net pid-x-output        => mux2.3.in1 # hm2_7i96.0.stepgen.01.velocity-cmd
+
+############################################################
+# Set up params for manual mode
+############################################################
+
 net r-rps <= hm2_7i96.0.encoder.00.velocity
 net r-rps => lathe.speed_rps
 
-net z-pos <= hm2_7i96.0.stepgen.00.position-fb 
-net z-pos => lathe.position_z
+net mux-z-position-fb => lathe.position_z
+net mux-x-position-fb => lathe.position_x
 
-net x-pos <= hm2_7i96.0.stepgen.01.position-fb 
-net x-pos => lathe.position_x
-
-net a-pos <= hm2_7i96.0.encoder.00.position
-net a-pos => lathe.position_a
-net a-pos => scale.0.in
-net a-pos => scale.3.in
+net mux-a-position-rv => lathe.position_a
+net mux-a-position-rv => scale.0.in
+net mux-a-position-rv => scale.3.in
 
 net z-stepper-enable <= lathe.enable_stepper_z 
-net z-stepper-enable => hm2_7i96.0.stepgen.00.enable
+net z-stepper-enable => mux-gen.02.in-bit-00 # hm2_7i96.0.stepgen.00.enable
 
 # we are inverting the stepper enable signal here, might not be required for your machine
 net z-enable <= lathe.enable_z
@@ -111,7 +261,7 @@ net z-enable-inv => hm2_7i96.0.ssr.00.out-00
 ## net z-enable => hm2_7i96.0.ssr.00.out-00
 
 net x-stepper-enable <= lathe.enable_stepper_x 
-net x-stepper-enable => hm2_7i96.0.stepgen.01.enable
+net x-stepper-enable => mux-gen.03.in-bit-00 # hm2_7i96.0.stepgen.01.enable
 
 # we are inverting the stepper enable signal here, might not be required for your machine
 net x-enable <= lathe.enable_x
@@ -128,7 +278,7 @@ net scale0_to_1 => scale.1.in
 net scale1_to_2 <= scale.1.out
 net scale1_to_2 => scale.2.in
 net scale2_to_position-cmd <= scale.2.out
-net scale2_to_position-cmd => hm2_7i96.0.stepgen.00.position-cmd
+net scale2_to_position-cmd => mux2.0.in0 # hm2_7i96.0.stepgen.00.position-cmd
 
 net z-offset-encoder <= lathe.offset_z_encoder
 net z-offset-encoder => scale.0.offset
@@ -138,9 +288,9 @@ net z-offset-stepper <= lathe.offset_z_stepper
 net z-offset-stepper => scale.2.offset
 
 net z-control-type <= lathe.control_z_type
-net z-control-type => hm2_7i96.0.stepgen.00.control-type
+net z-control-type => mux-gen.00.in-bit-00 # hm2_7i96.0.stepgen.00.control-type
 net z-velocity-cmd <= lathe.velocity_z_cmd
-net z-velocity-cmd => hm2_7i96.0.stepgen.00.velocity-cmd
+net z-velocity-cmd => mux2.2.in0 # hm2_7i96.0.stepgen.01.velocity-cmd
 
 # X Axis -- scale chain
 net scale3_to_4 <= scale.3.out
@@ -148,7 +298,7 @@ net scale3_to_4 => scale.4.in
 net scale4_to_5 <= scale.4.out
 net scale4_to_5 => scale.5.in
 net scale5_to_position-cmd <= scale.5.out
-net scale5_to_position-cmd => hm2_7i96.0.stepgen.01.position-cmd
+net scale5_to_position-cmd => mux2.1.in0 # hm2_7i96.0.stepgen.01.position-cmd
 
 net x-offset-encoder <= lathe.offset_x_encoder
 net x-offset-encoder => scale.3.offset
@@ -158,9 +308,9 @@ net x-offset-stepper <= lathe.offset_x_stepper
 net x-offset-stepper => scale.5.offset
 
 net x-control-type <= lathe.control_x_type
-net x-control-type => hm2_7i96.0.stepgen.01.control-type
+net x-control-type => mux-gen.01.in-bit-00 # hm2_7i96.0.stepgen.01.control-type
 net x-velocity-cmd <= lathe.velocity_x_cmd
-net x-velocity-cmd => hm2_7i96.0.stepgen.01.velocity-cmd
+net x-velocity-cmd => mux2.3.in0 # hm2_7i96.0.stepgen.01.velocity-cmd
 
 start
 
