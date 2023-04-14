@@ -5,8 +5,14 @@ import { useDialog } from 'primevue/usedialog';
 import Numpad from './components/Numpad.vue';
 import DRODisplay from './components/DRODisplay.vue';
 
-const halOutURL = 'http://localhost:8000/hal/hal_out';
-const halInURL = 'http://localhost:8000/hal/hal_in';
+let halOutURL = 'http://localhost:8000/hal/hal_out';
+let halInURL = 'http://localhost:8000/hal/hal_in';
+
+var userAgent = navigator.userAgent.toLowerCase();
+if (userAgent.indexOf(' electron/') < 0) {
+  halOutURL = 'http://lathev2:8000/hal/hal_out';
+  halInURL = 'http://lathev2:8000/hal/hal_in';
+}
 
 const selectedMenu = ref(0);
 
@@ -273,16 +279,25 @@ const halStdoutText = ref('');
 
 const startHAL = () => {
   halStdoutText.value = '';
-  window.api.send('startHAL');
+  var userAgent = navigator.userAgent.toLowerCase();
+  if (userAgent.indexOf(' electron/') > -1) {
+    window.api.send('startHAL');
+  }
 }
 
 const stopHAL = () => {
   halStdoutText.value = '';
-  window.api.send('stopHAL');
+  var userAgent = navigator.userAgent.toLowerCase();
+  if (userAgent.indexOf(' electron/') > -1) {
+    window.api.send('stopHAL');
+  }
 }
 
 const quitApplication = () => {
-  window.api.send('quit');
+  var userAgent = navigator.userAgent.toLowerCase();
+  if (userAgent.indexOf(' electron/') > -1) {
+    window.api.send('quit');
+  }
 };
 
 const testProgram = () => {
@@ -724,25 +739,28 @@ const pitchClicked = (axis:string) => {
     });
 };
 
-window.api.receive('halStarted', () => {
-  //console.log("receive:halStarted");
-  selectedMenu.value = 0;
+var userAgent = navigator.userAgent.toLowerCase();
+  if (userAgent.indexOf(' electron/') > -1) {
+  window.api.receive('halStarted', () => {
+    selectedMenu.value = 0;
+    startPoll();
+    updateHALOut();
+  });
+
+  window.api.receive('halStopped', () => {
+    endPoll();
+  });
+
+  window.api.receive('halStdout', (event:any, arg:any) => {
+    halStdoutText.value += event as string;
+  });
+
+  selectedMenu.value = 2;
+  startHAL();
+} else {
   startPoll();
   updateHALOut();
-});
-
-window.api.receive('halStopped', () => {
-  //console.log("receive:halStopped");
-  endPoll();
-});
-
-window.api.receive('halStdout', (event:any, arg:any) => {
-  //console.log("receive:halStdout");
-  halStdoutText.value += event as string;
-});
-
-selectedMenu.value = 2;
-startHAL();
+}
 
 </script>
 

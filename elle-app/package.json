@@ -16,7 +16,7 @@
     "front:setup": "cd elle-frontend && yarn",
     "electron:setup": "yarn",
     "setup": "yarn front:setup && yarn electron:setup",
-    "serve:front": "cd elle-frontend && yarn dev",
+    "serve:front": "cd elle-frontend && yarn dev --host",
     "serve:electron": "set APP_IS_NIGHTLY=yes && set APP_IS_DEV=yes && yarn build:front && yarn build && wait-on tcp:3000 && electron .",
     "build:front": "cd elle-frontend && yarn build",
     "electron:build": "yarn build",
