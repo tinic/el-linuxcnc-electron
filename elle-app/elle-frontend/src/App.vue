@@ -43,6 +43,12 @@ let xaxissetscheduled:boolean = false;
 let zaxissetscheduled:boolean = false;
 let aaxissetscheduled:boolean = false;
 
+let buttonuptime:number = 0;
+let buttondowntime:number = 0;
+let buttonlefttime:number = 0;
+let buttonrighttime:number = 0;
+let buttonupscheduled:boolean = false;
+
 enum FeedMode {
   none=0,
   longitudinal=1,
@@ -344,6 +350,56 @@ function startPoll() {
     } catch {
       // nop
     }
+    if (buttonuptime > 0) {
+      let velocity = (Date.now()/1000 - buttonuptime) * 3;
+			velocity = Math.min(velocity, 3.0)
+      let halOut = {
+          "control_z_type" : 1,
+          "velocity_z_cmd" : +velocity
+      }
+      putHalOut(halOut);
+    }
+    if (buttondowntime > 0) {
+      let velocity = (Date.now()/1000 - buttondowntime) * 3;
+			velocity = Math.min(velocity, 3.0)
+      let halOut = {
+          "control_z_type" : 1,
+          "velocity_z_cmd" : -velocity
+      }
+      putHalOut(halOut);
+    }
+    if (buttonlefttime > 0) {
+      let velocity = (Date.now()/1000 - buttonlefttime) * 3;
+			velocity = Math.min(velocity, 6.0)
+      let halOut = {
+          "control_x_type" : 1,
+          "velocity_x_cmd" : -velocity
+      }
+      putHalOut(halOut);
+    }
+    if (buttonrighttime > 0) {
+      let velocity = (Date.now()/1000 - buttonrighttime) * 3;
+			velocity = Math.min(velocity, 6.0)
+      let halOut = {
+          "control_x_type" : 1,
+          "velocity_x_cmd" : +velocity
+      }
+      putHalOut(halOut);
+    }
+    if (buttonupscheduled) {
+      buttonupscheduled = false
+      buttonuptime = 0;
+      buttondowntime = 0;
+      buttonlefttime = 0;
+      buttonrighttime = 0;
+      let halOut = {
+          "velocity_x_cmd" : 0,
+          "control_x_type" : 0,
+          "velocity_y_cmd" : 0,
+          "control_y_type" : 0,
+      }
+      putHalOut(halOut);
+    }
     if (halOutScheduled) {
       halOutScheduled = false;
       let halOut = {
@@ -356,7 +412,6 @@ function startPoll() {
           "enable_stepper_x" : xstepperactive.value
       };
       putHalOut(halOut);
-      console.log(" xpitch.value " + xpitch.value + " zpitch.value " + zpitch.value)
     }
   }, 33.33333);
 }
@@ -414,6 +469,38 @@ const directionModeHoldClicked = () => {
 }
 const directionModeIdleClicked = () => {
   selectedDirectionMode.value = DirectionMode.idle;
+}
+
+const mouseUpUp = () => {
+  buttonupscheduled = true;
+}
+
+const mouseDownUp = () => {
+  buttonuptime = Date.now() / 1000;
+}
+
+const mouseUpLeft = () => {
+  buttonupscheduled = true;
+}
+
+const mouseDownLeft = () => {
+  buttonlefttime = Date.now() / 1000;
+}
+
+const mouseUpRight = () => {
+  buttonupscheduled = true;
+}
+
+const mouseDownRight = () => {
+  buttonrighttime = Date.now() / 1000;
+}
+
+const mouseUpDown = () => {
+  buttonupscheduled = true;
+}
+
+const mouseDownDown = () => {
+  buttondowntime = Date.now() / 1000;
 }
 
 function scheduleHALOut() {
@@ -771,13 +858,13 @@ startHAL();
           </div>
           <div class="grid grid-nogutter bg-gray-900 mt-2 p-1 dro-font-mode" style="width:24em">
               <div class="col-4 p-1"></div>
-              <div class="col-4 p-1"><button class="button-mode button-direction w-full h-full">⏶</button></div>
+              <div class="col-4 p-1"><button @mouseup="mouseUpUp" @mousedown="mouseDownUp" class="button-mode button-direction w-full h-full">⏶</button></div>
               <div class="col-4 p-1"></div>
-              <div class="col-4 p-1"><button class="button-mode button-direction w-full h-full">⏴</button></div>
+              <div class="col-4 p-1"><button @mouseup="mouseUpLeft" @mousedown="mouseDownLeft" class="button-mode button-direction w-full h-full">⏴</button></div>
               <div class="col-4 p-1"><button class="button-mode button-direction w-full h-full">STOP</button></div>
-              <div class="col-4 p-1"><button class="button-mode button-direction w-full h-full">⏵</button></div>
+              <div class="col-4 p-1"><button @mouseup="mouseUpRight" @mousedown="mouseDownRight" class="button-mode button-direction w-full h-full">⏵</button></div>
               <div class="col-4 p-1"></div>
-              <div class="col-4 p-1"><button class="button-mode button-direction w-full h-full">⏷</button></div>
+              <div class="col-4 p-1"><button @mouseup="mouseUpDown" @mousedown="mouseDownDown" class="button-mode button-direction w-full h-full">⏷</button></div>
               <div class="col-4 p-1"></div>
             </div>
         </div>
