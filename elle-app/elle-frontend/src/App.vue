@@ -306,6 +306,9 @@ const quitApplication = () => {
 
 const rendererC = ref()
 
+const materia_feed = new THREE.LineBasicMaterial( { color: 0x00ff00 } );
+const materia_trav = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+
 const gcodeUploader = async (event:any) => {
     const file = event.files[0];
     console.log(file)
@@ -316,17 +319,20 @@ const gcodeUploader = async (event:any) => {
           console.log(json);
 
           const renderer = rendererC.value as RendererPublicInterface
+          renderer.scene?.clear();
 
-          const materia_feed = new THREE.LineBasicMaterial( { color: 0x0000ff } );
-          const materia_trav = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+          let maxx = json["extents"][3]-json["extents"][0]
+          let maxy = json["extents"][4]-json["extents"][1]
+          let maxz = json["extents"][5]-json["extents"][2]
+          let mul  = 1.0 / Math.max(maxz,Math.max(maxx, maxy))
 
           for (let entry of json["backplot"]) {
             switch(entry["type"]) {
               case 'feed':
               for (let line of entry["feed"]) {
                 const points = [];
-                points.push( new THREE.Vector3( line["coords"][0], line["coords"][1], line["coords"][2]) );
-                points.push( new THREE.Vector3( line["coords"][3], line["coords"][4], line["coords"][5]) );
+                points.push( new THREE.Vector3( line["coords"][0] * mul, line["coords"][1] * mul, line["coords"][2] * mul) );
+                points.push( new THREE.Vector3( line["coords"][3] * mul, line["coords"][4] * mul, line["coords"][5] * mul) );
                 const geometry = new THREE.BufferGeometry().setFromPoints( points );
                 const mesh = new THREE.Line( geometry, materia_feed );
                 renderer.scene?.add( mesh );
@@ -334,18 +340,27 @@ const gcodeUploader = async (event:any) => {
               }
               break;
               case 'arcfeed':
+              for (let line of entry["arcfeed"]) {
+                const points = [];
+                points.push( new THREE.Vector3( line["coords"][0] * mul, line["coords"][1] * mul, line["coords"][2] * mul) );
+                points.push( new THREE.Vector3( line["coords"][3] * mul, line["coords"][4] * mul, line["coords"][5] * mul) );
+                const geometry = new THREE.BufferGeometry().setFromPoints( points );
+                const mesh = new THREE.Line( geometry, materia_feed );
+                renderer.scene?.add( mesh );
+                break;
+              }
               break;
               case 'trav':
               for (let line of entry["trav"]) {
                 const points = [];
-                points.push( new THREE.Vector3( line["coords"][0], line["coords"][1], line["coords"][2]) );
-                points.push( new THREE.Vector3( line["coords"][3], line["coords"][4], line["coords"][5]) );
+                points.push( new THREE.Vector3( line["coords"][0] * mul, line["coords"][1] * mul, line["coords"][2] * mul) );
+                points.push( new THREE.Vector3( line["coords"][3] * mul, line["coords"][4] * mul, line["coords"][5] * mul) );
                 const geometry = new THREE.BufferGeometry().setFromPoints( points );
                 const mesh = new THREE.Line( geometry, materia_trav );
                 renderer.scene?.add( mesh );
               }
               break;
-              case 'dev':
+              case 'dwell':
               break;
             }
           }

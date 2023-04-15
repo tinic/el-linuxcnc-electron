@@ -86,9 +86,9 @@ class BackplotGenerator( rs274.glcanon.GlCanonDraw ):
                         entry[1][0],
                         entry[1][1],
                         entry[1][2],
+                        entry[2][0],
                         entry[2][1],
-                        entry[2][2],
-                        entry[2][3]
+                        entry[2][2]
                     ],
                     "rate": entry[3],
                     "offset": [
@@ -111,7 +111,7 @@ class BackplotGenerator( rs274.glcanon.GlCanonDraw ):
                     data.append({
                         "type": "arcfeed",
                         "line": currentline,
-                        "arc" : arc
+                        "arcfeed" : arc
                     })
                     arc = []
                     currentline = entry[0]
@@ -120,9 +120,9 @@ class BackplotGenerator( rs274.glcanon.GlCanonDraw ):
                         entry[1][0],
                         entry[1][1],
                         entry[1][2],
+                        entry[2][0],
                         entry[2][1],
-                        entry[2][2],
-                        entry[2][3]
+                        entry[2][2]
                     ],
                     "rate": entry[3],
                     "offset": [
@@ -134,7 +134,7 @@ class BackplotGenerator( rs274.glcanon.GlCanonDraw ):
             data.append({
                 "type": "arcfeed",
                 "line": currentline,
-                "arc" : arc
+                "arcfeed" : arc
             })
 
         if self.canon.traverse and self.canon.traverse[0]:
@@ -154,9 +154,9 @@ class BackplotGenerator( rs274.glcanon.GlCanonDraw ):
                         entry[1][0],
                         entry[1][1],
                         entry[1][2],
+                        entry[2][0],
                         entry[2][1],
-                        entry[2][2],
-                        entry[2][3]
+                        entry[2][2]
                     ],
                     "offset": [
                         entry[3][0],
