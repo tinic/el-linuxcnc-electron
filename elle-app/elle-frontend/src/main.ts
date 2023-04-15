@@ -19,6 +19,7 @@ import TabPanel from 'primevue/tabpanel';
 import Textarea from 'primevue/textarea';
 import Toolbar from "primevue/toolbar";
 import SelectButton from 'primevue/selectbutton';
+import FileUpload from 'primevue/fileupload';
 //import { AppImageUpdater } from 'electron-updater';
 
 const routes = [
@@ -48,6 +49,7 @@ app.component('TabView', TabView);
 app.component('TabPanel', TabPanel);
 app.component('SelectButton', SelectButton);
 app.component('Textarea', Textarea);
+app.component('FileUpload', FileUpload);
 
 app.mount('#app')
 

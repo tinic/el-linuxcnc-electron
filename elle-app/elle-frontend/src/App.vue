@@ -1,17 +1,21 @@
 <script setup lang="ts">
-import { ref, computed, watch, defineAsyncComponent } from 'vue';
+import { ref, onMounted, computed, watch, defineAsyncComponent } from 'vue';
 import { useDialog } from 'primevue/usedialog';
+import { Box, Camera, LambertMaterial, MeshPublicInterface, PointLight, Renderer, RendererPublicInterface, Scene } from 'troisjs'
+import * as THREE from 'three'
 
 import Numpad from './components/Numpad.vue';
 import DRODisplay from './components/DRODisplay.vue';
 
 let halOutURL = 'http://localhost:8000/hal/hal_out';
 let halInURL = 'http://localhost:8000/hal/hal_in';
+let linuxcncURL = 'http://localhost:8001/linuxcnc/';
 
 var userAgent = navigator.userAgent.toLowerCase();
 if (userAgent.indexOf(' electron/') < 0) {
   halOutURL = 'http://lathev2:8000/hal/hal_out';
   halInURL = 'http://lathev2:8000/hal/hal_in';
+  linuxcncURL = 'http://lathev2:8001/linuxcnc/';
 }
 
 const selectedMenu = ref(0);
@@ -300,8 +304,57 @@ const quitApplication = () => {
   }
 };
 
-const testProgram = () => {
-}
+const rendererC = ref()
+
+const gcodeUploader = async (event:any) => {
+    const file = event.files[0];
+    console.log(file)
+    const reader = new FileReader();
+    reader.readAsText(file);
+    reader.onloadend = function () {
+        putLinuxCNC('backplot', {"gcode": btoa(reader.result as string)}).then(json => {
+          console.log(json);
+
+          const renderer = rendererC.value as RendererPublicInterface
+
+          const materia_feed = new THREE.LineBasicMaterial( { color: 0x0000ff } );
+          const materia_trav = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+
+          for (let entry of json["backplot"]) {
+            switch(entry["type"]) {
+              case 'feed':
+              for (let line of entry["feed"]) {
+                const points = [];
+                points.push( new THREE.Vector3( line["coords"][0], line["coords"][1], line["coords"][2]) );
+                points.push( new THREE.Vector3( line["coords"][3], line["coords"][4], line["coords"][5]) );
+                const geometry = new THREE.BufferGeometry().setFromPoints( points );
+                const mesh = new THREE.Line( geometry, materia_feed );
+                renderer.scene?.add( mesh );
+                break;
+              }
+              break;
+              case 'arcfeed':
+              break;
+              case 'trav':
+              for (let line of entry["trav"]) {
+                const points = [];
+                points.push( new THREE.Vector3( line["coords"][0], line["coords"][1], line["coords"][2]) );
+                points.push( new THREE.Vector3( line["coords"][3], line["coords"][4], line["coords"][5]) );
+                const geometry = new THREE.BufferGeometry().setFromPoints( points );
+                const mesh = new THREE.Line( geometry, materia_trav );
+                renderer.scene?.add( mesh );
+              }
+              break;
+              case 'dev':
+              break;
+            }
+          }
+
+          renderer.onBeforeRender(() => {
+          })
+        })
+      }
+};
 
 let halOutScheduled:boolean = false;
 let updateInterval:NodeJS.Timer;
@@ -321,6 +374,23 @@ async function putHalOut(halOut:Object) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(halOut),
+    });
+    const result = await response.json();
+    return result;
+  } catch {
+    // nop
+  }
+  return {};
+}
+
+async function putLinuxCNC(command:string, data:Object) {
+  try {
+    const response = await fetch(linuxcncURL + command, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
     });
     const result = await response.json();
     return result;
@@ -739,28 +809,32 @@ const pitchClicked = (axis:string) => {
     });
 };
 
-var userAgent = navigator.userAgent.toLowerCase();
+onMounted(() => {
+
+  var userAgent = navigator.userAgent.toLowerCase();
   if (userAgent.indexOf(' electron/') > -1) {
-  window.api.receive('halStarted', () => {
-    selectedMenu.value = 0;
+    window.api.receive('halStarted', () => {
+      selectedMenu.value = 0;
+      startPoll();
+      updateHALOut();
+    });
+
+    window.api.receive('halStopped', () => {
+      endPoll();
+    });
+
+    window.api.receive('halStdout', (event:any, arg:any) => {
+      halStdoutText.value += event as string;
+    });
+
+    selectedMenu.value = 2;
+    startHAL();
+  } else {
     startPoll();
     updateHALOut();
-  });
+  }
 
-  window.api.receive('halStopped', () => {
-    endPoll();
-  });
-
-  window.api.receive('halStdout', (event:any, arg:any) => {
-    halStdoutText.value += event as string;
-  });
-
-  selectedMenu.value = 2;
-  startHAL();
-} else {
-  startPoll();
-  updateHALOut();
-}
+})
 
 </script>
 
@@ -889,9 +963,15 @@ var userAgent = navigator.userAgent.toLowerCase();
         <DynamicDialog/>
     </div>
     <div v-if="selectedMenu==1" class="flex-grow-1 flex align-items-center justify-content-center bg-blue-500 ">
-      <button @click="testProgram" size="large" class="col-12 dro-font-mode button-mode p-3 m-1">
-          Test Program
-      </button>
+      <div class="flex flex-column">
+        <FileUpload mode="basic" name="elle[]" url="/api/upload" accept="text/plain" customUpload @uploader="gcodeUploader" />
+        <Renderer ref="rendererC" antialias :orbit-ctrl="{ enableDamping: true }" width="800" height="600">
+          <Camera :position="{ z: 10 }" />
+          <Scene>
+            <PointLight :position="{ y: 50, z: 50 }" />
+          </Scene>
+        </Renderer>
+      </div>
     </div>
     <div v-if="selectedMenu==2" class="flex-grow-1 flex align-items-center m-2 justify-content-center ">
       <div class="flex flex-column w-full h-full">

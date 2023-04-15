@@ -84,6 +84,7 @@ def write_hal_out():
 
 halc.ready()
 
+
 print("{REST_API_READY}")
 
 sys.stdout.flush()

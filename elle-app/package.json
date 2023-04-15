@@ -41,6 +41,7 @@
     "wait-on": "^7.0.1"
   },
   "dependencies": {
+    "@types/three": "^0.150.1",
     "@vitejs/plugin-vue": "^4.1.0",
     "electron-log": "^4.4.8",
     "electron-store": "^8.1.0",
@@ -48,6 +49,8 @@
     "primeflex": "^3.3.0",
     "primeicons": "^6.0.1",
     "primevue": "^3.26.1",
+    "three": "^0.151.3",
+    "troisjs": "^0.3.4",
     "vite": "^4.2.1",
     "vue": "^3.2.47",
     "vue-cli": "^2.9.6",
