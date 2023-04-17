@@ -337,7 +337,7 @@ class Backplot {
   omat:THREE.Matrix4 = new THREE.Matrix4();
 
   boundingBoxMaterial:LineMaterial = new LineMaterial( { 
-		color: 0x0000ff, 
+		color: 0xaaaaaa, 
 		linewidth: 1,
     resolution: new THREE.Vector2(800,600)
   });
@@ -500,6 +500,32 @@ class Backplot {
     }
   }
 
+  updateProgress(lineidx:number) {
+    let clin:number = 0;
+    for (let entry of this.json["backplot"]) {
+      let entryType = entry["type"]
+      switch(entryType) {
+        case 'feed':
+        case 'trav':
+        for (let line of entry[entryType]) {
+          let line2 = line['line2'] as Line2;
+          if (entryType == "feed" && line.hasOwnProperty("rate")) {
+            let r = Math.floor(((clin / this.tlin) * 256) % 256);
+            line2.material = clin > lineidx ? this.backplotMaterial0[r] : this.backplotMaterial1[r];
+          } else {
+            line2.material = clin > lineidx ? this.backplotMaterial2 : this.backplotMaterial3;
+          }
+          clin++;
+        }
+        break;
+        case 'arcfeed':
+        break;
+        case 'dwell':
+        break;
+      }
+    }
+  }
+
   boundingBoxLine2Points():Array<Array<number>> {
     let a:Array<Array<number>> = [];
     a.push([this.xmin,this.ymin,this.zmin,this.xmax,this.ymin,this.zmin])
@@ -535,32 +561,10 @@ const gcodeUploader = async (event:any) => {
           backplot.addBackplot()
 
           let xlin:number = 0;
+          let xinc:number = backplot.tlin / 600;
           renderer.onBeforeRender(() => {
-            let clin:number = 0;
-            for (let entry of backplot.json["backplot"]) {
-              let entryType = entry["type"]
-              switch(entryType) {
-                case 'feed':
-                case 'trav':
-                for (let line of entry[entryType]) {
-                  let line2 = line['line2'] as Line2;
-                  if (entryType == "feed" && line.hasOwnProperty("rate")) {
-                    let r = Math.floor(((clin / backplot.tlin) * 256) % 256);
-                    line2.material = clin > xlin ? backplot.backplotMaterial0[r] : backplot.backplotMaterial1[r];
-                  } else {
-                    line2.material = clin > xlin ? backplot.backplotMaterial2 : backplot.backplotMaterial3;
-                  }
-                  clin++;
-                }
-                break;
-                case 'arcfeed':
-                break;
-                case 'dwell':
-                break;
-              }
-            }
-            //xlin++;
-            xlin+=8;
+            backplot.updateProgress(xlin);
+            xlin += xinc;
             xlin %= backplot.tlin;
           })
         })
