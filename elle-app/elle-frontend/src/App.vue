@@ -342,6 +342,12 @@ class Backplot {
     resolution: new THREE.Vector2(800,600)
   });
 
+  backplotMaterial:LineMaterial = new LineMaterial( { 
+		color: 0xffffff, 
+		linewidth: 1,
+    resolution: new THREE.Vector2(800,600)
+  });
+
   backplotMaterial0:Array<LineMaterial> = new Array<LineMaterial>();
   backplotMaterial1:Array<LineMaterial> = new Array<LineMaterial>();
   backplotMaterial2:LineMaterial;
@@ -403,12 +409,24 @@ class Backplot {
     this.omat.multiply(smat)
     this.omat.multiply(tmat)
 
-    this.fixupMinMax();
+    this.xmin += this.xoff - 0.01;
+    this.xmax += this.xoff + 0.01;
+    this.ymin += this.yoff - 0.01;
+    this.ymax += this.yoff + 0.01;
+    this.zmin += this.zoff - 0.01;
+    this.zmax += this.zoff + 0.01;
 
-    this.createLines2()
+    this.xmin *= this.scal;
+    this.xmax *= this.scal;
+    this.ymin *= this.scal;
+    this.ymax *= this.scal;
+    this.zmin *= this.scal;
+    this.zmax *= this.scal;
+
+    this.createLine2Geometry()
   }
 
-  createLines2() {
+  createLine2Geometry() {
     for (let entry of this.json["backplot"]) {
       let entryType = entry["type"]
       if (entry.hasOwnProperty("line")) {
@@ -426,44 +444,36 @@ class Backplot {
             }
           }
           let points:Array<number> = [];
-          let l0 = new THREE.Vector3( line["coords"][0], line["coords"][1], line["coords"][2]).applyMatrix4(this.omat);
-          let l1 = new THREE.Vector3( line["coords"][3], line["coords"][4], line["coords"][5]).applyMatrix4(this.omat);
+          let l0 = new THREE.Vector3( 
+            line["coords"][0], 
+            line["coords"][1], 
+            line["coords"][2]).applyMatrix4(this.omat);
+          let l1 = new THREE.Vector3( 
+            line["coords"][3], 
+            line["coords"][4], 
+            line["coords"][5]).applyMatrix4(this.omat);
           points.push(l0.x, l0.y, l0.z, l1.x, l1.y, l1.z);
           line['points'] = points;
           var geometry:LineGeometry = new LineGeometry();
           geometry.setPositions(points);
           line['geometry'] = geometry;
-          let line2 = new Line2( geometry,  this.backplotMaterial0[0]);
+          let line2 = new Line2(geometry, this.backplotMaterial);
           line2.computeLineDistances();
           line['line2'] = line2;
           this.tlin++;
         }
         break;
         case 'arcfeed':
+        // TODO!!!!!
         break;
         case 'dwell':
+        // TODO!!!!!
         break;
       }
     }
   }
 
-  fixupMinMax() {
-    this.xmin += this.xoff - 0.01;
-    this.xmax += this.xoff + 0.01;
-    this.ymin += this.yoff - 0.01;
-    this.ymax += this.yoff + 0.01;
-    this.zmin += this.zoff - 0.01;
-    this.zmax += this.zoff + 0.01;
-
-    this.xmin *= this.scal;
-    this.xmax *= this.scal;
-    this.ymin *= this.scal;
-    this.ymax *= this.scal;
-    this.zmin *= this.scal;
-    this.zmax *= this.scal;
-  }
-
-  addBackplot() {
+  addBackplotToScene() {
     const renderer = rendererC.value as RendererPublicInterface
     for (let entry of this.json["backplot"]) {
       let entryType = entry["type"]
@@ -488,7 +498,7 @@ class Backplot {
     }
   }
 
-  addBoundingBoxTo() {
+  addBoundingBoxToScene() {
     const renderer = rendererC.value as RendererPublicInterface
     let geom_lines = this.boundingBoxLine2Points();
     for (let geom_line of geom_lines) {
@@ -551,14 +561,13 @@ const gcodeUploader = async (event:any) => {
     reader.readAsText(file);
     reader.onloadend = function () {
         putLinuxCNC('backplot', {"gcode": btoa(reader.result as string)}).then(json => {
-          //console.log(json);
 
           const renderer = rendererC.value as RendererPublicInterface
           renderer.scene?.clear();
 
           let backplot = new Backplot(json);
-          backplot.addBoundingBoxTo()
-          backplot.addBackplot()
+          backplot.addBoundingBoxToScene()
+          backplot.addBackplotToScene()
 
           let xlin:number = 0;
           let xinc:number = backplot.tlin / 600;
