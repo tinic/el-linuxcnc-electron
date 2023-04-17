@@ -24,11 +24,13 @@ class NullProgress:
     def progress(self): pass
 
 class StatCanon(rs274.glcanon.GLCanon, rs274.interpret.StatMixin):
-    def __init__(self, colors, geometry, lathe_view_option, stat, random):
+    def __init__(self, colors, geometry, is_foam, lathe_view_option, stat, random, arcdivision):
         rs274.glcanon.GLCanon.__init__(self, colors, geometry)
         rs274.interpret.StatMixin.__init__(self, stat, random)
         self.progress = NullProgress()
         self.lathe_view_option = lathe_view_option
+        self.arcdivision = arcdivision
+        self.is_foam = is_foam
     def is_lathe(self): return self.lathe_view_option
 
 def sortByLine(elem):
@@ -36,24 +38,30 @@ def sortByLine(elem):
 
 class BackplotGenerator( rs274.glcanon.GlCanonDraw ):
 
-    def __init__(self, inifile, islathe):
+    def __init__(self, inifile):
         self.inifile = linuxcnc.ini(inifile)
         self.inifile_path = os.path.split(inifile)[0];
         self.select_primed = None
-        self.lathe_option = islathe
         rs274.glcanon.GlCanonDraw.__init__(self, linuxcnc.stat(), None)
         live_axis_count = 0
         for i,j in enumerate("XYZABCUVW"):
             if self.stat.axis_mask & (1<<i) == 0: continue
             live_axis_count += 1
         self.num_joints = int(self.inifile.find("KINS", "JOINTS") or live_axis_count)
+        self.foam_option = bool(self.inifile.find("DISPLAY", "FOAM"))
+        temp = self.inifile.find("DISPLAY", "LATHE")
+        self.lathe_option = bool(temp == "1" or temp == "True" or temp == "true" )
+        self.a_axis_wrapped = bool(self.inifile.find("AXIS_A", "WRAPPED_ROTARY"))
+        self.b_axis_wrapped = bool(self.inifile.find("AXIS_B", "WRAPPED_ROTARY"))
+        self.c_axis_wrapped = bool(self.inifile.find("AXIS_C", "WRAPPED_ROTARY"))
 
     def load(self, filepath):
         self._current_file = filepath
         try:
             self.stat.poll()
             random_toolchanger = int(self.inifile.find("EMCIO", "RANDOM_TOOLCHANGER") or 0)
-            self.canon = StatCanon(None, self.inifile.find("DISPLAY", "GEOMETRY") or "XYZ", self.lathe_option, self.stat, random_toolchanger)
+            arcdivision = int(self.inifile.find("DISPLAY", "ARCDIVISION") or 64)
+            self.canon = StatCanon(None, self.inifile.find("DISPLAY", "GEOMETRY") or "XYZ", self.foam_option, self.lathe_option, self.stat, random_toolchanger, arcdivision)
             parameter_file = os.path.join(self.inifile_path, os.path.basename(self.inifile.find("RS274NGC", "PARAMETER_FILE") or "linuxcnc.var"));
             with tempfile.TemporaryDirectory() as tmpdirname:
                 tmp_parameter_file = os.path.join( tmpdirname, "backplot.var" )
@@ -113,8 +121,8 @@ class BackplotGenerator( rs274.glcanon.GlCanonDraw ):
                         "line": currentline,
                         "arcfeed" : arc
                     })
-                    arc = []
                     currentline = entry[0]
+                    arc = []
                 arc.append({
                     "coords": [
                         entry[1][0],
@@ -226,7 +234,7 @@ def backplot():
         file.write(gcode_string)
         file.close()
         lathe_init_path = os.path.join(os.getcwd(), "lathe.ini")
-        bp = BackplotGenerator(lathe_init_path, False)
+        bp = BackplotGenerator(lathe_init_path)
         bp.load(file_path)
         return bp.toJson()
 

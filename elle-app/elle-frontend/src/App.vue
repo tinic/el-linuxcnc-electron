@@ -430,10 +430,11 @@ class Backplot {
         this.lmax = Math.max(this.lmax, entry["line"]);
       }
       switch(entryType) {
+        case 'arcfeed':
         case 'feed':
         case 'trav':
         for (let line of entry[entryType]) {
-          if (entryType == "feed") {
+          if (entryType == "feed" || entryType == "arcfeed") {
             if (line.hasOwnProperty("rate")) {
               this.fmin = Math.min(this.fmin, line["rate"]);
               this.fmax = Math.max(this.fmax, line["rate"]);
@@ -459,11 +460,8 @@ class Backplot {
           this.tlin++;
         }
         break;
-        case 'arcfeed':
-        // TODO!!!!!
-        break;
         case 'dwell':
-        // TODO!!!!!
+        console.log("dwell not implemented!");
         break;
       }
     }
@@ -474,19 +472,16 @@ class Backplot {
     for (let entry of this.json["backplot"]) {
       let entryType = entry["type"]
       switch(entryType) {
+        case 'arcfeed':
         case 'feed':
         case 'trav':
-        entry['vector3'] = []
         for (let line of entry[entryType]) {
           if (line.hasOwnProperty("line2")) {
             let line2 = line["line2"] as Line2;
             line2.computeLineDistances();
             renderer.scene?.add( line2 );
           }
-          break;
         }
-        break;
-        case 'arcfeed':
         break;
         case 'dwell':
         break;
@@ -511,11 +506,12 @@ class Backplot {
     for (let entry of this.json["backplot"]) {
       let entryType = entry["type"]
       switch(entryType) {
+        case 'arcfeed':
         case 'feed':
         case 'trav':
         for (let line of entry[entryType]) {
           let line2 = line['line2'] as Line2;
-          if (entryType == "feed" && line.hasOwnProperty("rate")) {
+          if ((entryType == 'feed' || entryType == 'arcfeed') && line.hasOwnProperty("rate")) {
             let r = Math.floor(((clin / this.tlin) * 256) % 256);
             line2.material = clin > lineidx ? this.backplotMaterial0[r] : this.backplotMaterial1[r];
           } else {
@@ -523,8 +519,6 @@ class Backplot {
           }
           clin++;
         }
-        break;
-        case 'arcfeed':
         break;
         case 'dwell':
         break;
@@ -557,6 +551,7 @@ const gcodeUploader = async (event:any) => {
     reader.readAsText(file);
     reader.onloadend = function () {
         putLinuxCNC('backplot', {"gcode": btoa(reader.result as string)}).then(json => {
+          console.log(json)
 
           const renderer = rendererC.value as RendererPublicInterface
           renderer.scene?.clear();
