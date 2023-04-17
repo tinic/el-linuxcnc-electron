@@ -50,6 +50,7 @@
     "primeicons": "^6.0.1",
     "primevue": "^3.26.1",
     "three": "0.136",
+    "three-fatline": "^0.6.1",
     "troisjs": "^0.3.4",
     "vite": "^4.2.1",
     "vue": "^3.2.47",

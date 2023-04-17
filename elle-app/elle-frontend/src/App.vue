@@ -3,6 +3,7 @@ import { ref, onMounted, computed, watch, defineAsyncComponent } from 'vue';
 import { useDialog } from 'primevue/usedialog';
 import { Box, Camera, LambertMaterial, MeshPublicInterface, PointLight, Renderer, RendererPublicInterface, Scene } from 'troisjs'
 import * as THREE from 'three'
+import { Line2, LineGeometry, LineMaterial, LineSegments2 } from 'three-fatline';
 
 import Numpad from './components/Numpad.vue';
 import DRODisplay from './components/DRODisplay.vue';
@@ -308,6 +309,196 @@ const rendererC = ref()
 
 const materia_feed = new THREE.LineBasicMaterial( { color: 0x00ff00 } );
 const materia_trav = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+const materia_bbox = new THREE.LineBasicMaterial( { color: 0x0000ff } );
+
+class Backplot {
+
+  json:any;
+
+  xmin:number;
+  ymin:number;
+  zmin:number;
+  xmax:number;
+  ymax:number;
+  zmax:number;
+
+  fmin:number=+999999;
+  fmax:number=-999999;
+
+  lmin:number=+999999;
+  lmax:number=-999999;
+
+  tlin:number=0;
+
+  xoff:number;
+  yoff:number;
+  zoff:number;
+  scal:number;
+  omat:THREE.Matrix4 = new THREE.Matrix4();
+
+  boundingBoxMaterial:LineMaterial = new LineMaterial( { 
+		color: 0x0000ff, 
+		linewidth: 1,
+    resolution: new THREE.Vector2(800,600)
+  });
+
+  backplotMaterial0:LineMaterial = new LineMaterial( { 
+		color: 0x00ff00, 
+		linewidth: 1,
+    resolution: new THREE.Vector2(800,600)
+  });
+
+  backplotMaterial1:LineMaterial = new LineMaterial( { 
+		color: 0x00ff00, 
+		linewidth: 3,
+    resolution: new THREE.Vector2(800,600)
+  });
+
+  constructor(_json:any) {
+    this.json = _json;
+
+    this.xmin = this.json["extents"][0];
+    this.ymin = this.json["extents"][1];
+    this.zmin = this.json["extents"][2];
+    this.xmax = this.json["extents"][3];
+    this.ymax = this.json["extents"][4];
+    this.zmax = this.json["extents"][5];
+
+    this.xoff = -(this.xmax - this.xmin) / 2 - this.xmin;
+    this.yoff = -(this.ymax - this.ymin) / 2 - this.ymin;
+    this.zoff = -(this.zmax - this.zmin) / 2 - this.zmin;
+
+    let maxx = Math.abs(this.xmax - this.xmin);
+    let maxy = Math.abs(this.ymax - this.ymin);
+    let maxz = Math.abs(this.zmax - this.zmin);
+
+    this.scal  = 1.0 / Math.max(maxz,Math.max(maxx, maxy))
+
+    let smat = new THREE.Matrix4().makeScale(this.scal, this.scal, this.scal);
+    let tmat = new THREE.Matrix4().makeTranslation(this.xoff, this.yoff, this.zoff)
+
+    this.omat.identity()
+    this.omat.multiply(smat)
+    this.omat.multiply(tmat)
+
+    this.fixupMinMax();
+
+    this.createLines2()
+  }
+
+  createLines2() {
+    for (let entry of this.json["backplot"]) {
+      let entryType = entry["type"]
+      if (entry.hasOwnProperty("line")) {
+        this.lmin = Math.min(this.lmin, entry["line"]);
+        this.lmax = Math.max(this.lmax, entry["line"]);
+      }
+
+      switch(entryType) {
+        case 'feed':
+        case 'trav':
+        for (let line of entry[entryType]) {
+          if (entryType == "feed") {
+            if (line.hasOwnProperty("rate")) {
+              this.fmin = Math.min(this.fmin, line["rate"]);
+              this.fmax = Math.max(this.fmax, line["rate"]);
+            }
+          }
+          let points:Array<number> = [];
+          let l0 = new THREE.Vector3( line["coords"][0], line["coords"][1], line["coords"][2]).applyMatrix4(this.omat);
+          let l1 = new THREE.Vector3( line["coords"][3], line["coords"][4], line["coords"][5]).applyMatrix4(this.omat);
+          points.push(l0.x, l0.y, l0.z, l1.x, l1.y, l1.z);
+          line['points'] = points;
+          var geometry:LineGeometry = new LineGeometry();
+          geometry.setPositions(points);
+          line['geometry'] = geometry;
+          let line2 = new Line2( geometry,  this.backplotMaterial0);
+          line2.computeLineDistances();
+          line['line2'] = line2;
+          line2.material = this.backplotMaterial1;
+          this.tlin++;
+          break;
+        }
+        break;
+        case 'arcfeed':
+        break;
+        case 'dwell':
+        break;
+      }
+    }
+  }
+
+  fixupMinMax() {
+    this.xmin += this.xoff;
+    this.xmax += this.xoff;
+    this.ymin += this.yoff;
+    this.ymax += this.yoff;
+    this.zmin += this.zoff;
+    this.zmax += this.zoff;
+
+    this.xmin *= this.scal;
+    this.xmax *= this.scal;
+    this.ymin *= this.scal;
+    this.ymax *= this.scal;
+    this.zmin *= this.scal;
+    this.zmax *= this.scal;
+  }
+
+  addBackplot() {
+    const renderer = rendererC.value as RendererPublicInterface
+    for (let entry of this.json["backplot"]) {
+      let entryType = entry["type"]
+      switch(entryType) {
+        case 'feed':
+        case 'trav':
+        entry['vector3'] = []
+        for (let line of entry[entryType]) {
+          if (line.hasOwnProperty("line2")) {
+            let line2 = line["line2"] as Line2;
+            line2.computeLineDistances();
+            renderer.scene?.add( line2 );
+          }
+          break;
+        }
+        break;
+        case 'arcfeed':
+        break;
+        case 'dwell':
+        break;
+      }
+    }
+  }
+
+  addBoundingBoxTo() {
+    const renderer = rendererC.value as RendererPublicInterface
+    let geom_lines = this.boundingBoxLine2Points();
+    for (let geom_line of geom_lines) {
+      var geometry = new LineGeometry();
+      geometry.setPositions(geom_line);
+      let line = new Line2( geometry,  this.boundingBoxMaterial);
+      line.computeLineDistances();
+      renderer.scene?.add( line );
+    }
+  }
+
+  boundingBoxLine2Points():Array<Array<number>> {
+    let a:Array<Array<number>> = [];
+    a.push([this.xmin,this.ymin,this.zmin,this.xmax,this.ymin,this.zmin])
+    a.push([this.xmax,this.ymin,this.zmin,this.xmax,this.ymax,this.zmin])
+    a.push([this.xmax,this.ymax,this.zmin,this.xmin,this.ymax,this.zmin])
+    a.push([this.xmin,this.ymax,this.zmin,this.xmin,this.ymin,this.zmin])
+    a.push([this.xmin,this.ymin,this.zmax,this.xmax,this.ymin,this.zmax])
+    a.push([this.xmax,this.ymin,this.zmax,this.xmax,this.ymax,this.zmax])
+    a.push([this.xmax,this.ymax,this.zmax,this.xmin,this.ymax,this.zmax])
+    a.push([this.xmin,this.ymax,this.zmax,this.xmin,this.ymin,this.zmax])
+    a.push([this.xmin,this.ymin,this.zmin,this.xmin,this.ymin,this.zmax])
+    a.push([this.xmax,this.ymin,this.zmin,this.xmax,this.ymin,this.zmax])
+    a.push([this.xmax,this.ymax,this.zmin,this.xmax,this.ymax,this.zmax])
+    a.push([this.xmin,this.ymax,this.zmin,this.xmin,this.ymax,this.zmax])
+    return a;
+  }
+
+}
 
 const gcodeUploader = async (event:any) => {
     const file = event.files[0];
@@ -321,51 +512,33 @@ const gcodeUploader = async (event:any) => {
           const renderer = rendererC.value as RendererPublicInterface
           renderer.scene?.clear();
 
-          let maxx = json["extents"][3]-json["extents"][0]
-          let maxy = json["extents"][4]-json["extents"][1]
-          let maxz = json["extents"][5]-json["extents"][2]
-          let mul  = 1.0 / Math.max(maxz,Math.max(maxx, maxy))
+          let backplot = new Backplot(json);
+          backplot.addBoundingBoxTo()
+          backplot.addBackplot()
 
-          for (let entry of json["backplot"]) {
-            switch(entry["type"]) {
-              case 'feed':
-              for (let line of entry["feed"]) {
-                const points = [];
-                points.push( new THREE.Vector3( line["coords"][0] * mul, line["coords"][1] * mul, line["coords"][2] * mul) );
-                points.push( new THREE.Vector3( line["coords"][3] * mul, line["coords"][4] * mul, line["coords"][5] * mul) );
-                const geometry = new THREE.BufferGeometry().setFromPoints( points );
-                const mesh = new THREE.Line( geometry, materia_feed );
-                renderer.scene?.add( mesh );
-                break;
-              }
-              break;
-              case 'arcfeed':
-              for (let line of entry["arcfeed"]) {
-                const points = [];
-                points.push( new THREE.Vector3( line["coords"][0] * mul, line["coords"][1] * mul, line["coords"][2] * mul) );
-                points.push( new THREE.Vector3( line["coords"][3] * mul, line["coords"][4] * mul, line["coords"][5] * mul) );
-                const geometry = new THREE.BufferGeometry().setFromPoints( points );
-                const mesh = new THREE.Line( geometry, materia_feed );
-                renderer.scene?.add( mesh );
-                break;
-              }
-              break;
-              case 'trav':
-              for (let line of entry["trav"]) {
-                const points = [];
-                points.push( new THREE.Vector3( line["coords"][0] * mul, line["coords"][1] * mul, line["coords"][2] * mul) );
-                points.push( new THREE.Vector3( line["coords"][3] * mul, line["coords"][4] * mul, line["coords"][5] * mul) );
-                const geometry = new THREE.BufferGeometry().setFromPoints( points );
-                const mesh = new THREE.Line( geometry, materia_trav );
-                renderer.scene?.add( mesh );
-              }
-              break;
-              case 'dwell':
-              break;
-            }
-          }
-
+          let xlin:number = 0;
           renderer.onBeforeRender(() => {
+            let clin:number = 0;
+            for (let entry of backplot.json["backplot"]) {
+              let entryType = entry["type"]
+              switch(entryType) {
+                case 'feed':
+                case 'trav':
+                for (let line of entry[entryType]) {
+                  let line2 = line['line2'] as Line2;
+                  line2.material = clin > xlin ? backplot.backplotMaterial0 : backplot.backplotMaterial1;
+                  clin++;
+                  break;
+                }
+                break;
+                case 'arcfeed':
+                break;
+                case 'dwell':
+                break;
+              }
+            }
+            xlin+=8;
+            xlin %= backplot.tlin;
           })
         })
       }
@@ -979,11 +1152,10 @@ onMounted(() => {
     </div>
     <div v-if="selectedMenu==1" class="flex-grow-1 flex align-items-center justify-content-center bg-blue-500 ">
       <div class="flex flex-column">
-        <FileUpload mode="basic" name="elle[]" url="/api/upload" accept="text/plain" customUpload @uploader="gcodeUploader" />
+        <FileUpload mode="basic" name="elle[]" url="/api/upload" accept="text/plain" customUpload :auto="true" @uploader="gcodeUploader" />
         <Renderer ref="rendererC" antialias :orbit-ctrl="{ enableDamping: true }" width="800" height="600">
-          <Camera :position="{ z: 10 }" />
+          <Camera :position="{ z: 1.5 }" />
           <Scene>
-            <PointLight :position="{ y: 50, z: 50 }" />
           </Scene>
         </Renderer>
       </div>
