@@ -307,10 +307,6 @@ const quitApplication = () => {
 
 const rendererC = ref()
 
-const materia_feed = new THREE.LineBasicMaterial( { color: 0x00ff00 } );
-const materia_trav = new THREE.LineBasicMaterial( { color: 0xff0000 } );
-const materia_bbox = new THREE.LineBasicMaterial( { color: 0x0000ff } );
-
 class Backplot {
 
   json:any;
