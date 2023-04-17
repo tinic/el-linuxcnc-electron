@@ -486,7 +486,7 @@ class Backplot {
         case 'dwell':
         break;
       }
-    }
+    } 
   }
 
   addBoundingBoxToScene() {
@@ -551,8 +551,6 @@ const gcodeUploader = async (event:any) => {
     reader.readAsText(file);
     reader.onloadend = function () {
         putLinuxCNC('backplot', {"gcode": btoa(reader.result as string)}).then(json => {
-          console.log(json)
-
           const renderer = rendererC.value as RendererPublicInterface
           renderer.scene?.clear();
 
