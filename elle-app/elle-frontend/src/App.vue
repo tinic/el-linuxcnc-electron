@@ -342,20 +342,42 @@ class Backplot {
     resolution: new THREE.Vector2(800,600)
   });
 
-  backplotMaterial0:LineMaterial = new LineMaterial( { 
-		color: 0x00ff00, 
-		linewidth: 1,
-    resolution: new THREE.Vector2(800,600)
-  });
-
-  backplotMaterial1:LineMaterial = new LineMaterial( { 
-		color: 0x00ff00, 
-		linewidth: 3,
-    resolution: new THREE.Vector2(800,600)
-  });
-
+  backplotMaterial0:Array<LineMaterial> = new Array<LineMaterial>();
+  backplotMaterial1:Array<LineMaterial> = new Array<LineMaterial>();
+  backplotMaterial2:LineMaterial;
+  backplotMaterial3:LineMaterial;
+    
   constructor(_json:any) {
     this.json = _json;
+
+    let color0 = new THREE.Color(0xff0000);
+    let color1 = new THREE.Color(0x0000ff);
+
+    this.backplotMaterial2 = new LineMaterial( { 
+      color: 0xff00ff, 
+      linewidth: 1,
+      resolution: new THREE.Vector2(800,600)
+    })
+
+    this.backplotMaterial3 = new LineMaterial( { 
+      color: 0xff00ff, 
+      linewidth: 3,
+      resolution: new THREE.Vector2(800,600)
+    })
+
+    for (let c = 0; c < 256; c++) {
+      this.backplotMaterial0[c] = new LineMaterial( { 
+        color: color0.lerpHSL(color1, c/32768).getHex(), 
+        linewidth: 1,
+        resolution: new THREE.Vector2(800,600)
+      })
+
+      this.backplotMaterial1[c] = new LineMaterial( { 
+        color: color0.lerpHSL(color1, c/32768).getHex(), 
+        linewidth: 4,
+        resolution: new THREE.Vector2(800,600)
+      })
+    }
 
     this.xmin = this.json["extents"][0];
     this.ymin = this.json["extents"][1];
@@ -393,7 +415,6 @@ class Backplot {
         this.lmin = Math.min(this.lmin, entry["line"]);
         this.lmax = Math.max(this.lmax, entry["line"]);
       }
-
       switch(entryType) {
         case 'feed':
         case 'trav':
@@ -412,12 +433,10 @@ class Backplot {
           var geometry:LineGeometry = new LineGeometry();
           geometry.setPositions(points);
           line['geometry'] = geometry;
-          let line2 = new Line2( geometry,  this.backplotMaterial0);
+          let line2 = new Line2( geometry,  this.backplotMaterial0[0]);
           line2.computeLineDistances();
           line['line2'] = line2;
-          line2.material = this.backplotMaterial1;
           this.tlin++;
-          break;
         }
         break;
         case 'arcfeed':
@@ -429,12 +448,12 @@ class Backplot {
   }
 
   fixupMinMax() {
-    this.xmin += this.xoff;
-    this.xmax += this.xoff;
-    this.ymin += this.yoff;
-    this.ymax += this.yoff;
-    this.zmin += this.zoff;
-    this.zmax += this.zoff;
+    this.xmin += this.xoff - 0.01;
+    this.xmax += this.xoff + 0.01;
+    this.ymin += this.yoff - 0.01;
+    this.ymax += this.yoff + 0.01;
+    this.zmin += this.zoff - 0.01;
+    this.zmax += this.zoff + 0.01;
 
     this.xmin *= this.scal;
     this.xmax *= this.scal;
@@ -502,12 +521,11 @@ class Backplot {
 
 const gcodeUploader = async (event:any) => {
     const file = event.files[0];
-    console.log(file)
     const reader = new FileReader();
     reader.readAsText(file);
     reader.onloadend = function () {
         putLinuxCNC('backplot', {"gcode": btoa(reader.result as string)}).then(json => {
-          console.log(json);
+          //console.log(json);
 
           const renderer = rendererC.value as RendererPublicInterface
           renderer.scene?.clear();
@@ -526,9 +544,13 @@ const gcodeUploader = async (event:any) => {
                 case 'trav':
                 for (let line of entry[entryType]) {
                   let line2 = line['line2'] as Line2;
-                  line2.material = clin > xlin ? backplot.backplotMaterial0 : backplot.backplotMaterial1;
+                  if (entryType == "feed" && line.hasOwnProperty("rate")) {
+                    let r = Math.floor(((clin / backplot.tlin) * 256) % 256);
+                    line2.material = clin > xlin ? backplot.backplotMaterial0[r] : backplot.backplotMaterial1[r];
+                  } else {
+                    line2.material = clin > xlin ? backplot.backplotMaterial2 : backplot.backplotMaterial3;
+                  }
                   clin++;
-                  break;
                 }
                 break;
                 case 'arcfeed':
@@ -537,6 +559,7 @@ const gcodeUploader = async (event:any) => {
                 break;
               }
             }
+            //xlin++;
             xlin+=8;
             xlin %= backplot.tlin;
           })
