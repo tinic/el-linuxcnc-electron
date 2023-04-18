@@ -2,73 +2,77 @@
 import { onMounted, inject } from "vue";
 import { useDialog } from "primevue/usedialog";
 
-import json from '../assets/presets.json';
+import json from "../assets/presets.json";
 import { showCompletionScript } from "yargs";
 import { emit } from "process";
 
-import DialogRef from 'primevue/dialog'
+import DialogRef from "primevue/dialog";
 
-const emit = defineEmits(['selected']);
+const emit = defineEmits(["selected"]);
 const dialogRef = inject("dialogRef") as any;
 const dialog = useDialog();
 
-var headers:string[] = [];
+var headers: string[] = [];
 
-var axis:number = 0;
-for (var i:number = 0; i < json.length; i++) {
-    if (json[i].axis == dialogRef.value.data.axis) {
-        axis = i;
-        break;
-    }
+var axis: number = 0;
+for (var i: number = 0; i < json.length; i++) {
+  if (json[i].axis == dialogRef.value.data.axis) {
+    axis = i;
+    break;
+  }
 }
-for (var i:number = 0; i < json[axis].sections.length; i++) {
-    headers.push(json[axis].sections[i].header);
+for (var i: number = 0; i < json[axis].sections.length; i++) {
+  headers.push(json[axis].sections[i].header);
 }
 
-const selectPitch = (name:string, pitch:number, type:string) => {
-    emit('selected',dialogRef.value.data.axis,name,pitch,type);
-    dialogRef.value.close();
+const selectPitch = (name: string, pitch: number, type: string) => {
+  emit("selected", dialogRef.value.data.axis, name, pitch, type);
+  dialogRef.value.close();
 };
 
-onMounted(() => {
-});
-
+onMounted(() => {});
 </script>
 
-<template>  
-    <TabView>
-        <TabPanel v-for="(title, sindex) in headers" :header="title">
-            <div class="grid dro-font-preset-button">
-                <div class="col-3 p-1" v-for="(pitch, pindex) in json[axis].sections[sindex].pitches">
-                    <button @click="selectPitch(pitch.name,pitch.value,pitch.type)" class="w-full h-full button-pitchselector">{{ pitch.name }}</button>
-                    <br/>
-                </div>            
-            </div>
-        </TabPanel>
-    </TabView>
+<template>
+  <TabView>
+    <TabPanel v-for="(title, sindex) in headers" :header="title">
+      <div class="grid dro-font-preset-button">
+        <div
+          class="col-3 p-1"
+          v-for="(pitch, pindex) in json[axis].sections[sindex].pitches"
+        >
+          <button
+            @click="selectPitch(pitch.name, pitch.value, pitch.type)"
+            class="w-full h-full button-pitchselector"
+          >
+            {{ pitch.name }}
+          </button>
+          <br />
+        </div>
+      </div>
+    </TabPanel>
+  </TabView>
 </template>
 
 <style>
 .button-pitchselector {
-    background: #333;
+  background: #333;
 }
 
 .p-tabview {
-	height: 100%;
-	display: flex;
-	flex-direction: column;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .p-tabview-panels {
-	flex-grow: 10;
+  flex-grow: 10;
 }
 
 .dro-font-preset-button {
-    font-family: 'iosevka';
-    font-weight: bold;
-    font-size: 1.75em;
-    text-align: center;
-  
-  }
- </style>
- 
+  font-family: "iosevka";
+  font-weight: bold;
+  font-size: 1.75em;
+  text-align: center;
+}
+</style>
