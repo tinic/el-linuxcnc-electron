@@ -332,6 +332,8 @@ class Backplot {
   scal:number;
   omat:THREE.Matrix4 = new THREE.Matrix4();
 
+  pruningMinLength:number = 0.005;
+
   boundingBoxMaterial:LineMaterial = new LineMaterial( { 
 		color: 0xaaaaaa, 
 		linewidth: 1,
@@ -350,6 +352,7 @@ class Backplot {
   backplotMaterial3:LineMaterial;
     
   constructor(_json:any) {
+
     this.json = _json;
 
     let color0 = new THREE.Color(0xff0000);
@@ -419,7 +422,52 @@ class Backplot {
     this.zmin *= this.scal;
     this.zmax *= this.scal;
 
+    this.pruneShortSegments()
     this.createLine2Geometry()
+  }
+
+  pruneShortSegments() {
+    for (let entry of this.json["backplot"]) {
+      let entryType = entry["type"]
+      switch(entryType) {
+        case 'arcfeed':
+        case 'feed':
+        case 'trav':
+        let pruned = []
+        let pruning = false;
+        let pruningIndex:number = 0;
+        let lines = entry[entryType];
+        for (let c = 0; c < lines.length; c++) {
+          let line = lines[c];
+          let l0 = new THREE.Vector3( 
+            pruning ? lines[pruningIndex]["coords"][0] : line["coords"][0], 
+            pruning ? lines[pruningIndex]["coords"][1] : line["coords"][1], 
+            pruning ? lines[pruningIndex]["coords"][2] : line["coords"][2]).applyMatrix4(this.omat);
+          let l1 = new THREE.Vector3(
+            line["coords"][3], 
+            line["coords"][4], 
+            line["coords"][5]).applyMatrix4(this.omat);
+          if (l0.distanceTo(l1) < this.pruningMinLength && c != (lines.length - 1)) {
+            if (!pruning) {
+              pruning = true
+              pruningIndex = c;
+            }
+          } else {
+            if (pruning) {
+              pruning = false;
+              line["coords"][0] = lines[pruningIndex]["coords"][0];
+              line["coords"][1] = lines[pruningIndex]["coords"][1];
+              line["coords"][2] = lines[pruningIndex]["coords"][2];
+            }
+            pruned.push(line);
+          }
+        }
+        entry[entryType] = pruned;
+        break;
+        case 'dwell':
+        break;
+      }
+    }
   }
 
   createLine2Geometry() {
