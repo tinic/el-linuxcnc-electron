@@ -62,9 +62,24 @@
   },
   "build": {
     "appId": "net.tinic.elle.app",
-    "productName": "Elle",
+    "productName": "Elle Nightly",
     "copyright": "Copyright © 2023 ${author}",
     "publish": [],
+    "linux": {
+      "target": "deb",
+      "maintainer": "tinicuro@gmail.com",
+      "vendor": "Obtainium Consulting",
+      "category": "Utility"
+    },
+    "deb": {
+      "depends": [
+        "expect",
+        "python3",
+        "linuxcnc-uspace",
+        "linuxcnc-uspace-dev",
+        "mesaflash"
+      ]
+    },
     "nsis": {
       "oneClick": true,
       "allowToChangeInstallationDirectory": false,
