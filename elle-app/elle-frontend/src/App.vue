@@ -6,17 +6,7 @@ import { Camera, Renderer, RendererPublicInterface, Scene } from "troisjs";
 import Numpad from "./components/Numpad.vue";
 import DRODisplay from "./components/DRODisplay.vue";
 import Backplot from "./Backplot";
-
-let halOutURL = "http://localhost:8000/hal/hal_out";
-let halInURL = "http://localhost:8000/hal/hal_in";
-let linuxcncURL = "http://localhost:8001/linuxcnc/";
-
-var userAgent = navigator.userAgent.toLowerCase();
-if (userAgent.indexOf(" electron/") < 0) {
-  halOutURL = "http://lathev2:8000/hal/hal_out";
-  halInURL = "http://lathev2:8000/hal/hal_in";
-  linuxcncURL = "http://lathev2:8001/linuxcnc/";
-}
+import { putHalOut, putLinuxCNC, getHalIn } from "./HAL"
 
 const selectedMenu = ref(0);
 
@@ -117,6 +107,7 @@ enum NumpadInputStage {
 }
 
 const entryActive = ref(0);
+
 let numpadInputStage = NumpadInputStage.none;
 let numbersClicked = new Array<string>();
 let numbersNegative = false;
@@ -342,55 +333,6 @@ const gcodeUploader = async (event: any) => {
 
 let halOutScheduled: boolean = false;
 let updateInterval: NodeJS.Timer;
-
-interface HalIn {
-  position_z: number;
-  position_x: number;
-  position_a: number;
-  speed_rps: number;
-}
-
-async function putHalOut(halOut: Object) {
-  try {
-    const response = await fetch(halOutURL, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(halOut),
-    });
-    const result = await response.json();
-    return result;
-  } catch {
-    // nop
-  }
-  return {};
-}
-
-async function putLinuxCNC(command: string, data: Object) {
-  try {
-    const response = await fetch(linuxcncURL + command, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-    const result = await response.json();
-    return result;
-  } catch {
-    // nop
-  }
-  return {};
-}
-
-function getHalIn(): Promise<HalIn[]> {
-  return fetch(halInURL)
-    .then((res) => res.json())
-    .then((res) => {
-      return res as HalIn[];
-    });
-}
 
 function startPoll() {
   updateInterval = setInterval(() => {
