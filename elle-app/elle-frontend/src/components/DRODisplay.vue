@@ -34,6 +34,7 @@ interface Props {
   numberentry: number;
   entryActive: number;
   metric: boolean;
+  cursorpos: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -52,6 +53,7 @@ const props = withDefaults(defineProps<Props>(), {
   numberentry: 0,
   entryActive: 0,
   metric: true,
+  cursorpos: 0,
 });
 
 enum ZeroEntry {
@@ -78,6 +80,14 @@ const xposUnitFormatted = computed(() => {
   return (props.metric ? "mm" : "″ ") + " ".repeat(4);
 });
 
+const xposCursorFormatted = computed(() => {
+  if (props.entryActive == NumberEntry.xpos) {
+    return " ".repeat(props.cursorpos + (props.metric ? 8 : 7)) + "_";
+  } else {
+    return "";
+  }
+});
+
 const zposFormatted = computed(() => {
   let zpos = props.zpos;
   if (props.entryActive == NumberEntry.zpos) {
@@ -91,6 +101,14 @@ const zposFormatted = computed(() => {
 
 const zposUnitFormatted = computed(() => {
   return (props.metric ? "mm" : "″ ") + " ".repeat(4);
+});
+
+const zposCursorFormatted = computed(() => {
+  if (props.entryActive == NumberEntry.zpos) {
+    return " ".repeat(props.cursorpos + (props.metric ? 8 : 7)) + "_";
+  } else {
+    return "";
+  }
 });
 
 const aposFormatted = computed(() => {
@@ -110,6 +128,14 @@ const aposFormatted = computed(() => {
 
 const aposUnitFormatted = computed(() => {
   return "°" + " ".repeat(5);
+});
+
+const aposCursorFormatted = computed(() => {
+  if (props.entryActive == NumberEntry.apos) {
+    return " ".repeat(props.cursorpos + 8) + "_";
+  } else {
+    return "";
+  }
 });
 
 const rpmsFormatted = computed(() => {
@@ -132,6 +158,14 @@ const xpitchUnitFormatted = computed(() => {
   return props.metric ? "mm/rev" : "″/rev ";
 });
 
+const xpitchCursorFormatted = computed(() => {
+  if (props.entryActive == NumberEntry.xpitch) {
+    return " ".repeat(props.cursorpos + (props.metric ? 8 : 7)) + "_";
+  } else {
+    return "";
+  }
+});
+
 const zpitchFormatted = computed(() => {
   let zpitch = props.zpitch;
   if (props.entryActive == NumberEntry.zpitch) {
@@ -146,6 +180,15 @@ const zpitchFormatted = computed(() => {
 const zpitchUnitFormatted = computed(() => {
   return props.metric ? "mm/rev" : "″/rev ";
 });
+
+const zpitchCursorFormatted = computed(() => {
+  if (props.entryActive == NumberEntry.zpitch) {
+    return " ".repeat(props.cursorpos + (props.metric ? 8 : 7)) + "_";
+  } else {
+    return "";
+  }
+});
+
 
 const rpmsUnitFormatted = computed(() => {
   return "rpm" + " ".repeat(3);
@@ -234,7 +277,7 @@ const zpitchLabel = computed(() => {
   <div class="bg-gray-900 inline dro-font-display p-2 keep-spaces">
     <div @click="xposClicked" class="inline">
       <span v-html="xposLabel" />{{ xposFormatted }}<font size="-1">&nbsp;</font
-      ><font color="#aaaaaa">{{ xposUnitFormatted }}</font>
+><font color="#aaaaaa">{{ xposUnitFormatted }}</font>
     </div>
     <button
       @click="xpos0Clicked"
@@ -347,6 +390,21 @@ const zpitchLabel = computed(() => {
       mm↔in
     </button>
     <br />
+    <div style="position: absolute; top: 0.71em">
+      <span style="color:#ff0000">{{xposCursorFormatted}}</span>
+    </div>
+    <div style="position: absolute; top: 2.40em">
+      <span style="color:#ff0000">{{zposCursorFormatted}}</span>
+    </div>
+    <div style="position: absolute; top: 4.05em">
+      <span style="color:#ff0000">{{aposCursorFormatted}}</span>
+    </div>
+    <div style="position: absolute; top: 5.72em">
+      <span style="color:#ff0000">{{xpitchCursorFormatted}}</span>
+    </div>
+    <div style="position: absolute; top: 7.40em">
+      <span style="color:#ff0000">{{zpitchCursorFormatted}}</span>
+    </div>
   </div>
 </template>
 

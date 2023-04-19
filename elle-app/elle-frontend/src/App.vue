@@ -30,6 +30,7 @@ const xpitchlabel = ref("…");
 const zpitchlabel = ref("…");
 const xpitchangle = ref(0);
 const metric = ref(true);
+const cursorpos = ref(0);
 
 let zforward: boolean = true;
 let xforward: boolean = true;
@@ -127,7 +128,18 @@ const numberClicked = (entry: number, value: number) => {
   treatOffClickAsEnter();
   numbersClicked.length = 0;
   numpadInputStage = NumpadInputStage.start;
-  numberentry.value = numbersPrevious = metric.value ? value : value / 25.4;
+  switch (entry) {
+    case 1:
+    case 2:
+    case 4:
+    case 5:
+    console.log(entry + " " + value);
+    numberentry.value = numbersPrevious = metric.value ? value : value / 25.4;
+    break;
+    case 3:
+    numberentry.value = numbersPrevious = value;
+    break;
+  }
   entryActive.value = entry;
   numbersNegative = false;
 };
@@ -139,8 +151,14 @@ function calcNumber(): number {
   if (dotIndex >= 0) {
     integerSize = dotIndex;
     fractionSize = numbersClicked.length - dotIndex - 1;
+    cursorpos.value = numbersClicked.length - dotIndex + 1;
   } else {
     integerSize = numbersClicked.length;
+    if (numbersClicked.length == 0) {
+      cursorpos.value = 0;
+    } else {
+      cursorpos.value = 1;
+    }
   }
   let value: number = 0;
   for (let i = 0; i < integerSize; i++) {
@@ -157,8 +175,18 @@ function calcNumber(): number {
 }
 
 function setFinalNumber(value: number) {
-  if (!metric.value) {
-    value = value * 25.4;
+  switch (entryActive.value) {
+    case 1:
+    case 2:
+    case 4:
+    case 5:
+    if (!metric.value) {
+      value = value * 25.4;
+    }
+    break;
+    case 3:
+    //nop
+    break;
   }
   switch (entryActive.value) {
     case 1:
@@ -186,6 +214,7 @@ function setFinalNumber(value: number) {
   numpadInputStage = NumpadInputStage.none;
   numbersClicked.length = 0;
   entryActive.value = 0;
+  cursorpos.value = 0;
 }
 
 const numPadClicked = (key: string) => {
@@ -198,6 +227,7 @@ const numPadClicked = (key: string) => {
       numberentry.value = numbersPrevious;
       numbersClicked.length = 0;
       entryActive.value = 0;
+      cursorpos.value = 0;
       break;
     case "Enter":
       if (numpadInputStage == NumpadInputStage.start) {
@@ -212,6 +242,9 @@ const numPadClicked = (key: string) => {
       numpadInputStage = NumpadInputStage.entry;
       if (numbersClicked.at(-1) == ".") {
         numbersClicked.pop();
+      }
+      if (numbersClicked.length <= 1) {
+        cursorpos.value = 0;
       }
       numbersClicked.pop();
       numberentry.value = calcNumber();
@@ -808,6 +841,7 @@ onMounted(() => {
           :xpitchlabel="xpitchlabel"
           :zpitchlabel="zpitchlabel"
           :metric="metric"
+          :cursorpos="cursorpos"
           @numberClicked="numberClicked"
           @zeroClicked="zeroClicked"
           @pitchClicked="pitchClicked"
