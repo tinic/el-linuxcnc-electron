@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from "path";
-import AppUpdater from "./auto-update";
 
 import { app, BrowserWindow, BrowserWindowConstructorOptions, ipcMain, screen } from "electron";
 import { isDev } from "./config";
@@ -33,9 +32,6 @@ async function createWindow() {
 
     if (appBounds !== undefined && appBounds !== null) Object.assign(BrowserWindowOptions, appBounds);
     mainWindow = new BrowserWindow(BrowserWindowOptions);
-
-    // auto updated
-    if (!isDev) AppUpdater();
 
     // Remove menu bar
     mainWindow.removeMenu();
