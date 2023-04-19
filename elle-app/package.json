@@ -23,7 +23,7 @@
     "electron:builder": "electron-builder --publish never",
     "app:build": "yarn prod:rename && yarn build:front && yarn electron:build && yarn electron:builder",
     "app:build:nightly": "set APP_IS_NIGHTLY=yes && set APP_IS_DEV=no && yarn nightly:rename && yarn build:front && yarn electron:build && yarn electron:builder",
-    "nightly:rename": "json -I -f package.json -e \"this.name='elle-app'\" && json -I -f package.json -e \"this.build.productName='Elle Nightly'\" && json -I -f package.json -e \"this.build.appId='net.tinic.elle.app'\"",
+    "nightly:rename": "json -I -f package.json -e \"this.name='elle-app'\" && json -I -f package.json -e \"this.build.productName='Elle-Nightly'\" && json -I -f package.json -e \"this.build.appId='net.tinic.elle.app'\"",
     "prod:rename": "json -I -f package.json -e \"this.name='elle-app'\" && json -I -f package.json -e \"this.build.productName='Elle'\" && json -I -f package.json -e \"this.build.appId='net.tinic.elle.app'\"",
     "electron-rebuild": "./node_modules/.bin/electron-rebuild",
     "sqlite-rebuild": "cd node_modules/better-sqlite3 && npm run build-release",
@@ -62,7 +62,7 @@
   },
   "build": {
     "appId": "net.tinic.elle.app",
-    "productName": "Elle Nightly",
+    "productName": "Elle-Nightly",
     "copyright": "Copyright © 2023 ${author}",
     "publish": [],
     "linux": {
