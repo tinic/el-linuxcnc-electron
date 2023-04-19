@@ -133,7 +133,6 @@ const numberClicked = (entry: number, value: number) => {
     case 2:
     case 4:
     case 5:
-    console.log(entry + " " + value);
     numberentry.value = numbersPrevious = metric.value ? value : value / 25.4;
     break;
     case 3:
