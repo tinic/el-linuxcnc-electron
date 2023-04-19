@@ -34,5 +34,6 @@
 elle-app/dist
 elle-app/dist_electron
 elle-app/node_modules
+elle-app/build
 
 **/.DS_Store

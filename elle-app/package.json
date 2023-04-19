@@ -83,11 +83,6 @@
         "python3-waitress"
       ]
     },
-    "nsis": {
-      "oneClick": true,
-      "allowToChangeInstallationDirectory": false,
-      "deleteAppDataOnUninstall": true
-    },
     "files": [
       "dist/**/*"
     ],
@@ -102,7 +97,7 @@
     ],
     "directories": {
       "buildResources": "assets",
-      "output": "dist_electron"
+      "output": "build"
     }
   }
 }
