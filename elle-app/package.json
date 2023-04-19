@@ -62,7 +62,7 @@
   },
   "build": {
     "appId": "net.tinic.elle.app",
-    "productName": "Elle-Nightly",
+    "productName": "Elle",
     "copyright": "Copyright © 2023 ${author}",
     "publish": [],
     "linux": {
