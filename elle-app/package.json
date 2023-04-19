@@ -77,7 +77,10 @@
         "python3",
         "linuxcnc-uspace",
         "linuxcnc-uspace-dev",
-        "mesaflash"
+        "mesaflash",
+        "python3-flask",
+        "python3-flask-cors",
+        "python3-waitress"
       ]
     },
     "nsis": {
