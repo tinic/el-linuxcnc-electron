@@ -10,51 +10,50 @@ if (userAgent.indexOf(" electron/") < 0) {
 }
 
 export interface HalIn {
-    position_z: number;
-    position_x: number;
-    position_a: number;
-    speed_rps: number;
-  }
+  position_z: number;
+  position_x: number;
+  position_a: number;
+  speed_rps: number;
+}
 
 export async function putHalOut(halOut: Object) {
-    try {
-      const response = await fetch(halOutURL, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(halOut),
-      });
-      const result = await response.json();
-      return result;
-    } catch {
-      // nop
-    }
-    return {};
+  try {
+    const response = await fetch(halOutURL, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(halOut),
+    });
+    const result = await response.json();
+    return result;
+  } catch {
+    // nop
   }
-  
+  return {};
+}
+
 export async function putLinuxCNC(command: string, data: Object) {
-    try {
-      const response = await fetch(linuxcncURL + command, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-      const result = await response.json();
-      return result;
-    } catch {
-      // nop
-    }
-    return {};
+  try {
+    const response = await fetch(linuxcncURL + command, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    const result = await response.json();
+    return result;
+  } catch {
+    // nop
   }
-  
+  return {};
+}
+
 export function getHalIn(): Promise<HalIn[]> {
-    return fetch(halInURL)
-      .then((res) => res.json())
-      .then((res) => {
-        return res as HalIn[];
-      });
-  }
-  
+  return fetch(halInURL)
+    .then((res) => res.json())
+    .then((res) => {
+      return res as HalIn[];
+    });
+}
