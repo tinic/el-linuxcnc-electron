@@ -55,6 +55,21 @@ def read_hal_in():
 def write_hal_out():
     json = request.json
 
+    if "control_stop_now" in json:
+        hal_pin_velocity_z_cmd.set(0)
+        hal_pin_velocity_x_cmd.set(0)
+        hal_pin_control_z_type.set(0)
+        hal_pin_control_x_type.set(0)
+
+    if "control_z_type" in json:
+        hal_pin_control_z_type.set(json["control_z_type"])
+    if "control_x_type" in json:
+        hal_pin_control_x_type.set(json["control_x_type"])
+    if "velocity_z_cmd" in json:
+        hal_pin_velocity_z_cmd.set(json["velocity_z_cmd"])
+    if "velocity_x_cmd" in json:
+        hal_pin_velocity_x_cmd.set(json["velocity_x_cmd"])
+
     hal_pin_offset_z_encoder.set(-hal_pin_position_a.get())
     hal_pin_offset_z_stepper.set(+hal_pin_position_z.get())
     hal_pin_offset_x_encoder.set(-hal_pin_position_a.get())
@@ -76,16 +91,7 @@ def write_hal_out():
     if "enable_x" in json:
         hal_pin_enable_x.set(json["enable_x"])
 
-    if "control_z_type" in json:
-        hal_pin_control_z_type.set(json["control_z_type"])
-    if "control_x_type" in json:
-        hal_pin_control_x_type.set(json["control_x_type"])
-    if "velocity_z_cmd" in json:
-        hal_pin_velocity_z_cmd.set(json["velocity_z_cmd"])
-    if "velocity_x_cmd" in json:
-        hal_pin_velocity_x_cmd.set(json["velocity_x_cmd"])
-
-    return {"status": "OK!"}
+    return {"status": "OK"}
 
 
 halc.ready()

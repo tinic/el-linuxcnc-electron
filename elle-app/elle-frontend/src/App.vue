@@ -366,6 +366,17 @@ const gcodeUploader = async (event: any) => {
 let halOutScheduled: boolean = false;
 let updateInterval: NodeJS.Timer;
 
+function stopJogNow() {
+  buttonuptime = 0;
+  buttondowntime = 0;
+  buttonlefttime = 0;
+  buttonrighttime = 0;
+  let halOut = {
+    control_stop_now: 1,
+  };
+  putHalOut(halOut);
+}
+
 function startPoll() {
   updateInterval = setInterval(() => {
     try {
@@ -396,54 +407,47 @@ function startPoll() {
       // nop
     }
     if (buttonuptime > 0) {
+      halOutScheduled = false;
       let velocity = (Date.now() / 1000 - buttonuptime) * 3;
       velocity = Math.min(velocity, 3.0);
-      let halOut = {
-        control_z_type: 1,
-        velocity_z_cmd: +velocity,
-      };
-      putHalOut(halOut);
-    }
-    if (buttondowntime > 0) {
-      let velocity = (Date.now() / 1000 - buttondowntime) * 3;
-      velocity = Math.min(velocity, 3.0);
-      let halOut = {
-        control_z_type: 1,
-        velocity_z_cmd: -velocity,
-      };
-      putHalOut(halOut);
-    }
-    if (buttonlefttime > 0) {
-      let velocity = (Date.now() / 1000 - buttonlefttime) * 3;
-      velocity = Math.min(velocity, 6.0);
-      let halOut = {
-        control_x_type: 1,
-        velocity_x_cmd: -velocity,
-      };
-      putHalOut(halOut);
-    }
-    if (buttonrighttime > 0) {
-      let velocity = (Date.now() / 1000 - buttonrighttime) * 3;
-      velocity = Math.min(velocity, 6.0);
       let halOut = {
         control_x_type: 1,
         velocity_x_cmd: +velocity,
       };
       putHalOut(halOut);
     }
-    if (buttonupscheduled) {
-      buttonupscheduled = false;
-      buttonuptime = 0;
-      buttondowntime = 0;
-      buttonlefttime = 0;
-      buttonrighttime = 0;
+    if (buttondowntime > 0) {
+      halOutScheduled = false;
+      let velocity = (Date.now() / 1000 - buttondowntime) * 3;
+      velocity = Math.min(velocity, 3.0);
       let halOut = {
-        velocity_x_cmd: 0,
-        control_x_type: 0,
-        velocity_y_cmd: 0,
-        control_y_type: 0,
+        control_x_type: 1,
+        velocity_x_cmd: -velocity,
       };
       putHalOut(halOut);
+    }
+    if (buttonlefttime > 0) {
+      halOutScheduled = false;
+      let velocity = (Date.now() / 1000 - buttonlefttime) * 3;
+      velocity = Math.min(velocity, 6.0);
+      let halOut = {
+        control_z_type: 1,
+        velocity_z_cmd: -velocity,
+      };
+      putHalOut(halOut);
+    }
+    if (buttonrighttime > 0) {
+      halOutScheduled = false;
+      let velocity = (Date.now() / 1000 - buttonrighttime) * 3;
+      velocity = Math.min(velocity, 6.0);
+      let halOut = {
+        control_z_type: 1,
+        velocity_z_cmd: +velocity,
+      };
+      putHalOut(halOut);
+    }
+    if (buttonupscheduled) {
+      stopJogNow();
     }
     if (halOutScheduled) {
       halOutScheduled = false;
@@ -516,36 +520,45 @@ const directionModeIdleClicked = () => {
   selectedDirectionMode.value = DirectionMode.idle;
 };
 
-const mouseUpUp = () => {
-  buttonupscheduled = true;
-};
-
-const mouseDownUp = () => {
+const touchStartUp = () => {
   buttonuptime = Date.now() / 1000;
 };
 
-const mouseUpLeft = () => {
+const touchEndUp = () => {
   buttonupscheduled = true;
+  stopJogNow();
 };
 
-const mouseDownLeft = () => {
+const touchStartLeft = () => {
   buttonlefttime = Date.now() / 1000;
 };
 
-const mouseUpRight = () => {
+const touchEndLeft = () => {
   buttonupscheduled = true;
+  stopJogNow();
 };
 
-const mouseDownRight = () => {
+const touchStartRight = () => {
   buttonrighttime = Date.now() / 1000;
 };
 
-const mouseUpDown = () => {
+const touchEndRight = () => {
+  stopJogNow();
   buttonupscheduled = true;
 };
 
-const mouseDownDown = () => {
+const touchStartDown = () => {
   buttondowntime = Date.now() / 1000;
+};
+
+const touchEndDown = () => {
+  buttonupscheduled = true;
+  stopJogNow();
+};
+
+const touchStop = () => {
+  buttonupscheduled = true;
+  stopJogNow();
 };
 
 function scheduleHALOut() {
@@ -989,9 +1002,11 @@ onMounted(() => {
           <div class="col-4 p-1"></div>
           <div class="col-4 p-1">
             <button
-              @mouseup="mouseUpUp"
-              @mousedown="mouseDownUp"
-              class="button-mode button-direction w-full h-full"
+              @touchstart="touchStartUp"
+              @touchend="touchEndUp"
+              @touchcancel="touchEndUp"
+              @touchleave="touchEndUp"
+              class="button-arrow button-direction w-full h-full"
             >
               ⏶
             </button>
@@ -999,23 +1014,32 @@ onMounted(() => {
           <div class="col-4 p-1"></div>
           <div class="col-4 p-1">
             <button
-              @mouseup="mouseUpLeft"
-              @mousedown="mouseDownLeft"
-              class="button-mode button-direction w-full h-full"
+              @touchstart="touchStartLeft"
+              @touchend="touchEndLeft"
+              @touchcancel="touchEndLeft"
+              @touchleave="touchEndLeft"
+              class="button-arrow button-direction w-full h-full"
             >
               ⏴
             </button>
           </div>
           <div class="col-4 p-1">
-            <button class="button-mode button-direction w-full h-full">
+            <button 
+              @touchstart="touchStop"
+              @touchend="touchStop"
+              @touchcancel="touchStop"
+              @touchleave="touchStop"
+              class="button-arrow button-direction w-full h-full">
               STOP
             </button>
           </div>
           <div class="col-4 p-1">
             <button
-              @mouseup="mouseUpRight"
-              @mousedown="mouseDownRight"
-              class="button-mode button-direction w-full h-full"
+              @touchstart="touchStartRight"
+              @touchend="touchEndRight"
+              @touchcancel="touchEndRight"
+              @touchleave="touchEndRight"
+              class="button-arrow button-direction w-full h-full"
             >
               ⏵
             </button>
@@ -1023,9 +1047,11 @@ onMounted(() => {
           <div class="col-4 p-1"></div>
           <div class="col-4 p-1">
             <button
-              @mouseup="mouseUpDown"
-              @mousedown="mouseDownDown"
-              class="button-mode button-direction w-full h-full"
+              @touchstart="touchStartDown"
+              @touchend="touchEndDown"
+              @touchcancel="touchEndDown"
+              @touchleave="touchEndDown"
+              class="button-arrow button-direction w-full h-full"
             >
               ⏷
             </button>
@@ -1105,6 +1131,15 @@ onMounted(() => {
   color: #ffffff;
 }
 
+.button-arrow {
+  background: #333;
+  color: #ffffff;
+  border: none;
+  outline: none;
+  cursor: none;
+  text-decoration: none;
+}
+
 .button-direction {
   font-size: 1.5em;
 }
@@ -1129,6 +1164,11 @@ body {
   margin: 0;
   color: #ffffff;
   background-color: #222222;
+  -webkit-touch-callout: none; /* Safari */
+  -webkit-user-select: none; /* Chrome */     
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; 
 }
 
 .wrapper {

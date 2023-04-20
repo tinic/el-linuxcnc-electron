@@ -208,7 +208,7 @@ class BackplotGenerator(rs274.glcanon.GlCanonDraw):
 
 @app.route("/")
 def index():
-    return {"status": "OK!"}
+    return {"status": "OK"}
 
 
 @app.put("/linuxcnc/backplot")
