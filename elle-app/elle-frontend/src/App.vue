@@ -447,6 +447,7 @@ function startPoll() {
       putHalOut(halOut);
     }
     if (buttonupscheduled) {
+      buttonupscheduled = false;
       stopJogNow();
     }
     if (halOutScheduled) {
