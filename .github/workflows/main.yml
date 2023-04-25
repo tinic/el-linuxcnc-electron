@@ -1,0 +1,19 @@
+name: yarn CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js 18.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+      - name: Install and dependencies
+        run: npm install --global yarn && yarn install
+      - name: Build app package
+        run: yarn app:build
