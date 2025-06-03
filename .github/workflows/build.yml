@@ -34,6 +34,9 @@ jobs:
                   # (Optional)
                   package_manager: NPM
 
+                  # Directory where NPM/Yarn commands should be run
+                  package_root: elle-app
+
                   # Skip buiding the application
                   # (Optional)
                   skip_build: false
