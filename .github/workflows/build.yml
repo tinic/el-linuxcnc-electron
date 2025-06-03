@@ -20,7 +20,7 @@ jobs:
                   node-version: 22
 
             - name: Compile Electron App
-              uses: x6Pnda/action-electron-compiler@5bb5fdc
+              uses: x6Pnda/action-electron-compiler@5bb5fdcf4265905ff090a1e0af241380b972f5ba
               with:
                   # GitHub token, automatically provided to the action
                   # (Optional)
