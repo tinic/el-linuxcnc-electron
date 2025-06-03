@@ -1,8 +1,8 @@
 {
   "name": "elle-app",
   "majorversion": "1.0",
-  "gitversion": "102",
-  "version": "1.0.102",
+  "gitversion": "104",
+  "version": "1.0.104",
   "description": "Electronic Leadscrew for LinuxCNC",
   "main": "./dist/main.js",
   "license": "MIT",
