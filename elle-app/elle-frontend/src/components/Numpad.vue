@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { emit } from "process";
 const emit = defineEmits(["numPadClicked"]);
 const numPadClicked = (key: string) => {
   emit("numPadClicked", key);

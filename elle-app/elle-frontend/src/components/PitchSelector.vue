@@ -3,8 +3,6 @@ import { onMounted, inject } from "vue";
 import { useDialog } from "primevue/usedialog";
 
 import json from "../assets/presets.json";
-import { showCompletionScript } from "yargs";
-import { emit } from "process";
 
 import DialogRef from "primevue/dialog";
 
@@ -35,7 +33,7 @@ onMounted(() => {});
 
 <template>
   <TabView>
-    <TabPanel v-for="(title, sindex) in headers" :header="title">
+    <TabPanel v-for="(title, sindex) in headers" :key="sindex" :value="sindex" :header="title">
       <div class="grid dro-font-preset-button">
         <div
           class="col-3 p-1"

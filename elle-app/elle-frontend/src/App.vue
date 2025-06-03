@@ -49,6 +49,7 @@ let buttondowntime: number = 0;
 let buttonlefttime: number = 0;
 let buttonrighttime: number = 0;
 let buttonupscheduled: boolean = false;
+let updateInterval: NodeJS.Timeout;
 
 enum FeedMode {
   none = 0,
@@ -364,7 +365,6 @@ const gcodeUploader = async (event: any) => {
 };
 
 let halOutScheduled: boolean = false;
-let updateInterval: NodeJS.Timer;
 
 function stopJogNow() {
   buttonuptime = 0;
@@ -818,7 +818,7 @@ onMounted(() => {
     <Menu v-model="selectedMenu" :model="menuItems" class="flex-none">
       <template #start>
         <button
-          class="w-full p-link flex align-items-center p-2 pl-3 text-color hover:surface-200 border-noround"
+          class="w-full p-link flex align-items-center justify-content-start p-2 pl-3 text-color hover:surface-200 border-noround"
         >
           <div class="flex flex-column align">
             <span class="font-bold">Elle</span>
@@ -828,7 +828,7 @@ onMounted(() => {
       <template #end>
         <button
           @click="quitApplication"
-          class="w-full p-link bottom-0flex align-items-center p-2 pl-4 text-color hover:surface-200 border-noround"
+          class="w-full p-link flex align-items-center justify-content-start p-2 pl-4 text-color hover:surface-200 border-noround"
         >
           <i class="pi pi-sign-out" />
           <span class="ml-2">Exit</span>
@@ -861,8 +861,10 @@ onMounted(() => {
           @metricClicked="metricClicked"
           @otherClicked="otherClicked"
         />
+        <div class="divider-vertical"></div>
         <Numpad class="" @numPadClicked="numPadClicked" />
       </div>
+      <div class="divider-horizontal"></div>
       <div class="flex flex-row">
         <div
           class="grid dro-font-mode grid-nogutter p-3 pr-4 m-0 mt-2 bg-gray-900"
@@ -1176,4 +1178,17 @@ body {
   display: flex;
   flex-direction: column;
 }
+
+/* Simple divider lines for visual separation */
+.divider-vertical {
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  margin: 0 1rem;
+}
+
+.divider-horizontal {
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  margin: 1rem 0;
+  width: 100%;
+}
+
 </style>
