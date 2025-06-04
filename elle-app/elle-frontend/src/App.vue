@@ -1031,6 +1031,12 @@ onMounted(() => {
     window.api.receive("halStdout", (event: any, arg: any) => {
       halStdoutText.value += event as string;
     });
+
+    selectedMenu.value = 2;
+    startHAL();
+  } else {
+    startPoll();
+    updateHALOut();
   }
 });
 </script>
