@@ -40,7 +40,7 @@ async function createWindow() {
     // Remove menu bar
     mainWindow.removeMenu();
 
-//    mainWindow.webContents.openDevTools()
+    //mainWindow.webContents.openDevTools()
 
     // and load the index.html of the app.
     // win.loadFile("index.html");
@@ -123,7 +123,7 @@ ipcMain.on('quit', () => {
     stopHAL(true);
 });
 
-ipcMain.on('startHAL', () => { 
+ipcMain.on('startHAL', () => {
     let hal_path = process.cwd() + "/elle-hal";
     let halfile_path = process.cwd() + "/elle-hal/lathe.hal";
     if (fs.existsSync(halfile_path)) {
@@ -151,3 +151,4 @@ ipcMain.on('startHAL', () => {
         }
     }
 });
+

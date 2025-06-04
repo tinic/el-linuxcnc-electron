@@ -11,5 +11,6 @@
         "strict": true,
         "skipLibCheck": true
     },
-    "include": ["elle-electron/**/*.ts"]
+    "include": ["elle-electron/**/*.ts"],
+    "exclude": ["elle-electron/preload.ts"]
 }

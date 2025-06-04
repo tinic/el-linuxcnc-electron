@@ -95,4 +95,3 @@ app.component('Textarea', Textarea);
 app.component('FileUpload', FileUpload);
 
 app.mount('#app')
- 

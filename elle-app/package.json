@@ -2,8 +2,8 @@
   "name": "elle-app",
   "type": "module",
   "majorversion": "1.0",
-  "gitversion": "112",
-  "version": "1.0.112",
+  "gitversion": "113",
+  "version": "1.0.113",
   "description": "Electronic Leadscrew for LinuxCNC",
   "main": "./dist/main.js",
   "license": "MIT",
@@ -13,7 +13,7 @@
     "url": "https://github.com/tinic/el-linuxcnc-electron.git"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp elle-electron/preload.ts dist/preload.js && sed -i 's/import.*from.*electron.*/const { contextBridge, ipcRenderer } = require(\"electron\");/' dist/preload.js && sed -i 's/:any//g' dist/preload.js",
     "watch": "nodemon --exec yarn serve:electron",
     "start": "yarn nightly:rename && concurrently -k \"yarn serve:front\" \"yarn watch\"",
     "front:setup": "cd elle-frontend && yarn",
