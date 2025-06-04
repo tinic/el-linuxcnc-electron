@@ -1,12 +1,18 @@
 let halOutURL = "http://localhost:8000/hal/hal_out";
 let halInURL = "http://localhost:8000/hal/hal_in";
 let linuxcncURL = "http://localhost:8001/linuxcnc/";
+let gcodeURL = "http://localhost:8000/hal/gcode";
+let abortURL = "http://localhost:8000/hal/abort";
+let estopURL = "http://localhost:8000/hal/estop";
 
 var userAgent = navigator.userAgent.toLowerCase();
 if (userAgent.indexOf(" electron/") < 0) {
   halOutURL = "http://lathev2:8000/hal/hal_out";
   halInURL = "http://lathev2:8000/hal/hal_in";
   linuxcncURL = "http://lathev2:8001/linuxcnc/";
+  gcodeURL = "http://lathev2:8000/hal/gcode";
+  abortURL = "http://lathev2:8000/hal/abort";
+  estopURL = "http://lathev2:8000/hal/estop";
 }
 
 export interface HalIn {
@@ -14,6 +20,57 @@ export interface HalIn {
   position_x: number;
   position_a: number;
   speed_rps: number;
+}
+
+export async function putGCode(gcodeOut: Object) {
+  try {
+    const response = await fetch(gcodeURL, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(gcodeOut),
+    });
+    const result = await response.json();
+    return result;
+  } catch {
+    // nop
+  }
+  return {};
+}
+
+export async function putAbort() {
+  try {
+    const response = await fetch(abortURL, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    });
+    const result = await response.json();
+    return result;
+  } catch {
+    // nop
+  }
+  return {};
+}
+
+export async function putEmergencyStop() {
+  try {
+    const response = await fetch(estopURL, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    });
+    const result = await response.json();
+    return result;
+  } catch {
+    // nop
+  }
+  return {};
 }
 
 export async function putHalOut(halOut: Object) {

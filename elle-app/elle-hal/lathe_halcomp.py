@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 import hal
 import sys
+import linuxcnc
 
 from flask import Flask
 from flask_cors import CORS
 from flask import request
 
 halc = hal.component("lathe")
+c = linuxcnc.command()
 
 hal_pin_control_source = halc.newpin("control_source", hal.HAL_BIT, hal.HAL_OUT)
 
@@ -50,6 +52,69 @@ def read_hal_in():
         "speed_rps": hal_pin_speed_rps.get(),
     }
 
+@app.put("/hal/gcode")
+def write_gcode():
+    json_data = request.json
+    
+    if not json_data or "gcode" not in json_data:
+        return {"status": "Error", "message": "Missing gcode parameter"}, 400
+    
+    gcode_command = json_data["gcode"]
+    
+    try:
+        # Ensure LinuxCNC is in a state where it can accept commands
+        c.wait_complete()
+        
+        # Execute the G-code command
+        c.mdi(gcode_command)
+        
+        print(f"Executed G-code: {gcode_command}")
+        sys.stdout.flush()
+        
+        return {"status": "OK", "gcode": gcode_command}
+        
+    except Exception as e:
+        error_msg = f"Error executing G-code '{gcode_command}': {str(e)}"
+        print(error_msg)
+        sys.stdout.flush()
+        return {"status": "Error", "message": error_msg}, 500
+
+@app.put("/hal/abort")
+def abort_operation():
+    try:
+        # Abort current operation without E-stop
+        c.abort()
+        
+        print("Operation aborted")
+        sys.stdout.flush()
+        
+        return {"status": "OK", "message": "Operation aborted"}
+        
+    except Exception as e:
+        error_msg = f"Error during abort: {str(e)}"
+        print(error_msg)
+        sys.stdout.flush()
+        return {"status": "Error", "message": error_msg}, 500
+
+@app.put("/hal/estop")
+def emergency_stop():
+    try:
+        # Immediate abort of all operations
+        c.abort()
+        
+        # Set machine to E-stop state
+        c.state(linuxcnc.STATE_ESTOP)
+        
+        print("Emergency stop executed")
+        sys.stdout.flush()
+        
+        return {"status": "OK", "message": "Emergency stop executed"}
+        
+    except Exception as e:
+        error_msg = f"Error during emergency stop: {str(e)}"
+        print(error_msg)
+        sys.stdout.flush()
+        return {"status": "Error", "message": error_msg}, 500
 
 @app.put("/hal/hal_out")
 def write_hal_out():

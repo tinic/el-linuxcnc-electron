@@ -7,7 +7,7 @@ import Numpad from "./components/Numpad.vue";
 import DRODisplay from "./components/DRODisplay.vue";
 import G76PresetSelector from "./components/G76PresetSelector.vue";
 import Backplot from "./Backplot";
-import { putHalOut, putLinuxCNC, getHalIn } from "./HAL"
+import { putHalOut, putGCode, putLinuxCNC, getHalIn, putAbort, putEmergencyStop } from "./HAL"
 
 const selectedMenu = ref(0);
 
@@ -546,16 +546,29 @@ function startPoll() {
     }
     if (halOutScheduled) {
       halOutScheduled = false;
-      let halOut = {
-        control_source: false,
-        forward_z: zforward ? -zpitch.value : zpitch.value,
-        forward_x: xforward ? -xpitch.value : xpitch.value,
-        enable_z: zpitchactive.value,
-        enable_x: xpitchactive.value,
-        enable_stepper_z: zstepperactive.value,
-        enable_stepper_x: xstepperactive.value,
-      };
-      putHalOut(halOut);
+      if (selectedMenu.value == 0) {
+        let halOut = {
+          control_source: false,
+          forward_z: zforward ? -zpitch.value : zpitch.value,
+          forward_x: xforward ? -xpitch.value : xpitch.value,
+          enable_z: zpitchactive.value,
+          enable_x: xpitchactive.value,
+          enable_stepper_z: zstepperactive.value,
+          enable_stepper_x: xstepperactive.value,
+        };
+        putHalOut(halOut);
+      } else if (selectedMenu.value == 1) {
+        let halOut = {
+          control_source: true,
+          forward_z: zforward ? -zpitch.value : zpitch.value,
+          forward_x: xforward ? -xpitch.value : xpitch.value,
+          enable_z: true,
+          enable_x: true,
+          enable_stepper_z: true,
+          enable_stepper_x: true,
+        };
+        putHalOut(halOut);
+      }
     }
   }, 33.33333);
 }
@@ -923,21 +936,99 @@ const g76PresetClicked = () => {
 const g76StartClicked = () => {
   treatOffClickAsEnter();
   entryActive.value = 0;
-  console.log("G76 Start clicked - parameters:", {
-    X: g76XMinorDia.value,
-    Z: g76ZEndPoint.value,
-    I: g76ITaper.value,
-    K: g76KDepth.value,
-    D: g76DFirstPass.value,
-    A: g76AAngle.value,
-    F: g76FPitch.value
-  });
+  
+  // Validate required parameters exist
+  if (g76XMinorDia.value === null || g76ZEndPoint.value === null || 
+      g76KDepth.value === null || g76FPitch.value === null) {
+    console.error("G76: Missing required parameters (X, Z, K, F)");
+    alert("Error: Missing required G76 parameters. Please set X, Z, K, and F values.");
+    return;
+  }
+  
+  // Validate parameter ranges and values
+  const errors = [];
+  
+  // X - Minor diameter (should be positive for external threads)
+  if (g76XMinorDia.value <= 0) {
+    errors.push("X (Minor Diameter) must be positive");
+  }
+  
+  // Z - End point (should be negative for typical threading toward chuck)
+  if (g76ZEndPoint.value >= 0) {
+    errors.push("Z (End Point) should typically be negative (toward chuck)");
+  }
+  
+  // K - Depth of thread (should be positive and reasonable)
+  if (g76KDepth.value <= 0) {
+    errors.push("K (Thread Depth) must be positive");
+  }
+  if (g76KDepth.value > 5) {
+    errors.push("K (Thread Depth) seems too large (>5mm), please verify");
+  }
+  
+  // F - Pitch (should be positive and reasonable)
+  if (g76FPitch.value <= 0) {
+    errors.push("F (Pitch) must be positive");
+  }
+  if (g76FPitch.value > 10) {
+    errors.push("F (Pitch) seems too large (>10mm), please verify");
+  }
+  
+  // Validate optional parameters if set
+  if (g76ITaper.value !== null && Math.abs(g76ITaper.value) > 10) {
+    errors.push("I (Taper) seems too large (>10mm), please verify");
+  }
+  
+  if (g76DFirstPass.value !== null && (g76DFirstPass.value <= 0 || g76DFirstPass.value > g76KDepth.value)) {
+    errors.push("D (First Pass Depth) must be positive and ≤ K (Thread Depth)");
+  }
+  
+  if (g76AAngle.value !== null && (g76AAngle.value < 10 || g76AAngle.value > 90)) {
+    errors.push("A (Thread Angle) should be between 10° and 90°");
+  }
+  
+  // Show errors if any
+  if (errors.length > 0) {
+    const errorMessage = "G76 Parameter Validation Errors:\n\n" + errors.join("\n");
+    console.error("G76 Validation failed:", errors);
+    alert(errorMessage);
+    return;
+  }
+  
+  // Assemble G76 command with validated parameters
+  let g76Command = `G76 X${g76XMinorDia.value} Z${g76ZEndPoint.value}`;
+  
+  // Add optional parameters if they are set and valid
+  if (g76ITaper.value !== null && g76ITaper.value !== 0) {
+    g76Command += ` I${g76ITaper.value}`;
+  }
+  
+  g76Command += ` K${g76KDepth.value}`;
+  
+  if (g76DFirstPass.value !== null && g76DFirstPass.value !== 0) {
+    g76Command += ` D${g76DFirstPass.value}`;
+  }
+  
+  if (g76AAngle.value !== null && g76AAngle.value !== 0) {
+    g76Command += ` A${g76AAngle.value}`;
+  }
+  
+  g76Command += ` F${g76FPitch.value}`;
+  
+  console.log("G76 Command (validated):", g76Command);
+  
+  // Send the validated G76 command to LinuxCNC
+  putGCode({ gcode: g76Command });
 };
 
 const g76StopClicked = () => {
   treatOffClickAsEnter();
   entryActive.value = 0;
+  
   console.log("G76 Stop clicked");
+  
+  // Abort current operation (gentler than emergency stop)
+  putAbort();
 };
 
 const g76ResetClicked = () => {

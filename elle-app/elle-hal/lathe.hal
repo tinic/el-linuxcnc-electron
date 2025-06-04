@@ -229,7 +229,7 @@ net jnt-x-vel-cmd       <= joint.0.vel-cmd
 net jnt-z-stepper-enbl  <= joint.1.amp-enable-out
 net jnt-z-stepper-enbl  => mux-gen.02.in-bit-01 # hm2_7i96.0.stepgen.00.enable
 net jnt-x-stepper-enbl  <= joint.0.amp-enable-out
-net jnt-z-stepper-enbl  => mux-gen.03.in-bit-01 # hm2_7i96.0.stepgen.01.enable
+net jnt-x-stepper-enbl  => mux-gen.03.in-bit-01 # hm2_7i96.0.stepgen.01.enable
 
 net control-source      => mux-gen.00.in-bit-01 # control-source will be true, use that as a 1
 net control-source      => mux-gen.01.in-bit-01 # control-source will be true, use that as a 1
