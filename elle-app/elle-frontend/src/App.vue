@@ -1542,10 +1542,9 @@ onMounted(() => {
     </div>
     <div
       v-if="selectedMenu == 2"
-      class="flex-grow-1 flex align-items-center m-2 justify-content-center"
+      class="flex-grow-1 flex flex-column"
     >
-      <div class="flex flex-column w-full h-full">
-        <Toolbar class="mb-2">
+      <Toolbar class="flex-none p-1">
           <template #start>
             <Button
               @click="startHAL"
@@ -1561,13 +1560,15 @@ onMounted(() => {
             />
           </template>
         </Toolbar>
-        <Textarea
-          v-model="halStdoutText"
-          autoScroll="true"
-          rows="30"
-          cols="30"
-        />
-      </div>
+      <Textarea
+        v-model="halStdoutText"
+        autoScroll="true"
+        class="console-output flex-grow-1"
+        spellcheck="false"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+      />
     </div>
     <div
       v-if="selectedMenu == 3"
@@ -1579,6 +1580,14 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.console-output {
+  font-family: "iosevka", "Consolas", "Monaco", "Liberation Mono", "Lucida Console", monospace !important;
+  font-size: 1em;
+  line-height: 1.2;
+  height: 100% !important;
+  resize: none;
+}
+
 .button-mode {
   background: #333;
   color: #ffffff;
