@@ -6,7 +6,7 @@ const numPadClicked = (key: string) => {
 </script>
 
 <template>
-  <div class="bg-gray-900 align-content-center">
+  <div class="align-content-center">
     <div class="grid dro-font-numpad grid-nogutter p-1" style="width: 350px">
       <div class="col-3 p-1">
         <button

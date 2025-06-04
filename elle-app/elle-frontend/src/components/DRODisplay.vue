@@ -274,7 +274,7 @@ const zpitchLabel = computed(() => {
 </script>
 
 <template>
-  <div class="bg-gray-900 inline dro-font-display p-2 keep-spaces">
+  <div class="inline dro-font-display p-2 keep-spaces">
     <div @click="xposClicked" class="inline">
       <span v-html="xposLabel" />{{ xposFormatted }}<font size="-1">&nbsp;</font
 ><font color="#aaaaaa">{{ xposUnitFormatted }}</font>

@@ -1045,7 +1045,7 @@ onMounted(() => {
 
 <template>
   <div
-    class="flex flex-row flex-grow-1 absolute top-0 left-0 wrapper bg-gray-800"
+    class="flex flex-row flex-grow-1 absolute top-0 left-0 wrapper"
   >
     <Menu v-model="selectedMenu" :model="menuItems" class="flex-none">
       <template #start>
@@ -1099,7 +1099,7 @@ onMounted(() => {
       <div class="divider-horizontal"></div>
       <div class="flex flex-row">
         <div
-          class="grid dro-font-mode grid-nogutter p-3 pr-4 m-0 mt-2 bg-gray-900"
+          class="grid dro-font-mode grid-nogutter p-3 pr-4 m-0 mt-2"
           style="width: 16em"
         >
           <div class="col-12 align-content-center">Feed</div>
@@ -1165,7 +1165,7 @@ onMounted(() => {
           </button>
         </div>
         <div
-          class="grid dro-font-mode grid-nogutter p-3 pr-4 m-0 mt-2 bg-gray-900"
+          class="grid dro-font-mode grid-nogutter p-3 pr-4 m-0 mt-2"
           style="width: 15em"
         >
           <div class="col-12 align-content-center">Direction</div>
@@ -1231,7 +1231,7 @@ onMounted(() => {
           </button>
         </div>
         <div
-          class="grid grid-nogutter bg-gray-900 mt-2 p-1 dro-font-mode"
+          class="grid grid-nogutter mt-2 p-1 dro-font-mode"
           style="width: 24em"
         >
           <div class="col-4 p-1"></div>
@@ -1298,7 +1298,7 @@ onMounted(() => {
     </div>
     <div
       v-if="selectedMenu == 1"
-      class="flex-grow-1 flex flex-column bg-gray-800 p-2"
+      class="flex-grow-1 flex flex-column p-2"
     >
       <div class="flex flex-row">
         <DRODisplay
@@ -1331,7 +1331,7 @@ onMounted(() => {
       <div class="divider-horizontal"></div>
       <div class="flex flex-row flex-grow-1">
         <div
-          class="grid dro-font-mode grid-nogutter p-3 pr-4 m-0 bg-gray-900"
+          class="grid dro-font-mode grid-nogutter p-3 pr-4 m-0"
           style="width: 18em"
         >
           <div class="col-12 align-content-center">Canned Cycles</div>
@@ -1397,7 +1397,7 @@ onMounted(() => {
           </button>
         </div>
         <div v-if="selectedCannedCycle == CannedCycle.g76" class="divider-vertical"></div>
-        <div v-if="selectedCannedCycle == CannedCycle.g76" class="flex flex-column dro-font-mode p-1 bg-gray-900" style="width: 43em;">
+        <div v-if="selectedCannedCycle == CannedCycle.g76" class="flex flex-column dro-font-mode p-1" style="width: 43em;">
           <div class="grid grid-nogutter flex-none">
           <div class="col-12 align-content-center mb-2">
             G76 Thread Cycle Parameters{{ g76PresetName ? ` (${g76PresetName})` : '' }}
@@ -1545,7 +1545,7 @@ onMounted(() => {
       class="flex-grow-1 flex align-items-center m-2 justify-content-center"
     >
       <div class="flex flex-column w-full h-full">
-        <Toolbar class="mb-2 bg-gray-900">
+        <Toolbar class="mb-2">
           <template #start>
             <Button
               @click="startHAL"
@@ -1571,7 +1571,7 @@ onMounted(() => {
     </div>
     <div
       v-if="selectedMenu == 3"
-      class="flex-grow-1 flex align-items-center justify-content-center bg-gray-800"
+      class="flex-grow-1 flex align-items-center justify-content-center"
     >
       Settings
     </div>
