@@ -316,4 +316,10 @@ net x-control-type => mux-gen.01.in-bit-00 # hm2_7i96.0.stepgen.01.control-type
 net x-velocity-cmd <= lathe.velocity_x_cmd
 net x-velocity-cmd => mux2.3.in0 # hm2_7i96.0.stepgen.01.velocity-cmd
 
+# Force spindle at-speed to always be true for mechanically synchronized spindle
+setp spindle.0.at-speed true
+
+# Connect spindle index enable for threading synchronization
+net spindle-index-enable spindle.0.index-enable <=> hm2_7i96.0.encoder.00.index-enable
+
 #loadusr halshow
