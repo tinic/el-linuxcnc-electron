@@ -226,6 +226,10 @@ net jnt-z-vel-cmd       <= joint.1.vel-cmd
 net jnt-x-pos-cmd       <= joint.0.motor-pos-cmd
 net jnt-x-vel-cmd       <= joint.0.vel-cmd
 
+# Connect position commands to motmod mode position inputs
+net jnt-z-pos-cmd       => mux2.0.in1  # Z position command for motmod
+net jnt-x-pos-cmd       => mux2.1.in1  # X position command for motmod
+
 net jnt-z-stepper-enbl  <= joint.1.amp-enable-out
 net jnt-z-stepper-enbl  => mux-gen.02.in-bit-01 # hm2_7i96.0.stepgen.00.enable
 net jnt-x-stepper-enbl  <= joint.0.amp-enable-out
