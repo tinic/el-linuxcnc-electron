@@ -5,6 +5,7 @@ import { Camera, Renderer, RendererPublicInterface, Scene } from "troisjs";
 
 import Numpad from "./components/Numpad.vue";
 import DRODisplay from "./components/DRODisplay.vue";
+import G76PresetSelector from "./components/G76PresetSelector.vue";
 import Backplot from "./Backplot";
 import { putHalOut, putLinuxCNC, getHalIn } from "./HAL"
 
@@ -68,6 +69,25 @@ enum DirectionMode {
   idle = 4,
 }
 const selectedDirectionMode = ref(DirectionMode.forward);
+
+enum CannedCycle {
+  none = 0,
+  g76 = 1,
+  placeholder2 = 2,
+  placeholder3 = 3,
+  placeholder4 = 4,
+}
+const selectedCannedCycle = ref(CannedCycle.none);
+
+// G76 Screw Thread Cycle parameters
+const g76XMinorDia = ref<number | null>(null);
+const g76ZEndPoint = ref<number | null>(null);
+const g76ITaper = ref<number | null>(null);
+const g76KDepth = ref<number | null>(null);
+const g76DFirstPass = ref<number | null>(null);
+const g76AAngle = ref<number | null>(null);
+const g76FPitch = ref<number | null>(null);
+const g76PresetName = ref<string | null>(null);
 
 const menuItems = ref([
   { separator: true },
@@ -134,9 +154,16 @@ const numberClicked = (entry: number, value: number) => {
     case 2:
     case 4:
     case 5:
+    case 6: // G76 X
+    case 7: // G76 Z
+    case 8: // G76 I
+    case 9: // G76 K
+    case 10: // G76 D
+    case 12: // G76 F
     numberentry.value = numbersPrevious = metric.value ? value : value / 25.4;
     break;
     case 3:
+    case 11: // G76 A
     numberentry.value = numbersPrevious = value;
     break;
   }
@@ -180,11 +207,18 @@ function setFinalNumber(value: number) {
     case 2:
     case 4:
     case 5:
+    case 6: // G76 X
+    case 7: // G76 Z
+    case 8: // G76 I
+    case 9: // G76 K
+    case 10: // G76 D
+    case 12: // G76 F
     if (!metric.value) {
       value = value * 25.4;
     }
     break;
     case 3:
+    case 11: // G76 A
     //nop
     break;
   }
@@ -209,6 +243,36 @@ function setFinalNumber(value: number) {
       break;
     case 5:
       zpitch.value = Math.abs(value);
+      break;
+    case 6:
+      g76XMinorDia.value = Math.round(value * 1000000) / 1000000;
+      g76PresetName.value = null; // Clear preset name on manual change
+      break;
+    case 7:
+      g76ZEndPoint.value = Math.round(value * 1000000) / 1000000;
+      g76PresetName.value = null; // Clear preset name on manual change
+      break;
+    case 8:
+      g76ITaper.value = Math.round(value * 1000000) / 1000000;
+      g76PresetName.value = null; // Clear preset name on manual change
+      updatePitchFromG76();
+      break;
+    case 9:
+      g76KDepth.value = Math.round(value * 1000000) / 1000000;
+      g76PresetName.value = null; // Clear preset name on manual change
+      break;
+    case 10:
+      g76DFirstPass.value = Math.round(value * 1000000) / 1000000;
+      g76PresetName.value = null; // Clear preset name on manual change
+      break;
+    case 11:
+      g76AAngle.value = Math.round(value * 1000000) / 1000000;
+      g76PresetName.value = null; // Clear preset name on manual change
+      break;
+    case 12:
+      g76FPitch.value = Math.round(value * 1000000) / 1000000;
+      g76PresetName.value = null; // Clear preset name on manual change
+      updatePitchFromG76();
       break;
   }
   numpadInputStage = NumpadInputStage.none;
@@ -247,7 +311,37 @@ const numPadClicked = (key: string) => {
         cursorpos.value = 0;
       }
       numbersClicked.pop();
-      numberentry.value = calcNumber();
+      if (numbersClicked.length === 0) {
+        // Reset G76 fields to null when fully erased
+        switch (entryActive.value) {
+          case 6:
+            g76XMinorDia.value = null;
+            break;
+          case 7:
+            g76ZEndPoint.value = null;
+            break;
+          case 8:
+            g76ITaper.value = null;
+            break;
+          case 9:
+            g76KDepth.value = null;
+            break;
+          case 10:
+            g76DFirstPass.value = null;
+            break;
+          case 11:
+            g76AAngle.value = null;
+            break;
+          case 12:
+            g76FPitch.value = null;
+            break;
+        }
+        numpadInputStage = NumpadInputStage.none;
+        entryActive.value = 0;
+        numberentry.value = 0;
+      } else {
+        numberentry.value = calcNumber();
+      }
       break;
     case "PlusMinus":
       if (numpadInputStage == NumpadInputStage.start) {
@@ -521,6 +615,10 @@ const directionModeIdleClicked = () => {
   selectedDirectionMode.value = DirectionMode.idle;
 };
 
+const cannedCycleClicked = (cycle: CannedCycle) => {
+  selectedCannedCycle.value = cycle;
+};
+
 const touchStartUp = () => {
   buttonuptime = Date.now() / 1000;
 };
@@ -728,6 +826,8 @@ const PitchSelector = defineAsyncComponent(
   () => import("./components/PitchSelector.vue")
 );
 
+// G76PresetSelector is now imported directly above
+
 function pitchForAngle(pitch: number, angle: number) {
   return pitch * Math.tan(angle * (Math.PI / 180));
 }
@@ -781,6 +881,138 @@ const pitchClicked = (axis: string) => {
     templates: {},
     onClose: (options) => {},
   });
+};
+
+const g76PresetClicked = () => {
+  treatOffClickAsEnter();
+  entryActive.value = 0;
+  const dialogRef = dialog.open(G76PresetSelector, {
+    props: {
+      header: "Select G76 Thread Preset",
+      style: {
+        width: "70vw",
+      },
+      breakpoints: {
+        "960px": "75vw",
+        "640px": "90vw",
+      },
+      position: "top",
+      modal: true,
+    },
+    emits: {
+      onSelected: (preset: any) => {
+        // Preset values are stored in metric units, convert if currently in imperial
+        const conversionFactor = metric.value ? 1 : 1/25.4;
+        
+        g76XMinorDia.value = Math.round((preset.X * conversionFactor) * 1000000) / 1000000;
+        g76ZEndPoint.value = Math.round((preset.Z * conversionFactor) * 1000000) / 1000000;
+        g76ITaper.value = Math.round((preset.I * conversionFactor) * 1000000) / 1000000;
+        g76KDepth.value = Math.round((preset.K * conversionFactor) * 1000000) / 1000000;
+        g76DFirstPass.value = Math.round((preset.D * conversionFactor) * 1000000) / 1000000;
+        g76AAngle.value = Math.round(preset.A * 1000000) / 1000000; // Angle stays the same but still round
+        g76FPitch.value = Math.round((preset.F * conversionFactor) * 1000000) / 1000000;
+        g76PresetName.value = preset.name; // Store the preset name
+        updatePitchFromG76();
+      },
+    },
+    templates: {},
+    onClose: (options) => {},
+  });
+};
+
+const g76StartClicked = () => {
+  treatOffClickAsEnter();
+  entryActive.value = 0;
+  console.log("G76 Start clicked - parameters:", {
+    X: g76XMinorDia.value,
+    Z: g76ZEndPoint.value,
+    I: g76ITaper.value,
+    K: g76KDepth.value,
+    D: g76DFirstPass.value,
+    A: g76AAngle.value,
+    F: g76FPitch.value
+  });
+};
+
+const g76StopClicked = () => {
+  treatOffClickAsEnter();
+  entryActive.value = 0;
+  console.log("G76 Stop clicked");
+};
+
+const g76ResetClicked = () => {
+  treatOffClickAsEnter();
+  entryActive.value = 0;
+  g76XMinorDia.value = null;
+  g76ZEndPoint.value = null;
+  g76ITaper.value = null;
+  g76KDepth.value = null;
+  g76DFirstPass.value = null;
+  g76AAngle.value = null;
+  g76FPitch.value = null;
+  g76PresetName.value = null;
+  updatePitchFromG76();
+};
+
+const updatePitchFromG76 = () => {
+  // Update PZ (longitudinal) with thread pitch (F parameter)
+  if (g76FPitch.value !== null) {
+    zpitch.value = Math.abs(g76FPitch.value);
+    if (metric.value) {
+      zpitchlabel.value = `${g76FPitch.value}mm`;
+    } else {
+      // In imperial mode, show TPI (threads per inch)
+      const tpi = 1 / g76FPitch.value;
+      // Show integer if close to whole number, otherwise 1 decimal place
+      const rounded = Math.round(tpi);
+      const formatted = Math.abs(tpi - rounded) < 0.1 ? rounded.toString() : tpi.toFixed(1);
+      zpitchlabel.value = `${formatted} TPI`;
+    }
+  } else {
+    zpitchlabel.value = "…";
+  }
+  
+  // Update PX (cross) based on taper amount (I parameter)
+  if (g76ITaper.value !== null && g76ITaper.value !== 0) {
+    // For tapered threads, PX is proportional to the taper amount
+    // I parameter is the taper offset per unit length along Z
+    xpitch.value = Math.abs(g76ITaper.value);
+    xpitchlabel.value = "Taper";
+    xpitchangle.value = 0; // No angle involved
+  } else {
+    // No taper - minimal cross feed for straight threading
+    xpitch.value = 0.001; // Very small value for threading
+    xpitchlabel.value = "Thread";
+    xpitchangle.value = 0;
+  }
+};
+
+const g76MetricClicked = () => {
+  treatOffClickAsEnter();
+  metric.value = !metric.value;
+  
+  // Convert G76 values between metric and imperial
+  if (metric.value) {
+    // Converting to metric (multiply by 25.4)
+    if (g76XMinorDia.value !== null) g76XMinorDia.value = Math.round(g76XMinorDia.value * 25.4 * 1000000) / 1000000;
+    if (g76ZEndPoint.value !== null) g76ZEndPoint.value = Math.round(g76ZEndPoint.value * 25.4 * 1000000) / 1000000;
+    if (g76ITaper.value !== null) g76ITaper.value = Math.round(g76ITaper.value * 25.4 * 1000000) / 1000000;
+    if (g76KDepth.value !== null) g76KDepth.value = Math.round(g76KDepth.value * 25.4 * 1000000) / 1000000;
+    if (g76DFirstPass.value !== null) g76DFirstPass.value = Math.round(g76DFirstPass.value * 25.4 * 1000000) / 1000000;
+    // A (angle) stays the same
+    if (g76FPitch.value !== null) g76FPitch.value = Math.round(g76FPitch.value * 25.4 * 1000000) / 1000000;
+  } else {
+    // Converting to imperial (divide by 25.4)
+    if (g76XMinorDia.value !== null) g76XMinorDia.value = Math.round(g76XMinorDia.value / 25.4 * 1000000) / 1000000;
+    if (g76ZEndPoint.value !== null) g76ZEndPoint.value = Math.round(g76ZEndPoint.value / 25.4 * 1000000) / 1000000;
+    if (g76ITaper.value !== null) g76ITaper.value = Math.round(g76ITaper.value / 25.4 * 1000000) / 1000000;
+    if (g76KDepth.value !== null) g76KDepth.value = Math.round(g76KDepth.value / 25.4 * 1000000) / 1000000;
+    if (g76DFirstPass.value !== null) g76DFirstPass.value = Math.round(g76DFirstPass.value / 25.4 * 1000000) / 1000000;
+    // A (angle) stays the same
+    if (g76FPitch.value !== null) g76FPitch.value = Math.round(g76FPitch.value / 25.4 * 1000000) / 1000000;
+  }
+  g76PresetName.value = null; // Clear preset name when units change
+  updatePitchFromG76();
 };
 
 onMounted(() => {
@@ -1066,29 +1298,247 @@ onMounted(() => {
     </div>
     <div
       v-if="selectedMenu == 1"
-      class="flex-grow-1 flex align-items-center justify-content-center bg-blue-500"
+      class="flex-grow-1 flex flex-column bg-blue-500 p-2"
     >
-      <div class="flex flex-column">
-        <FileUpload
-          mode="basic"
-          name="elle[]"
-          url="/api/upload"
-          accept="text/plain"
-          customUpload
-          :auto="true"
-          @uploader="gcodeUploader"
+      <div class="flex flex-row">
+        <DRODisplay
+          class="mr-2 h-min"
+          :entryActive="entryActive"
+          :xpos="xpos"
+          :zpos="zpos"
+          :apos="apos"
+          :rpms="rpms"
+          :xpitch="xpitch"
+          :zpitch="zpitch"
+          :xlock="xpitchactive"
+          :zlock="zpitchactive"
+          :xpitchactive="xstepperactive"
+          :zpitchactive="zstepperactive"
+          :numberentry="numberentry"
+          :xpitchlabel="xpitchlabel"
+          :zpitchlabel="zpitchlabel"
+          :metric="metric"
+          :cursorpos="cursorpos"
+          @numberClicked="numberClicked"
+          @zeroClicked="zeroClicked"
+          @pitchClicked="pitchClicked"
+          @metricClicked="g76MetricClicked"
+          @otherClicked="otherClicked"
         />
-        <Renderer
-          ref="rendererC"
-          antialias
-          :orbit-ctrl="{ enableDamping: true }"
-          width="800"
-          height="600"
-        >
-          <Camera :position="{ z: 1.5 }" />
-          <Scene> </Scene>
-        </Renderer>
+        <div class="divider-vertical"></div>
+        <Numpad class="" @numPadClicked="numPadClicked" />
       </div>
+      <div class="divider-horizontal"></div>
+      <div class="flex flex-row flex-grow-1">
+        <div
+          class="grid dro-font-mode grid-nogutter p-3 pr-4 m-0 bg-gray-900"
+          style="width: 18em"
+        >
+          <div class="col-12 align-content-center">Canned Cycles</div>
+          <button
+            @click="cannedCycleClicked(CannedCycle.g76)"
+            size="large"
+            class="col-12 dro-font-mode button-mode p-3 m-1"
+          >
+            <span class="flex flex-row align-items-center">
+              <i
+                v-if="selectedCannedCycle == CannedCycle.g76"
+                class="pi pi-circle-fill mr-3"
+                style="color: #ff0000"
+              />
+              <i v-else class="pi pi-circle mr-3" />
+              G76 Threading Cycle
+            </span>
+          </button>
+          <button
+            @click="cannedCycleClicked(CannedCycle.placeholder2)"
+            size="large"
+            class="col-12 dro-font-mode button-mode p-3 m-1"
+          >
+            <span class="flex flex-row align-items-center">
+              <i
+                v-if="selectedCannedCycle == CannedCycle.placeholder2"
+                class="pi pi-circle-fill mr-3"
+                style="color: #ff0000"
+              />
+              <i v-else class="pi pi-circle mr-3" />
+              Placeholder 2
+            </span>
+          </button>
+          <button
+            @click="cannedCycleClicked(CannedCycle.placeholder3)"
+            size="large"
+            class="col-12 dro-font-mode button-mode p-3 m-1"
+          >
+            <span class="flex flex-row align-items-center">
+              <i
+                v-if="selectedCannedCycle == CannedCycle.placeholder3"
+                class="pi pi-circle-fill mr-3"
+                style="color: #ff0000"
+              />
+              <i v-else class="pi pi-circle mr-3" />
+              Placeholder 3
+            </span>
+          </button>
+          <button
+            @click="cannedCycleClicked(CannedCycle.placeholder4)"
+            size="large"
+            class="col-12 dro-font-mode button-mode p-3 m-1"
+          >
+            <span class="flex flex-row align-items-center">
+              <i
+                v-if="selectedCannedCycle == CannedCycle.placeholder4"
+                class="pi pi-circle-fill mr-3"
+                style="color: #ff0000"
+              />
+              <i v-else class="pi pi-circle mr-3" />
+              Placeholder 4
+            </span>
+          </button>
+        </div>
+        <div v-if="selectedCannedCycle == CannedCycle.g76" class="divider-vertical"></div>
+        <div v-if="selectedCannedCycle == CannedCycle.g76" class="flex flex-column dro-font-mode p-1 bg-gray-900" style="width: 43em;">
+          <div class="grid grid-nogutter flex-none">
+          <div class="col-12 align-content-center mb-2">
+            G76 Thread Cycle Parameters{{ g76PresetName ? ` (${g76PresetName})` : '' }}
+          </div>
+          <!-- Left Column -->
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end">X</div>
+          <div class="col-4 p-1">
+            <button
+              @click="numberClicked(6, g76XMinorDia || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-2 truncate', { 'placeholder-text': entryActive != 6 && g76XMinorDia === null }]"
+              :style="{ backgroundColor: entryActive == 6 ? '#666' : '#333' }"
+              :title="entryActive == 6 ? String(numberentry) : String(g76XMinorDia ?? 'Minor dia of thread')"
+            >
+              {{ entryActive == 6 ? numberentry : (g76XMinorDia ?? 'Minor dia of thread') }}
+            </button>
+          </div>
+          <!-- Right Column -->
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end">Z</div>
+          <div class="col-4 p-1">
+            <button
+              @click="numberClicked(7, g76ZEndPoint || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-2 truncate', { 'placeholder-text': entryActive != 7 && g76ZEndPoint === null }]"
+              :style="{ backgroundColor: entryActive == 7 ? '#666' : '#333' }"
+              :title="entryActive == 7 ? String(numberentry) : String(g76ZEndPoint ?? 'End point of thread')"
+            >
+              {{ entryActive == 7 ? numberentry : (g76ZEndPoint ?? 'End point of thread') }}
+            </button>
+          </div>
+          <div class="col-2 p-0"></div>
+          
+          <!-- Left Column -->
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end">I</div>
+          <div class="col-4 p-1">
+            <button
+              @click="numberClicked(8, g76ITaper || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-2 truncate', { 'placeholder-text': entryActive != 8 && g76ITaper === null }]"
+              :style="{ backgroundColor: entryActive == 8 ? '#666' : '#333' }"
+              :title="entryActive == 8 ? String(numberentry) : String(g76ITaper ?? 'Thread taper amount')"
+            >
+              {{ entryActive == 8 ? numberentry : (g76ITaper ?? 'Thread taper amount') }}
+            </button>
+          </div>
+          <!-- Right Column -->
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end">K</div>
+          <div class="col-4 p-1">
+            <button
+              @click="numberClicked(9, g76KDepth || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-2 truncate', { 'placeholder-text': entryActive != 9 && g76KDepth === null }]"
+              :style="{ backgroundColor: entryActive == 9 ? '#666' : '#333' }"
+              :title="entryActive == 9 ? String(numberentry) : String(g76KDepth ?? 'Depth of thread')"
+            >
+              {{ entryActive == 9 ? numberentry : (g76KDepth ?? 'Depth of thread') }}
+            </button>
+          </div>
+          <div class="col-2 p-0"></div>
+          
+          <!-- Left Column -->
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end">D</div>
+          <div class="col-4 p-1">
+            <button
+              @click="numberClicked(10, g76DFirstPass || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-2 truncate', { 'placeholder-text': entryActive != 10 && g76DFirstPass === null }]"
+              :style="{ backgroundColor: entryActive == 10 ? '#666' : '#333' }"
+              :title="entryActive == 10 ? String(numberentry) : String(g76DFirstPass ?? 'Depth of first pass')"
+            >
+              {{ entryActive == 10 ? numberentry : (g76DFirstPass ?? 'Depth of first pass') }}
+            </button>
+          </div>
+          <!-- Right Column -->
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end">A</div>
+          <div class="col-4 p-1">
+            <button
+              @click="numberClicked(11, g76AAngle || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-2 truncate', { 'placeholder-text': entryActive != 11 && g76AAngle === null }]"
+              :style="{ backgroundColor: entryActive == 11 ? '#666' : '#333' }"
+              :title="entryActive == 11 ? String(numberentry) : String(g76AAngle ?? 'Angle of thread')"
+            >
+              {{ entryActive == 11 ? numberentry : (g76AAngle ?? 'Angle of thread') }}
+            </button>
+          </div>
+          <div class="col-2 p-0"></div>
+          
+          <!-- Left Column -->
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end">F</div>
+          <div class="col-4 p-1">
+            <button
+              @click="numberClicked(12, g76FPitch || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-2 truncate', { 'placeholder-text': entryActive != 12 && g76FPitch === null }]"
+              :style="{ backgroundColor: entryActive == 12 ? '#666' : '#333' }"
+              :title="entryActive == 12 ? String(numberentry) : String(g76FPitch ?? 'Pitch of thread')"
+            >
+              {{ entryActive == 12 ? numberentry : (g76FPitch ?? 'Pitch of thread') }}
+            </button>
+          </div>
+          <!-- Preset and Reset buttons -->
+          <div class="col-1 p-0"></div>
+          <div class="col-2 p-1">
+            <button
+              @click="g76PresetClicked"
+              class="w-full dro-font-mode button-mode p-2"
+              style="background: #555; color: #ffffff;"
+            >
+              ...
+            </button>
+          </div>
+          <div class="col-2 p-1">
+            <button
+              @click="g76ResetClicked"
+              class="w-full dro-font-mode button-mode p-2"
+              style="background: #555; color: #ffffff;"
+            >
+              Reset
+            </button>
+          </div>
+          <div class="col-2 p-0"></div>
+          
+          </div>
+          
+          <!-- Spacer to push buttons to bottom -->
+          <div class="flex-grow-1"></div>
+          
+          <!-- Start and Stop buttons centered as a group -->
+          <div class="flex justify-content-center gap-2 p-1">
+            <button
+              @click="g76StartClicked"
+              class="dro-font-mode button-mode p-2"
+              style="background: #22c55e; color: #ffffff; width: 8em;"
+            >
+              ⏵ Start
+            </button>
+            <button
+              @click="g76StopClicked"
+              class="dro-font-mode button-mode p-2"
+              style="background: #ef4444; color: #ffffff; width: 8em;"
+            >
+              ⏹ Stop
+            </button>
+          </div>
+        </div>
+      </div>
+      <DynamicDialog />
     </div>
     <div
       v-if="selectedMenu == 2"
@@ -1189,6 +1639,16 @@ body {
   border-top: 1px solid rgba(255, 255, 255, 0.2);
   margin: 1rem 0;
   width: 100%;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.placeholder-text {
+  color: #aaaaaa;
 }
 
 </style>

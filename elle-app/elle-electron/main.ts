@@ -20,7 +20,7 @@ async function createWindow() {
         minHeight: 768,
         webPreferences: {
             preload: __dirname + "/preload.js",
-            devTools: isDev,
+            devTools: false,
             nodeIntegration: false,
             contextIsolation: true,
         },
@@ -36,6 +36,8 @@ async function createWindow() {
     // Remove menu bar
     mainWindow.removeMenu();
 
+//    mainWindow.webContents.openDevTools()
+
     // and load the index.html of the app.
     // win.loadFile("index.html");
     await mainWindow.loadURL(isDev ? "http://localhost:3000" : `file://${path.join(__dirname, "./index.html")}`);
@@ -43,16 +45,10 @@ async function createWindow() {
     if (appBounds !== undefined && appBounds !== null && appBounds.width > width && appBounds.height > height) mainWindow.maximize();
     else mainWindow.show();
 
-
     // this will turn off always on top after opening the application
     setTimeout(() => {
         mainWindow.setAlwaysOnTop(false);
     }, 1000);
-
-    // Open the DevTools.
-    if (isDev) {
-        mainWindow.webContents.openDevTools();
-    }
 
     ipcMain.handle('versions', () => {
         return {

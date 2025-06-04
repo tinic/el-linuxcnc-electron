@@ -1,0 +1,173 @@
+{
+  "metric": [
+    {
+      "name": "M10 x 1.5",
+      "description": "Metric M10 x 1.5 thread",
+      "X": 8.5,
+      "Z": -25,
+      "I": 0,
+      "K": 1.5,
+      "D": 0.3,
+      "A": 60,
+      "F": 1.5
+    },
+    {
+      "name": "M12 x 1.75",
+      "description": "Metric M12 x 1.75 thread",
+      "X": 10.25,
+      "Z": -30,
+      "I": 0,
+      "K": 1.75,
+      "D": 0.35,
+      "A": 60,
+      "F": 1.75
+    },
+    {
+      "name": "M16 x 2.0",
+      "description": "Metric M16 x 2.0 thread",
+      "X": 14,
+      "Z": -35,
+      "I": 0,
+      "K": 2.0,
+      "D": 0.4,
+      "A": 60,
+      "F": 2.0
+    },
+    {
+      "name": "M20 x 2.5",
+      "description": "Metric M20 x 2.5 thread",
+      "X": 17.5,
+      "Z": -40,
+      "I": 0,
+      "K": 2.5,
+      "D": 0.5,
+      "A": 60,
+      "F": 2.5
+    },
+    {
+      "name": "M24 x 3.0",
+      "description": "Metric M24 x 3.0 thread",
+      "X": 21,
+      "Z": -45,
+      "I": 0,
+      "K": 3.0,
+      "D": 0.6,
+      "A": 60,
+      "F": 3.0
+    }
+  ],
+  "imperial": [
+    {
+      "name": "1/4-20 UNC",
+      "description": "1/4 inch 20 TPI Unified Coarse",
+      "X": 5.537,
+      "Z": -25.4,
+      "I": 0,
+      "K": 1.27,
+      "D": 0.254,
+      "A": 60,
+      "F": 1.27
+    },
+    {
+      "name": "5/16-18 UNC",
+      "description": "5/16 inch 18 TPI Unified Coarse",
+      "X": 6.985,
+      "Z": -30.48,
+      "I": 0,
+      "K": 1.411,
+      "D": 0.282,
+      "A": 60,
+      "F": 1.411
+    },
+    {
+      "name": "3/8-16 UNC",
+      "description": "3/8 inch 16 TPI Unified Coarse",
+      "X": 8.432,
+      "Z": -35.56,
+      "I": 0,
+      "K": 1.588,
+      "D": 0.318,
+      "A": 60,
+      "F": 1.588
+    },
+    {
+      "name": "1/2-13 UNC",
+      "description": "1/2 inch 13 TPI Unified Coarse",
+      "X": 11.074,
+      "Z": -40.64,
+      "I": 0,
+      "K": 1.954,
+      "D": 0.391,
+      "A": 60,
+      "F": 1.954
+    },
+    {
+      "name": "5/8-11 UNC",
+      "description": "5/8 inch 11 TPI Unified Coarse",
+      "X": 14.072,
+      "Z": -45.72,
+      "I": 0,
+      "K": 2.309,
+      "D": 0.462,
+      "A": 60,
+      "F": 2.309
+    }
+  ],
+  "special": [
+    {
+      "name": "Acme 1/2-10",
+      "description": "1/2 inch 10 TPI Acme thread",
+      "X": 10.583,
+      "Z": -30,
+      "I": 0,
+      "K": 2.54,
+      "D": 0.508,
+      "A": 29,
+      "F": 2.54
+    },
+    {
+      "name": "Acme 5/8-8",
+      "description": "5/8 inch 8 TPI Acme thread",
+      "X": 13.096,
+      "Z": -35,
+      "I": 0,
+      "K": 3.175,
+      "D": 0.635,
+      "A": 29,
+      "F": 3.175
+    },
+    {
+      "name": "Pipe 1/8-27 NPT",
+      "description": "1/8 inch National Pipe Thread",
+      "X": 8.611,
+      "Z": -20,
+      "I": 0.625,
+      "K": 0.941,
+      "D": 0.188,
+      "A": 60,
+      "F": 0.941
+    },
+    {
+      "name": "Pipe 1/4-18 NPT",
+      "description": "1/4 inch National Pipe Thread",
+      "X": 11.445,
+      "Z": -25,
+      "I": 0.625,
+      "K": 1.411,
+      "D": 0.282,
+      "A": 60,
+      "F": 1.411
+    },
+    {
+      "name": "Trapezoidal 30x6",
+      "description": "30mm x 6mm Trapezoidal thread",
+      "X": 24,
+      "Z": -40,
+      "I": 0,
+      "K": 6,
+      "D": 1.2,
+      "A": 30,
+      "F": 6
+    }
+  ]
+}
