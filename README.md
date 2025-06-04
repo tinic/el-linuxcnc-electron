@@ -7,4 +7,5 @@ Background: Many hobbyists convert their manual lathe to function as a CNC machi
 Please note that for this to function you have to wire up the enable/disable signal on your stepper drivers, which is usually not required for pure CNC operation.
 
 ![elle-app](elle-app.png)
+![elle-app-thread](elle-app-thread.jpg)
 
