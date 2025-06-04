@@ -70,6 +70,7 @@ async function createWindow() {
 //app.commandLine.appendSwitch('disable-gpu');
 //app.commandLine.appendSwitch('disable-gpu-compositing');
 //app.disableHardwareAcceleration()
+app.commandLine.appendSwitch("gtk-version", "3")
 
 app.whenReady().then(async () => {
     if (isDev) {
