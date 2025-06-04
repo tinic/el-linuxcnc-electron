@@ -1,6 +1,12 @@
-import ElectronStore from 'electron-store';
+import Store from 'electron-store';
 
-export const appConfig = new ElectronStore({
+interface AppConfig {
+    setting: {
+        appBounds?: any;
+    };
+}
+
+export const appConfig = new Store<AppConfig>({
     name: 'appConfig',
     defaults: {
         setting: {},

@@ -6,23 +6,23 @@ import { createWebHistory, createRouter } from "vue-router";
 import { definePreset } from '@primevue/themes';
 import Aura from '@primevue/themes/aura';
 
-import 'primeicons/primeicons.css'                      // icons
-import 'primeflex/primeflex.css'          // PrimeFlex
+import 'primeicons/primeicons.css'
+import 'primeflex/primeflex.css'
 
-const MyPreset = definePreset(Aura, {
+const auraPreset = definePreset(Aura, {
     semantic: {
         primary: {
-            50: '{indigo.50}',
-            100: '{indigo.100}',
-            200: '{indigo.200}',
-            300: '{indigo.300}',
-            400: '{indigo.400}',
-            500: '{indigo.500}',
-            600: '{indigo.600}',
-            700: '{indigo.700}',
-            800: '{indigo.800}',
-            900: '{indigo.900}',
-            950: '{indigo.950}'
+            50: '{slate.50}',
+            100: '{slate.100}',
+            200: '{slate.200}',
+            300: '{slate.300}',
+            400: '{slate.400}',
+            500: '{slate.500}',
+            600: '{slate.600}',
+            700: '{slate.700}',
+            800: '{slate.800}',
+            900: '{slate.900}',
+            950: '{slate.950}'
         }
     }
 });
@@ -56,7 +56,7 @@ const router = createRouter({
 const app = createApp(App);
 app.use(PrimeVue, {
     theme: {
-        preset: MyPreset,
+        preset: auraPreset,
         options: {
             darkModeSelector: 'system'
         }

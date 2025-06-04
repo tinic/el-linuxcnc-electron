@@ -16,7 +16,7 @@ interface G76Preset {
 }
 
 const presets = {
-  metric: [
+  metric: [ 
     { name: "M10 x 1.5", X: 8.5, Z: -25, I: 0, K: 1.5, D: 0.3, A: 60, F: 1.5 },
     { name: "M12 x 1.75", X: 10.25, Z: -30, I: 0, K: 1.75, D: 0.35, A: 60, F: 1.75 },
     { name: "M16 x 2.0", X: 14, Z: -35, I: 0, K: 2.0, D: 0.4, A: 60, F: 2.0 },

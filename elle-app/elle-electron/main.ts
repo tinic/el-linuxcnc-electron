@@ -1,9 +1,13 @@
 import fs from 'fs';
 import path from "path";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 import { app, BrowserWindow, BrowserWindowConstructorOptions, ipcMain, screen } from "electron";
-import { isDev } from "./config";
-import { appConfig } from "./electron-store/configuration";
+import { isDev } from "./config.js";
+import { appConfig } from "./electron-store/configuration.js";
 import { spawn, spawnSync, ChildProcess } from 'node:child_process';
 
 let mainWindow:BrowserWindow;
@@ -12,7 +16,7 @@ let halquit:boolean = false;
 
 async function createWindow() {
     const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-    const appBounds: any = appConfig.get("setting.appBounds");
+    const appBounds: any = (appConfig as any).get("setting.appBounds");
     const BrowserWindowOptions: BrowserWindowConstructorOptions = {
         width: 1366,
         minWidth: 1366,
@@ -70,7 +74,7 @@ async function createWindow() {
 app.whenReady().then(async () => {
     if (isDev) {
         try {
-            const { installExt } = await import("./installDevTool");
+            const { installExt } = await import("./installDevTool.js");
             await installExt();
         } catch (e) {
             console.log("Can not install extension!");

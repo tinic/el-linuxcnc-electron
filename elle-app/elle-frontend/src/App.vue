@@ -1298,7 +1298,7 @@ onMounted(() => {
     </div>
     <div
       v-if="selectedMenu == 1"
-      class="flex-grow-1 flex flex-column bg-blue-500 p-2"
+      class="flex-grow-1 flex flex-column bg-gray-800 p-2"
     >
       <div class="flex flex-row">
         <DRODisplay
@@ -1571,7 +1571,7 @@ onMounted(() => {
     </div>
     <div
       v-if="selectedMenu == 3"
-      class="flex-grow-1 flex align-items-center justify-content-center bg-blue-500"
+      class="flex-grow-1 flex align-items-center justify-content-center bg-gray-800"
     >
       Settings
     </div>
