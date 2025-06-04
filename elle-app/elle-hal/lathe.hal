@@ -9,6 +9,7 @@ loadrt constant count=2
 setp constant.0.value 0
 setp constant.1.value 1
 
+
 loadrt not count=2
 loadrt mux2 count=6
 setp mux2.0.sel 0
@@ -237,7 +238,6 @@ net jnt-x-stepper-enbl  => mux-gen.03.in-bit-01 # hm2_7i96.0.stepgen.01.enable
 
 net control-source      => mux-gen.00.in-bit-01 # control-source will be true, use that as a 1
 net control-source      => mux-gen.01.in-bit-01 # control-source will be true, use that as a 1
-net control-source      => iocontrol.0.emc-enable-in
 
 net pid-z-output        => mux2.2.in1 # hm2_7i96.0.stepgen.00.velocity-cmd
 net pid-x-output        => mux2.3.in1 # hm2_7i96.0.stepgen.01.velocity-cmd
@@ -320,10 +320,11 @@ net x-control-type => mux-gen.01.in-bit-00 # hm2_7i96.0.stepgen.01.control-type
 net x-velocity-cmd <= lathe.velocity_x_cmd
 net x-velocity-cmd => mux2.3.in0 # hm2_7i96.0.stepgen.01.velocity-cmd
 
-# Force spindle at-speed to always be true for mechanically synchronized spindle
-setp spindle.0.at-speed true
-
 # Connect spindle index enable for threading synchronization
 net spindle-index-enable spindle.0.index-enable <=> hm2_7i96.0.encoder.00.index-enable
+
+# Force spindle at-speed to always be true for mechanically synchronized spindle
+setp spindle.0.at-speed true
+setp iocontrol.0.emc-enable-in true
 
 #loadusr halshow

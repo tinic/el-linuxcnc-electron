@@ -489,7 +489,7 @@ function startPoll() {
           aaxissetscheduled = false;
           aaxisoffset = (halIn as any).position_a - ((aaxisset / 360) % 1);
           aaxisset = 0;
-        }
+        }  
         zpos.value = (halIn as any).position_z - zaxisoffset;
         xpos.value = -(halIn as any).position_x - xaxisoffset;
         apos.value = Math.abs(
@@ -498,8 +498,8 @@ function startPoll() {
         rpms.value = Math.abs((halIn as any).speed_rps * 60);
       });
     } catch {
-      // nop
-    }
+      // nop 
+    }  
     if (buttonuptime > 0) {
       halOutScheduled = false;
       let velocity = (Date.now() / 1000 - buttonuptime) * 3;
@@ -833,6 +833,10 @@ watch([selectedFeedMode, selectedDirectionMode], () => {
 
 watch([zpitch, xpitch], () => {
   updateHALOut();
+});
+
+watch(selectedMenu, () => {
+  scheduleHALOut();
 });
 
 const PitchSelector = defineAsyncComponent(
@@ -1752,3 +1756,4 @@ body {
 }
 
 </style>
+ 

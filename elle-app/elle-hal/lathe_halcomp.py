@@ -2,10 +2,14 @@
 import hal
 import sys
 import linuxcnc
+import time
 
 from flask import Flask
 from flask_cors import CORS
 from flask import request
+
+#halc = hal.component("halui")
+#hal_pin_machine_is_on = halc.newpin("is-on", hal.HAL_BIT, hal.HAL_OUT)
 
 halc = hal.component("lathe")
 c = linuxcnc.command()
@@ -62,10 +66,35 @@ def write_gcode():
     gcode_command = json_data["gcode"]
     
     try:
+
+        # c.mode(linuxcnc.MODE_MDI)
+
         # Ensure LinuxCNC is in a state where it can accept commands
         c.wait_complete()
-        
-        # Execute the G-code command
+
+        # s = linuxcnc.stat()
+        # while True:
+        #     s.poll()
+        #     if s.estop:
+        #         print("Error: Machine is in ESTOP state.")
+        #         exit()
+        #     if not s.enabled:
+        #         print("Error: Machine is not enabled.")
+        #         exit()
+        #     if not s.homed:
+        #         print("Error: Machine is not homed.")
+        #         exit()
+        #     if s.interp_state != linuxcnc.INTERP_IDLE:
+        #         print("Error: Interpreter is not idle.")
+        #         exit()
+        #     if s.task_mode != linuxcnc.MODE_MDI:
+        #         print("Setting MDI mode")
+        #         c.mode(linuxcnc.MODE_MDI)
+        #         time.sleep(0.1)
+        #         continue
+        #     break
+
+        # # Execute the G-code command
         c.mdi(gcode_command)
         
         print(f"Executed G-code: {gcode_command}")
@@ -155,6 +184,8 @@ def write_hal_out():
         hal_pin_forward_x.set(json["forward_x"])
     if "enable_x" in json:
         hal_pin_enable_x.set(json["enable_x"])
+
+    #hal_pin_machine_is_on.set(True)
 
     return {"status": "OK"}
 

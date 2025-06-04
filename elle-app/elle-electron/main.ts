@@ -30,8 +30,8 @@ async function createWindow() {
         },
         show: false,
         alwaysOnTop: true,
-        frame: true,
-        fullscreen: true,
+        frame: false,
+//        fullscreen: true,
     };
 
     if (appBounds !== undefined && appBounds !== null) Object.assign(BrowserWindowOptions, appBounds);
