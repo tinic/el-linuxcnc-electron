@@ -1,0 +1,81 @@
+
+(filename: thread-loop.ngc by Joe Kline 1/25/2013)
+(  6/15/2016 JK add G4 P.01)
+(must be in path as in .ini file PROGRAM_PREFIX = ...)
+(Thanks John T for input on using named parameters)
+(The following parameters to be set from calling prog)
+(just copy this list to your prog)
+(uncomment and set them for desired thread)
+(Then call with: o<thread-loop> call )
+;#<_X_Start>     =    (X START POINT)
+;#<_Z_Start>     =    (Z START POINT)
+;#<_Pitch>       =    (PITCH ALONG DRIVELINE)
+;#<_X_Depth>     =    (X DEPTH, - EXTERNAL, + INTERNAL)
+;#<_Z_Depth>     =    (Z DEPTH, +/- FOR COMPOUND, 0 PLUNGE)
+;#<_X_End>       =    (X END OF THREAD)
+;#<_Z_End>       =    (Z END OF THREAD)
+;#<_X_Pullout>   =    (X PULL OUT, + EXTERNAL, - INTERNAL)
+;#<_Z_Pullout>   =    (Z PULL OUT, +/-)
+;#<_First_Cut>   =    (1st CUT SIZE)
+;#<_Cut_Mult>    =    (PROGRESSIVE MULTIPLIER .8 to 1.0)
+;#<_Min_Cut>     =    (MIN CUT SIZE)
+;#<_Spring_Cuts> =    (SPRING CUTS)
+
+o<thread-loop> sub
+(validate inputs)
+#<_First_Cut> = ABS[#<_First_Cut>]
+#<_Cut_Mult> = ABS[#<_Cut_Mult>]
+#<_Min_Cut> = ABS[#<_Min_Cut>]
+#<_Pitch> = ABS[#<_Pitch>]
+#<Compound_Dist>=SQRT[[#<_X_Depth>*#<_X_Depth>]+[#<_Z_Depth>*#<_Z_Depth>]]  (calc compound dist)
+;(debug,comp dist = #<Compound_Dist>)
+#<kX>=[#<_X_Depth>/#<Compound_Dist>] (kx)
+#<kZ>=[#<_Z_Depth>/#<Compound_Dist>] (kz)
+;(debug,kX = #<kX> kZ = #<kZ>) 
+#<Cut_Size> = 0.0
+#<X_Cut>=0.0
+#<Z_Cut>=0.0
+G0 X#<_X_Start> Z#<_Z_Start>     (Move to start point) 
+o100 do
+  o101 if [#<Cut_Size> EQ 0.0]
+    #<Cut_Size> = #<_First_Cut>
+;    (debug,1st Cut = #<Cut_Size>) 
+  o101 else
+    #<Cut_Size> = [#<Cut_Size> * #<_Cut_Mult>]
+  o101 endif
+;  (debug,Cut_Size = #<Cut_Size>) 
+  o102 if [ABS[#<Cut_Size>] LT ABS[#<_Min_Cut>]]
+    #<Cut_Size> = #<_Min_Cut>
+;    (debug,at min ---> = #<Cut_Size> ) 
+  o102 endif
+  #<X_Cut>=[#<X_Cut>+[#<Cut_Size> * #<kX>]] (X)
+  #<Z_Cut>=[#<Z_Cut>+[#<Cut_Size> * #<kZ>]] (Z)
+;  (debug,X_Cut = #<X_Cut>, Z_Cut #<Z_Cut>)
+  o110 if [ABS[#<X_Cut>] GE ABS[#<_X_Depth>]] (don't go too far)
+    #<X_Cut> = #<_X_Depth>
+    #<Z_Cut> = #<_Z_Depth>
+  o110 endif
+  G1X[#<_X_Start>+#<X_Cut>] Z[#<_Z_Start>+#<Z_Cut>]            (start point - cut size)
+  G4 P.01 (need for 2.7 TP)
+  G33 X[#<_X_End>+#<X_Cut>] Z[#<_Z_End>+#<Z_Cut>] K#<_Pitch>     (cut thread)
+  G33 X#<_X_End> Z[#<_Z_End>+#<Z_Cut>+#<_Z_Pullout>] K#<_Pitch> (pull out)
+;	G95 (feed per rev)
+;	F#<_Pitch>  (same as pitch)
+  G1 X#<_X_End> Z[#<_Z_End>+#<Z_Cut>+#<_Z_Pullout>]  (pull out)
+  G0 X[#<_X_End>+#<_X_Pullout>]
+  G0 Z#<_Z_Start>
+  G0 X#<_X_Start>
+  o120 if [ABS[#<X_Cut>] EQ ABS[#<_X_Depth>]]
+    o121 if [#<_Spring_Cuts> GT 0] 
+      #<X_Cut>=[#<X_Cut>-[#<Cut_Size> * #<kX>]] (back off X)
+      #<Z_Cut>=[#<Z_Cut>-[#<Cut_Size> * #<kZ>]] (Z)
+    o121 endif  
+    #<_Spring_Cuts>=[[#<_Spring_Cuts>]-1.] (decr spring passes) 
+  o120 endif
+o100 while [[#<_Spring_Cuts>] GT -1.0]
+
+;G0 X[#<_X_Start>+#<_X_Depth>] z.250  (temp mark OD)
+;G1Z.150
+;X#<_X_Start>
+;Z.250  (temp mark minor)
+o<thread-loop> endsub
