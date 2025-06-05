@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, defineAsyncComponent } from "vue";
 import { useDialog } from "primevue/usedialog";
+import Popover from "primevue/popover";
 import { Camera, Renderer, RendererPublicInterface, Scene } from "troisjs";
 
 import Numpad from "./components/Numpad.vue";
@@ -133,9 +134,50 @@ const threadMinCut = ref<number | null>(null);
 const threadSpringCuts = ref<number | null>(null);
 const threadPresetName = ref<string | null>(null);
 
+// Popover refs and state
+const threadingPopovers = ref<Record<string, any>>({});
+const currentPopoverLabel = ref("");
+
+// Threading parameter descriptions
+const threadingDescriptions: { [key: string]: string } = {
+  'P': 'Thread pitch - distance between threads',
+  'XD': 'X Depth - cross-slide cutting depth\n(negative for external, positive for internal)',
+  'ZD': 'Z Depth - longitudinal cutting depth\n(zero for straight threads)',
+  'XE': 'X End - final X position offset\n(zero for straight threads)',
+  'ZE': 'Z End - final Z position\n(usually negative for regular right hand threads)',
+  'XP': 'X Pullout - cross-slide retract distance\n(positive for external, negative for internal)',
+  'ZP': 'Z Pullout - spindle retract distance',
+  'FC': 'First Cut - initial cutting depth',
+  'CM': 'Cut Multiplier - depth reduction factor\n(0.5-1.0)',
+  'MC': 'Min Cut - minimum cutting depth',
+  'SC': 'Spring Cuts - number of finishing passes'
+};
+
 // Helper function to round threading values with optional unit conversion
 const roundThreadValue = (value: number, conversionFactor: number = 1): number => {
   return Math.round((value * conversionFactor) * 1000000) / 1000000;
+};
+
+// Show popover with parameter description
+const showLabelPopover = (event: Event, labelKey: string) => {
+  const popover = threadingPopovers.value[labelKey];
+  if (!popover) return;
+  
+  // If clicking the same label that's currently showing, hide it
+  if (currentPopoverLabel.value === labelKey && popover.visible) {
+    popover.hide();
+    currentPopoverLabel.value = "";
+    return;
+  }
+  
+  // Hide any currently visible popover
+  if (currentPopoverLabel.value && threadingPopovers.value[currentPopoverLabel.value]) {
+    threadingPopovers.value[currentPopoverLabel.value].hide();
+  }
+  
+  // Show the new popover
+  currentPopoverLabel.value = labelKey;
+  popover.show(event);
 };
 
 const menuItems = ref([
@@ -1591,22 +1633,38 @@ onMounted(() => {
           <!-- Note: X Start uses current position, Z Start is always 0 -->
           
           <!-- Row 1 -->
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end">P</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'P')">P</div>
           <div class="col-4 p-1">
             <button
               @click="numberClicked(6, threadPitch || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-2 truncate', { 'placeholder-text': entryActive != 6 && threadPitch === null }]"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 6 && threadPitch === null }]"
               :style="{ backgroundColor: entryActive == 6 ? '#666' : '#333' }"
               :title="entryActive == 6 ? String(numberentry) : String(threadPitch ?? 'Pitch')"
             >
               {{ entryActive == 6 ? numberentry : (threadPitch ?? 'Pitch') }}
             </button>
           </div>
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end">XD</div>
+          <div class="col-1 p-0"></div>
+          <div class="col-4 p-0"></div>
+          <div class="col-2 p-0"></div>
+          
+          <!-- Row 2 -->
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'ZD')">ZD</div>
+          <div class="col-4 p-1">
+            <button
+              @click="numberClicked(8, threadZDepth || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 8 && threadZDepth === null }]"
+              :style="{ backgroundColor: entryActive == 8 ? '#666' : '#333' }"
+              :title="entryActive == 8 ? String(numberentry) : String(threadZDepth ?? 'Z Depth')"
+            >
+              {{ entryActive == 8 ? numberentry : (threadZDepth ?? 'Z Depth') }}
+            </button>
+          </div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'XD')">XD</div>
           <div class="col-4 p-1">
             <button
               @click="numberClicked(7, threadXDepth || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-2 truncate', { 'placeholder-text': entryActive != 7 && threadXDepth === null }]"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 7 && threadXDepth === null }]"
               :style="{ backgroundColor: entryActive == 7 ? '#666' : '#333' }"
               :title="entryActive == 7 ? String(numberentry) : String(threadXDepth ?? 'X Depth')"
             >
@@ -1616,22 +1674,22 @@ onMounted(() => {
           <div class="col-2 p-0"></div>
           
           <!-- Row 3 -->
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end">ZD</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'ZE')">ZE</div>
           <div class="col-4 p-1">
             <button
-              @click="numberClicked(8, threadZDepth || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-2 truncate', { 'placeholder-text': entryActive != 8 && threadZDepth === null }]"
-              :style="{ backgroundColor: entryActive == 8 ? '#666' : '#333' }"
-              :title="entryActive == 8 ? String(numberentry) : String(threadZDepth ?? 'Z Depth')"
+              @click="numberClicked(10, threadZEnd || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 10 && threadZEnd === null }]"
+              :style="{ backgroundColor: entryActive == 10 ? '#666' : '#333' }"
+              :title="entryActive == 10 ? String(numberentry) : String(threadZEnd ?? 'Z End')"
             >
-              {{ entryActive == 8 ? numberentry : (threadZDepth ?? 'Z Depth') }}
+              {{ entryActive == 10 ? numberentry : (threadZEnd ?? 'Z End') }}
             </button>
           </div>
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end">XE</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'XE')">XE</div>
           <div class="col-4 p-1">
             <button
               @click="numberClicked(9, threadXEndOffset || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-2 truncate', { 'placeholder-text': entryActive != 9 && threadXEndOffset === null }]"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 9 && threadXEndOffset === null }]"
               :style="{ backgroundColor: entryActive == 9 ? '#666' : '#333' }"
               :title="entryActive == 9 ? String(numberentry) : String(threadXEndOffset ?? 'X End')"
             >
@@ -1641,22 +1699,22 @@ onMounted(() => {
           <div class="col-2 p-0"></div>
           
           <!-- Row 4 -->
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end">ZE</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'ZP')">ZP</div>
           <div class="col-4 p-1">
             <button
-              @click="numberClicked(10, threadZEnd || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-2 truncate', { 'placeholder-text': entryActive != 10 && threadZEnd === null }]"
-              :style="{ backgroundColor: entryActive == 10 ? '#666' : '#333' }"
-              :title="entryActive == 10 ? String(numberentry) : String(threadZEnd ?? 'Z End')"
+              @click="numberClicked(12, threadZPullout || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 12 && threadZPullout === null }]"
+              :style="{ backgroundColor: entryActive == 12 ? '#666' : '#333' }"
+              :title="entryActive == 12 ? String(numberentry) : String(threadZPullout ?? 'Z Pullout')"
             >
-              {{ entryActive == 10 ? numberentry : (threadZEnd ?? 'Z End') }}
+              {{ entryActive == 12 ? numberentry : (threadZPullout ?? 'Z Pullout') }}
             </button>
           </div>
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end">XP</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'XP')">XP</div>
           <div class="col-4 p-1">
             <button
               @click="numberClicked(11, threadXPullout || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-2 truncate', { 'placeholder-text': entryActive != 11 && threadXPullout === null }]"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 11 && threadXPullout === null }]"
               :style="{ backgroundColor: entryActive == 11 ? '#666' : '#333' }"
               :title="entryActive == 11 ? String(numberentry) : String(threadXPullout ?? 'X Pullout')"
             >
@@ -1666,22 +1724,22 @@ onMounted(() => {
           <div class="col-2 p-0"></div>
           
           <!-- Row 5 -->
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end">ZP</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'CM')">CM</div>
           <div class="col-4 p-1">
             <button
-              @click="numberClicked(12, threadZPullout || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-2 truncate', { 'placeholder-text': entryActive != 12 && threadZPullout === null }]"
-              :style="{ backgroundColor: entryActive == 12 ? '#666' : '#333' }"
-              :title="entryActive == 12 ? String(numberentry) : String(threadZPullout ?? 'Z Pullout')"
+              @click="numberClicked(14, threadCutMult || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 14 && threadCutMult === null }]"
+              :style="{ backgroundColor: entryActive == 14 ? '#666' : '#333' }"
+              :title="entryActive == 14 ? String(numberentry) : String(threadCutMult ?? 'Cut Multiplier')"
             >
-              {{ entryActive == 12 ? numberentry : (threadZPullout ?? 'Z Pullout') }}
+              {{ entryActive == 14 ? numberentry : (threadCutMult ?? 'Cut Multiplier') }}
             </button>
           </div>
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end">FC</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'FC')">FC</div>
           <div class="col-4 p-1">
             <button
               @click="numberClicked(13, threadFirstCut || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-2 truncate', { 'placeholder-text': entryActive != 13 && threadFirstCut === null }]"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 13 && threadFirstCut === null }]"
               :style="{ backgroundColor: entryActive == 13 ? '#666' : '#333' }"
               :title="entryActive == 13 ? String(numberentry) : String(threadFirstCut ?? 'First Cut')"
             >
@@ -1691,22 +1749,22 @@ onMounted(() => {
           <div class="col-2 p-0"></div>
           
           <!-- Row 6 -->
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end">CM</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'SC')">SC</div>
           <div class="col-4 p-1">
             <button
-              @click="numberClicked(14, threadCutMult || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-2 truncate', { 'placeholder-text': entryActive != 14 && threadCutMult === null }]"
-              :style="{ backgroundColor: entryActive == 14 ? '#666' : '#333' }"
-              :title="entryActive == 14 ? String(numberentry) : String(threadCutMult ?? 'Cut Multiplier')"
+              @click="numberClicked(16, threadSpringCuts || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 16 && threadSpringCuts === null }]"
+              :style="{ backgroundColor: entryActive == 16 ? '#666' : '#333' }"
+              :title="entryActive == 16 ? String(numberentry) : String(threadSpringCuts ?? 'Spring Cuts')"
             >
-              {{ entryActive == 14 ? numberentry : (threadCutMult ?? 'Cut Multiplier') }}
+              {{ entryActive == 16 ? numberentry : (threadSpringCuts ?? 'Spring Cuts') }}
             </button>
           </div>
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end">MC</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'MC')">MC</div>
           <div class="col-4 p-1">
             <button
               @click="numberClicked(15, threadMinCut || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-2 truncate', { 'placeholder-text': entryActive != 15 && threadMinCut === null }]"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 15 && threadMinCut === null }]"
               :style="{ backgroundColor: entryActive == 15 ? '#666' : '#333' }"
               :title="entryActive == 15 ? String(numberentry) : String(threadMinCut ?? 'Min Cut')"
             >
@@ -1715,21 +1773,6 @@ onMounted(() => {
           </div>
           <div class="col-2 p-0"></div>
           
-          <!-- Row 7 -->
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end">SC</div>
-          <div class="col-4 p-1">
-            <button
-              @click="numberClicked(16, threadSpringCuts || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-2 truncate', { 'placeholder-text': entryActive != 16 && threadSpringCuts === null }]"
-              :style="{ backgroundColor: entryActive == 16 ? '#666' : '#333' }"
-              :title="entryActive == 16 ? String(numberentry) : String(threadSpringCuts ?? 'Spring Cuts')"
-            >
-              {{ entryActive == 16 ? numberentry : (threadSpringCuts ?? 'Spring Cuts') }}
-            </button>
-          </div>
-          <div class="col-1 p-0"></div>
-          <div class="col-4 p-1"></div>
-          <div class="col-2 p-0"></div>
           
           
           </div>
@@ -1768,6 +1811,41 @@ onMounted(() => {
               ⏹ Stop
             </button>
           </div>
+          
+          <!-- Threading Label Popovers -->
+          <Popover :ref="(el) => threadingPopovers['P'] = el" class="threading-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ threadingDescriptions['P'] }}</div>
+          </Popover>
+          <Popover :ref="(el) => threadingPopovers['XD'] = el" class="threading-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ threadingDescriptions['XD'] }}</div>
+          </Popover>
+          <Popover :ref="(el) => threadingPopovers['ZD'] = el" class="threading-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ threadingDescriptions['ZD'] }}</div>
+          </Popover>
+          <Popover :ref="(el) => threadingPopovers['XE'] = el" class="threading-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ threadingDescriptions['XE'] }}</div>
+          </Popover>
+          <Popover :ref="(el) => threadingPopovers['ZE'] = el" class="threading-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ threadingDescriptions['ZE'] }}</div>
+          </Popover>
+          <Popover :ref="(el) => threadingPopovers['XP'] = el" class="threading-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ threadingDescriptions['XP'] }}</div>
+          </Popover>
+          <Popover :ref="(el) => threadingPopovers['ZP'] = el" class="threading-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ threadingDescriptions['ZP'] }}</div>
+          </Popover>
+          <Popover :ref="(el) => threadingPopovers['FC'] = el" class="threading-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ threadingDescriptions['FC'] }}</div>
+          </Popover>
+          <Popover :ref="(el) => threadingPopovers['CM'] = el" class="threading-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ threadingDescriptions['CM'] }}</div>
+          </Popover>
+          <Popover :ref="(el) => threadingPopovers['MC'] = el" class="threading-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ threadingDescriptions['MC'] }}</div>
+          </Popover>
+          <Popover :ref="(el) => threadingPopovers['SC'] = el" class="threading-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ threadingDescriptions['SC'] }}</div>
+          </Popover>
         </div>
       </div>
       <DynamicDialog />
@@ -1973,6 +2051,30 @@ body {
   background: #ffffff;
   border-color: #e5e7eb;
   box-shadow: 0 0 24px #ffffff, inset 0 3px 6px rgba(255,255,255,0.4);
+}
+
+/* Threading popover styling */
+:deep(.threading-popover .p-popover) {
+  background-color: #333 !important;
+  border: 1px solid #555 !important;
+  color: #ffffff !important;
+  font-size: 0.9em;
+  max-width: 250px;
+}
+
+:deep(.threading-popover .p-popover-arrow) {
+  border-bottom-color: #333 !important;
+  border-top-color: #333 !important;
+  border-left-color: #333 !important;
+  border-right-color: #333 !important;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.cursor-pointer:hover {
+  color: #aaaaaa;
 }
 
 </style>
