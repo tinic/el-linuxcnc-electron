@@ -63,16 +63,10 @@ def write_gcode():
     
     if not json_data or "gcode" not in json_data:
         return {"status": "Error", "message": "Missing gcode parameter"}, 400
-    
-    gcode_command = json_data["gcode"]
-    
+
+    c.state(linuxcnc.STATE_ON)
+
     try:
-
-        c.mode(linuxcnc.MODE_MDI)
-
-        # Ensure LinuxCNC is in a state where it can accept commands
-        c.wait_complete()
-
         s = linuxcnc.stat()
         while True:
             s.poll()
@@ -95,7 +89,12 @@ def write_gcode():
                 continue
             break
 
+        # Ensure LinuxCNC is in a state where it can accept commands
+        c.wait_complete()
+
         # # Execute the G-code command
+        c.mdi("M3S500")
+        gcode_command = json_data["gcode"]
         c.mdi(gcode_command)
         
         print(f"Executed G-code: {gcode_command}")
@@ -192,7 +191,7 @@ def write_hal_out():
 
 
 halc.ready()
-
+haluic.ready()
 
 print("{REST_API_READY}")
 

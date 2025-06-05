@@ -122,7 +122,7 @@ setp hm2_7i96.0.stepgen.00.control-type 0
 ## X Axis stepper setup
 
 # Set the scale so it represents 1 (one) millimeter movement, i.e. steps/mm
-setp hm2_7i96.0.stepgen.01.position-scale 1079.86501687289 ### 1.0 / (25.4 / (3200.0 * 10.0 * (12.0 / 14.0)))
+setp hm2_7i96.0.stepgen.01.position-scale -1079.86501687289 ### -1.0 / (25.4 / (3200.0 * 10.0 * (12.0 / 14.0)))
 
 # customize as per your machine/steppers
 setp hm2_7i96.0.stepgen.01.dirhold 1000
@@ -326,5 +326,6 @@ net spindle-index-enable spindle.0.index-enable <=> hm2_7i96.0.encoder.00.index-
 # Force spindle at-speed to always be true for mechanically synchronized spindle
 setp spindle.0.at-speed true
 setp iocontrol.0.emc-enable-in true
+net r-rps => spindle.0.speed-in
 
 #loadusr halshow
