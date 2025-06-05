@@ -52,14 +52,28 @@ def index():
 def read_hal_in():
     s = linuxcnc.stat()
     s.poll()
+    
+    error_state = (
+        s.estop or                              # E-stop active
+        s.exec_state == linuxcnc.EXEC_ERROR     # Execution error
+    )
+    
+    program_running = (
+        s.interp_state != linuxcnc.INTERP_IDLE or
+        s.exec_state in [linuxcnc.EXEC_WAITING_FOR_MOTION, 
+                        linuxcnc.EXEC_WAITING_FOR_MOTION_QUEUE, 
+                        linuxcnc.EXEC_WAITING_FOR_IO] or
+        s.call_level > 0
+    )
+    
     return {
         "position_z": hal_pin_position_z.get(),
         "position_x": hal_pin_position_x.get(),
         "position_a": hal_pin_position_a.get(),
         "speed_rps": hal_pin_speed_rps.get(),
-        "in_cycle": s.call_level > 0
+        "in_cycle": program_running,
+        "error_state": error_state
     }
-
 
 @app.put("/hal/abort")
 def abort_operation():
@@ -106,6 +120,7 @@ def execute_threading():
         return {"status": "Error", "message": "Missing threading parameters"}, 400
 
     c.state(linuxcnc.STATE_ON)
+    c.wait_complete()
 
     try:
         s = linuxcnc.stat()
@@ -132,30 +147,27 @@ def execute_threading():
         c.wait_complete()
 
         # Set thread-loop.ngc parameters using MDI
-        c.mdi("G7")        # Diameter mode
-        c.mdi("G90")       # Absolute positioning
-        c.mdi("G21")       # Metric units (assuming parameters are in mm)
-        c.mdi("F100")      # Set feed rate for G1 moves (100 mm/min)
-        c.mdi("M3 S500")   # Start spindle at 500 RPM
+        c.mdi("G7")       # Diameter mode
+        c.mdi("G90")      # Absolute positioning
+        c.mdi("G21")      # Metric units (assuming parameters are in mm)
+        c.mdi("F100")     # Set feed rate for G1 moves (100 mm/min)
+        c.mdi("M3S500")   # Start spindle at 500 RPM
         
         # Set thread-loop parameters
-        c.mdi(f"#<_X_Start> = {json_data['XStart']}")
-        c.mdi(f"#<_Z_Start> = {json_data['ZStart']}")
-        c.mdi(f"#<_Pitch> = {json_data['Pitch']}")
-        c.mdi(f"#<_X_Depth> = {json_data['XDepth']}")
-        c.mdi(f"#<_Z_Depth> = {json_data['ZDepth']}")
-        c.mdi(f"#<_X_End> = {json_data['XEnd']}")
-        c.mdi(f"#<_Z_End> = {json_data['ZEnd']}")
-        c.mdi(f"#<_X_Pullout> = {json_data['XPullout']}")
-        c.mdi(f"#<_Z_Pullout> = {json_data['ZPullout']}")
-        c.mdi(f"#<_First_Cut> = {json_data['FirstCut']}")
-        c.mdi(f"#<_Cut_Mult> = {json_data['CutMult']}")
-        c.mdi(f"#<_Min_Cut> = {json_data['MinCut']}")
-        c.mdi(f"#<_Spring_Cuts> = {json_data['SpringCuts']}")
+        c.mdi(f"#<_X_Start> = {float(json_data['XStart']):.6f}")
+        c.mdi(f"#<_Z_Start> = {float(json_data['ZStart']):.6f}")
+        c.mdi(f"#<_Pitch> = {float(json_data['Pitch']):.6f}")
+        c.mdi(f"#<_X_Depth> = {float(json_data['XDepth']):.6f}")
+        c.mdi(f"#<_Z_Depth> = {float(json_data['ZDepth']):.6f}")
+        c.mdi(f"#<_X_End> = {float(json_data['XEnd']):.6f}")
+        c.mdi(f"#<_Z_End> = {float(json_data['ZEnd']):.6f}")
+        c.mdi(f"#<_X_Pullout> = {float(json_data['XPullout']):.6f}")
+        c.mdi(f"#<_Z_Pullout> = {float(json_data['ZPullout']):.6f}")
+        c.mdi(f"#<_First_Cut> = {float(json_data['FirstCut']):.6f}")
+        c.mdi(f"#<_Cut_Mult> = {float(json_data['CutMult']):.6f}")
+        c.mdi(f"#<_Min_Cut> = {float(json_data['MinCut']):.6f}")
+        c.mdi(f"#<_Spring_Cuts> = {int(json_data['SpringCuts'])}")
 
-        # Wait for parameter setting to complete
-        c.wait_complete()
-        
         # Call the thread-loop subroutine
         c.mdi("o<thread-loop> call")
         

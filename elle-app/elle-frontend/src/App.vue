@@ -18,14 +18,14 @@ const zpos = ref(0);
 const apos = ref(0);
 const rpms = ref(0);
 const inCycle = ref(false);
+const errorState = ref(false);
 
 // Machine status computed from various states
 const machineStatus = computed(() => {
-  // TODO: Add error detection logic here when error signals are available
-  // For now, we don't have error detection implemented
-  // if (errorCondition) {
-  //   return 'error'; // Red - machine error/fault
-  // }
+  // Error states take highest priority
+  if (errorState.value) {
+    return 'error'; // Red - machine error/fault
+  }
   
   // Running any cycle takes priority
   if (inCycle.value) {
@@ -44,6 +44,8 @@ const machineStatus = computed(() => {
 
 const statusDisplay = computed(() => {
   switch (machineStatus.value) {
+    case 'error':
+      return { text: 'ERROR', class: 'status-error', title: 'Machine: Error/Fault State' };
     case 'running':
       return { text: 'RUNNING', class: 'status-running', title: 'Machine: Running/In Cycle' };
     case 'manual':
@@ -155,7 +157,13 @@ const threadingDescriptions: { [key: string]: string } = {
 
 // Helper function to round threading values with optional unit conversion
 const roundThreadValue = (value: number, conversionFactor: number = 1): number => {
-  return Math.round((value * conversionFactor) * 1000000) / 1000000;
+  const result = Math.round((value * conversionFactor) * 1000000) / 1000000;
+  return parseFloat(result.toFixed(6));
+};
+
+// Helper function to format numbers for LinuxCNC (prevents scientific notation)
+const formatForLinuxCNC = (value: number): number => {
+  return parseFloat(value.toFixed(6));
 };
 
 // Show popover with parameter description
@@ -623,6 +631,7 @@ function startPoll() {
         );
         rpms.value = Math.abs((halIn as any).speed_rps * 60);
         inCycle.value = (halIn as any).in_cycle || false;
+        errorState.value = (halIn as any).error_state || false;
       });
     } catch {
       // nop 
@@ -1124,19 +1133,19 @@ const threadStartClicked = () => {
    
   // Send threading parameters to LinuxCNC HAL component for subroutine call
   const threadingParams = {
-    XStart: xpos.value, // Use current X position
-    ZStart: threadPitch.value * 4, // Start a little behind so Z-Axis can accelerate
-    Pitch: threadPitch.value,
-    XDepth: threadXDepth.value || 0,
-    ZDepth: threadZDepth.value || 0,
-    XEnd: xpos.value + (threadXEndOffset.value || 0),
-    ZEnd: threadZEnd.value,
-    XPullout: threadXPullout.value || 0.1,
-    ZPullout: threadZPullout.value || 0.1,
-    FirstCut: threadFirstCut.value || 0.1,
-    CutMult: threadCutMult.value || 0.8,
-    MinCut: threadMinCut.value || 0.05,
-    SpringCuts: threadSpringCuts.value || 1
+    XStart: formatForLinuxCNC(xpos.value), // Use current X position
+    ZStart: formatForLinuxCNC(threadPitch.value * 4), // Start a little behind so Z-Axis can accelerate
+    Pitch: formatForLinuxCNC(threadPitch.value),
+    XDepth: formatForLinuxCNC(threadXDepth.value || 0),
+    ZDepth: formatForLinuxCNC(threadZDepth.value || 0),
+    XEnd: formatForLinuxCNC(xpos.value + (threadXEndOffset.value || 0)),
+    ZEnd: formatForLinuxCNC(threadZEnd.value),
+    XPullout: formatForLinuxCNC(threadXPullout.value || 0.1),
+    ZPullout: formatForLinuxCNC(threadZPullout.value || 0.1),
+    FirstCut: formatForLinuxCNC(threadFirstCut.value || 0.1),
+    CutMult: formatForLinuxCNC(threadCutMult.value || 0.8),
+    MinCut: formatForLinuxCNC(threadMinCut.value || 0.05),
+    SpringCuts: Math.round(threadSpringCuts.value || 1)
   };
   
   console.log("Threading Parameters:", threadingParams);
@@ -1277,7 +1286,7 @@ onMounted(() => {
           <div class="flex align-items-center justify-content-start p-2 pl-4 border-noround">
             <div class="stack-light" :title="statusDisplay.title">
               <div class="stack-light-base"></div>
-              <div :class="['stack-segment', 'segment-red', { 'active': false }]"></div>
+              <div :class="['stack-segment', 'segment-red', { 'active': machineStatus === 'error' }]"></div>
               <div :class="['stack-segment', 'segment-amber', { 'active': false }]"></div>
               <div :class="['stack-segment', 'segment-green', { 'active': machineStatus === 'running' }]"></div>
               <div :class="['stack-segment', 'segment-white', { 'active': machineStatus === 'program' }]"></div>
