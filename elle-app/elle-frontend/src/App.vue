@@ -20,6 +20,12 @@ const inCycle = ref(false);
 
 // Machine status computed from various states
 const machineStatus = computed(() => {
+  // TODO: Add error detection logic here when error signals are available
+  // For now, we don't have error detection implemented
+  // if (errorCondition) {
+  //   return 'error'; // Red - machine error/fault
+  // }
+  
   // Running any cycle takes priority
   if (inCycle.value) {
     return 'running'; // Green - machine running/in cycle
@@ -32,7 +38,6 @@ const machineStatus = computed(() => {
     return 'program'; // White - canned cycle mode ready
   }
   
-  // Future: can add error detection here
   return 'idle'; // Fallback - should rarely be used
 });
 
@@ -44,8 +49,6 @@ const statusDisplay = computed(() => {
       return { text: 'MANUAL', class: 'status-manual', title: 'Machine: Manual Mode' };
     case 'program':
       return { text: 'PROGRAM', class: 'status-program', title: 'Machine: Canned Cycle Mode' };
-    case 'error':
-      return { text: 'FAULT', class: 'status-error', title: 'Machine: Error/Fault' };
     case 'idle':
       return { text: 'IDLE', class: 'status-idle', title: 'Machine: Idle' };
     default:
@@ -1273,7 +1276,7 @@ onMounted(() => {
           <div class="flex align-items-center justify-content-start p-2 pl-4 border-noround">
             <div class="stack-light" :title="statusDisplay.title">
               <div class="stack-light-base"></div>
-              <div :class="['stack-segment', 'segment-red', { 'active': machineStatus === 'error' }]"></div>
+              <div :class="['stack-segment', 'segment-red', { 'active': false }]"></div>
               <div :class="['stack-segment', 'segment-amber', { 'active': false }]"></div>
               <div :class="['stack-segment', 'segment-green', { 'active': machineStatus === 'running' }]"></div>
               <div :class="['stack-segment', 'segment-white', { 'active': machineStatus === 'program' }]"></div>
@@ -1938,19 +1941,19 @@ body {
 }
 
 .stack-light-base {
-  width: 12px;
-  height: 4px;
+  width: 36px;
+  height: 12px;
   background: #444;
-  border-radius: 0 0 2px 2px;
-  margin-top: 1px;
+  border-radius: 0 0 6px 6px;
+  margin-top: 3px;
 }
 
 .stack-segment {
-  width: 10px;
-  height: 6px;
-  margin: 1px 0;
+  width: 30px;
+  height: 18px;
+  margin: 3px 0;
   border-radius: 50%;
-  border: 1px solid #333;
+  border: 3px solid #333;
   transition: all 0.3s ease;
   position: relative;
 }
@@ -1985,31 +1988,31 @@ body {
 .segment-red.active {
   background: #ef4444;
   border-color: #dc2626;
-  box-shadow: 0 0 8px #ef4444, inset 0 1px 2px rgba(255,255,255,0.3);
+  box-shadow: 0 0 24px #ef4444, inset 0 3px 6px rgba(255,255,255,0.3);
 }
 
 .segment-amber.active {
   background: #f59e0b;
   border-color: #d97706;
-  box-shadow: 0 0 8px #f59e0b, inset 0 1px 2px rgba(255,255,255,0.3);
+  box-shadow: 0 0 24px #f59e0b, inset 0 3px 6px rgba(255,255,255,0.3);
 }
 
 .segment-green.active {
   background: #22c55e;
   border-color: #16a34a;
-  box-shadow: 0 0 8px #22c55e, inset 0 1px 2px rgba(255,255,255,0.3);
+  box-shadow: 0 0 24px #22c55e, inset 0 3px 6px rgba(255,255,255,0.3);
 }
 
 .segment-blue.active {
   background: #3b82f6;
   border-color: #2563eb;
-  box-shadow: 0 0 8px #3b82f6, inset 0 1px 2px rgba(255,255,255,0.3);
+  box-shadow: 0 0 24px #3b82f6, inset 0 3px 6px rgba(255,255,255,0.3);
 }
 
 .segment-white.active {
   background: #ffffff;
   border-color: #e5e7eb;
-  box-shadow: 0 0 8px #ffffff, inset 0 1px 2px rgba(255,255,255,0.4);
+  box-shadow: 0 0 24px #ffffff, inset 0 3px 6px rgba(255,255,255,0.4);
 }
 
 </style>
