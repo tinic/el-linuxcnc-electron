@@ -111,7 +111,7 @@ setp hm2_7i96.0.stepgen.00.position-scale 1511.81102362204728706274 ### 1.0 / (2
 # customize as per your machine/steppers
 setp hm2_7i96.0.stepgen.00.dirhold 1000
 setp hm2_7i96.0.stepgen.00.dirsetup 5000
-setp hm2_7i96.0.stepgen.00.maxaccel 200
+setp hm2_7i96.0.stepgen.00.maxaccel 5000
 setp hm2_7i96.0.stepgen.00.maxvel 20
 setp hm2_7i96.0.stepgen.00.steplen 5000
 setp hm2_7i96.0.stepgen.00.stepspace 1000
@@ -127,7 +127,7 @@ setp hm2_7i96.0.stepgen.01.position-scale -1079.86501687289 ### -1.0 / (25.4 / (
 # customize as per your machine/steppers
 setp hm2_7i96.0.stepgen.01.dirhold 1000
 setp hm2_7i96.0.stepgen.01.dirsetup 5000
-setp hm2_7i96.0.stepgen.01.maxaccel 200
+setp hm2_7i96.0.stepgen.01.maxaccel 2000
 setp hm2_7i96.0.stepgen.01.maxvel 20
 setp hm2_7i96.0.stepgen.01.steplen 5000
 setp hm2_7i96.0.stepgen.01.stepspace 1000

@@ -1,7 +1,7 @@
 let halOutURL = "http://localhost:8000/hal/hal_out";
 let halInURL = "http://localhost:8000/hal/hal_in";
 let linuxcncURL = "http://localhost:8001/linuxcnc/";
-let gcodeURL = "http://localhost:8000/hal/gcode";
+let threadingURL = "http://localhost:8000/hal/threading";
 let abortURL = "http://localhost:8000/hal/abort";
 let estopURL = "http://localhost:8000/hal/estop";
 
@@ -10,7 +10,7 @@ if (userAgent.indexOf(" electron/") < 0) {
   halOutURL = "http://lathev2:8000/hal/hal_out";
   halInURL = "http://lathev2:8000/hal/hal_in";
   linuxcncURL = "http://lathev2:8001/linuxcnc/";
-  gcodeURL = "http://lathev2:8000/hal/gcode";
+  threadingURL = "http://lathev2:8000/hal/threading";
   abortURL = "http://lathev2:8000/hal/abort";
   estopURL = "http://lathev2:8000/hal/estop";
 }
@@ -22,14 +22,15 @@ export interface HalIn {
   speed_rps: number;
 }
 
-export async function putGCode(gcodeOut: Object) {
+
+export async function putThreading(threadingParams: Object) {
   try {
-    const response = await fetch(gcodeURL, {
+    const response = await fetch(threadingURL, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(gcodeOut),
+      body: JSON.stringify(threadingParams),
     });
     const result = await response.json();
     return result;

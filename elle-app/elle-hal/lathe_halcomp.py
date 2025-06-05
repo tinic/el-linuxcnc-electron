@@ -60,60 +60,6 @@ def read_hal_in():
         "in_cycle": s.call_level > 0
     }
 
-@app.put("/hal/gcode")
-def write_gcode():
-    json_data = request.json
-    
-    if not json_data or "gcode" not in json_data:
-        return {"status": "Error", "message": "Missing gcode parameter"}, 400
-
-    c.state(linuxcnc.STATE_ON)
-
-    try:
-        s = linuxcnc.stat()
-        while True:
-            s.poll()
-            if s.estop:
-                print("Error: Machine is in ESTOP state.")
-                exit()
-            if not s.enabled:
-                print("Error: Machine is not enabled.")
-                exit()
-            if not s.homed:
-                print("Error: Machine is not homed.")
-                exit()
-            if s.interp_state != linuxcnc.INTERP_IDLE:
-                print("Error: Interpreter is not idle.")
-                exit()
-            if s.task_mode != linuxcnc.MODE_MDI:
-                print("Setting MDI mode")
-                c.mode(linuxcnc.MODE_MDI)
-                time.sleep(0.1)
-                continue
-            break
-        c.wait_complete()
-
-        c.mdi("O100 SUB")
-        c.mdi("G7")
-        c.mdi("G90")
-        startPos_command = json_data["startPos"]
-        c.mdi(startPos_command)
-        cycle_command = json_data["cycle"]
-        c.mdi(cycle_command)
-        c.mdi("O100 ENDSUB")
-        c.wait_complete()
-
-        c.mdi("O100 CALL")
-        print(f"Executed G-code: {startPos_command} {cycle_command}")
-        sys.stdout.flush()
-        
-        return {"status": "OK", "cycle": cycle_command}
-        
-    except Exception as e:
-        error_msg = f"Error executing G-code '{startPos_command} {cycle_command}': {str(e)}"
-        print(error_msg)
-        sys.stdout.flush()
-        return {"status": "Error", "message": error_msg}, 500
 
 @app.put("/hal/abort")
 def abort_operation():
@@ -148,6 +94,78 @@ def emergency_stop():
         
     except Exception as e:
         error_msg = f"Error during emergency stop: {str(e)}"
+        print(error_msg)
+        sys.stdout.flush()
+        return {"status": "Error", "message": error_msg}, 500
+
+@app.put("/hal/threading")
+def execute_threading():
+    json_data = request.json
+    
+    if not json_data:
+        return {"status": "Error", "message": "Missing threading parameters"}, 400
+
+    c.state(linuxcnc.STATE_ON)
+
+    try:
+        s = linuxcnc.stat()
+        while True:
+            s.poll()
+            if s.estop:
+                print("Error: Machine is in ESTOP state.")
+                return {"status": "Error", "message": "Machine is in ESTOP state"}, 400
+            if not s.enabled:
+                print("Error: Machine is not enabled.")
+                return {"status": "Error", "message": "Machine is not enabled"}, 400
+            if not s.homed:
+                print("Error: Machine is not homed.")
+                return {"status": "Error", "message": "Machine is not homed"}, 400
+            if s.interp_state != linuxcnc.INTERP_IDLE:
+                print("Error: Interpreter is not idle.")
+                return {"status": "Error", "message": "Interpreter is not idle"}, 400
+            if s.task_mode != linuxcnc.MODE_MDI:
+                print("Setting MDI mode")
+                c.mode(linuxcnc.MODE_MDI)
+                time.sleep(0.1)
+                continue
+            break
+        c.wait_complete()
+
+        # Set thread-loop.ngc parameters using MDI
+        c.mdi("G7")        # Diameter mode
+        c.mdi("G90")       # Absolute positioning
+        c.mdi("G21")       # Metric units (assuming parameters are in mm)
+        c.mdi("F100")      # Set feed rate for G1 moves (100 mm/min)
+        c.mdi("M3 S500")   # Start spindle at 500 RPM
+        
+        # Set thread-loop parameters
+        c.mdi(f"#<_X_Start> = {json_data['XStart']}")
+        c.mdi(f"#<_Z_Start> = {json_data['ZStart']}")
+        c.mdi(f"#<_Pitch> = {json_data['Pitch']}")
+        c.mdi(f"#<_X_Depth> = {json_data['XDepth']}")
+        c.mdi(f"#<_Z_Depth> = {json_data['ZDepth']}")
+        c.mdi(f"#<_X_End> = {json_data['XEnd']}")
+        c.mdi(f"#<_Z_End> = {json_data['ZEnd']}")
+        c.mdi(f"#<_X_Pullout> = {json_data['XPullout']}")
+        c.mdi(f"#<_Z_Pullout> = {json_data['ZPullout']}")
+        c.mdi(f"#<_First_Cut> = {json_data['FirstCut']}")
+        c.mdi(f"#<_Cut_Mult> = {json_data['CutMult']}")
+        c.mdi(f"#<_Min_Cut> = {json_data['MinCut']}")
+        c.mdi(f"#<_Spring_Cuts> = {json_data['SpringCuts']}")
+
+        # Wait for parameter setting to complete
+        c.wait_complete()
+        
+        # Call the thread-loop subroutine
+        c.mdi("o<thread-loop> call")
+        
+        print(f"Executed threading subroutine with parameters: {json_data}")
+        sys.stdout.flush()
+        
+        return {"status": "OK", "message": "Threading subroutine executed"}
+        
+    except Exception as e:
+        error_msg = f"Error executing threading subroutine: {str(e)}"
         print(error_msg)
         sys.stdout.flush()
         return {"status": "Error", "message": error_msg}, 500

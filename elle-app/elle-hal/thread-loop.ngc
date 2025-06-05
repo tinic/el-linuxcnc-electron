@@ -12,7 +12,7 @@
 ;#<_Pitch>       =    (PITCH ALONG DRIVELINE)
 ;#<_X_Depth>     =    (X DEPTH, - EXTERNAL, + INTERNAL)
 ;#<_Z_Depth>     =    (Z DEPTH, +/- FOR COMPOUND, 0 PLUNGE)
-;#<_X_End>       =    (X END OF THREAD)
+;#<_X_End>       =    (X END OF THREAD, calculated as X_Start + X_End_Offset)
 ;#<_Z_End>       =    (Z END OF THREAD)
 ;#<_X_Pullout>   =    (X PULL OUT, + EXTERNAL, - INTERNAL)
 ;#<_Z_Pullout>   =    (Z PULL OUT, +/-)
