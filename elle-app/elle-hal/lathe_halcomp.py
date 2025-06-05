@@ -71,7 +71,7 @@ def read_hal_in():
         "position_x": hal_pin_position_x.get(),
         "position_a": hal_pin_position_a.get(),
         "speed_rps": hal_pin_speed_rps.get(),
-        "in_cycle": program_running,
+        "program_running": program_running,
         "error_state": error_state
     }
 

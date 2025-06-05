@@ -17,7 +17,7 @@ const xpos = ref(0);
 const zpos = ref(0);
 const apos = ref(0);
 const rpms = ref(0);
-const inCycle = ref(false);
+const programRunning = ref(false);
 const errorState = ref(false);
 
 // Machine status computed from various states
@@ -28,7 +28,7 @@ const machineStatus = computed(() => {
   }
   
   // Running any cycle takes priority
-  if (inCycle.value) {
+  if (programRunning.value) {
     return 'running'; // Green - machine running/in cycle
   }
   
@@ -630,7 +630,7 @@ function startPoll() {
           (((halIn as any).position_a - aaxisoffset) % 1) * 360
         );
         rpms.value = Math.abs((halIn as any).speed_rps * 60);
-        inCycle.value = (halIn as any).in_cycle || false;
+        programRunning.value = (halIn as any).program_running || false;
         errorState.value = (halIn as any).error_state || false;
       });
     } catch {
