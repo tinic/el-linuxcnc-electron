@@ -50,11 +50,14 @@ def index():
 
 @app.get("/hal/hal_in")
 def read_hal_in():
+    s = linuxcnc.stat()
+    s.poll()
     return {
         "position_z": hal_pin_position_z.get(),
         "position_x": hal_pin_position_x.get(),
         "position_a": hal_pin_position_a.get(),
         "speed_rps": hal_pin_speed_rps.get(),
+        "in_cycle": s.call_level > 0
     }
 
 @app.put("/hal/gcode")
@@ -88,22 +91,26 @@ def write_gcode():
                 time.sleep(0.1)
                 continue
             break
-
-        # Ensure LinuxCNC is in a state where it can accept commands
         c.wait_complete()
 
-        # # Execute the G-code command
-        c.mdi("M3S500")
-        gcode_command = json_data["gcode"]
-        c.mdi(gcode_command)
-        
-        print(f"Executed G-code: {gcode_command}")
+        c.mdi("O100 SUB")
+        c.mdi("G7")
+        c.mdi("G90")
+        position_command = json_data["position"]
+        c.mdi(position_command)
+        cycle_command = json_data["cycle"]
+        c.mdi(cycle_command)
+        c.mdi("O100 ENDSUB")
+        c.wait_complete()
+
+        c.mdi("O100 CALL")
+        print(f"Executed G-code: {position_command} {cycle_command}")
         sys.stdout.flush()
         
-        return {"status": "OK", "gcode": gcode_command}
+        return {"status": "OK", "cycle": cycle_command}
         
     except Exception as e:
-        error_msg = f"Error executing G-code '{gcode_command}': {str(e)}"
+        error_msg = f"Error executing G-code '{position_command} {cycle_command}': {str(e)}"
         print(error_msg)
         sys.stdout.flush()
         return {"status": "Error", "message": error_msg}, 500

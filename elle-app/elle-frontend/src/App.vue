@@ -1073,7 +1073,8 @@ const g76StartClicked = () => {
   console.log("G76 Command (LinuxCNC validated):", g76Command);
   
   // Send the validated G76 command to LinuxCNC
-  putGCode({ gcode: g76Command });
+  putGCode({ move: "" });
+  putGCode({ cycle: g76Command });
 };
 
 const g76StopClicked = () => {
