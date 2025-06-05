@@ -16,6 +16,42 @@ const xpos = ref(0);
 const zpos = ref(0);
 const apos = ref(0);
 const rpms = ref(0);
+const inCycle = ref(false);
+
+// Machine status computed from various states
+const machineStatus = computed(() => {
+  // Running any cycle takes priority
+  if (inCycle.value) {
+    return 'running'; // Green - machine running/in cycle
+  }
+  
+  // Mode-based status when not running
+  if (selectedMenu.value === 0) {
+    return 'manual'; // Blue - manual mode (Home menu)
+  } else if (selectedMenu.value === 1) {
+    return 'program'; // White - canned cycle mode ready
+  }
+  
+  // Future: can add error detection here
+  return 'idle'; // Fallback - should rarely be used
+});
+
+const statusDisplay = computed(() => {
+  switch (machineStatus.value) {
+    case 'running':
+      return { text: 'RUNNING', class: 'status-running', title: 'Machine: Running/In Cycle' };
+    case 'manual':
+      return { text: 'MANUAL', class: 'status-manual', title: 'Machine: Manual Mode' };
+    case 'program':
+      return { text: 'PROGRAM', class: 'status-program', title: 'Machine: Canned Cycle Mode' };
+    case 'error':
+      return { text: 'FAULT', class: 'status-error', title: 'Machine: Error/Fault' };
+    case 'idle':
+      return { text: 'IDLE', class: 'status-idle', title: 'Machine: Idle' };
+    default:
+      return { text: 'UNKNOWN', class: 'status-unknown', title: 'Machine: Unknown Status' };
+  }
+});
 
 // Pushed over REST
 const xpitch = ref(0.1);
@@ -80,6 +116,7 @@ enum CannedCycle {
 const selectedCannedCycle = ref(CannedCycle.none);
 
 // G76 Threading Canned Cycle parameters (LinuxCNC spec)
+const g76DDiameter = ref<number | null>(null);
 const g76PPitch = ref<number | null>(null);
 const g76ZEndPoint = ref<number | null>(null);
 const g76IOffset = ref<number | null>(null);
@@ -91,6 +128,11 @@ const g76HSpringPasses = ref<number | null>(null);
 const g76ETaperDistance = ref<number | null>(null);
 const g76LTaperEnd = ref<number | null>(null);
 const g76PresetName = ref<string | null>(null);
+
+// Helper function to round G76 values with optional unit conversion
+const roundG76Value = (value: number, conversionFactor: number = 1): number => {
+  return Math.round((value * conversionFactor) * 1000000) / 1000000;
+};
 
 const menuItems = ref([
   { separator: true },
@@ -165,6 +207,7 @@ const numberClicked = (entry: number, value: number) => {
     case 11: // G76 K
     case 14: // G76 E
     case 15: // G76 L
+    case 16: // G76 D
     numberentry.value = numbersPrevious = metric.value ? value : value / 25.4;
     break;
     case 3:
@@ -221,6 +264,7 @@ function setFinalNumber(value: number) {
     case 11: // G76 K
     case 14: // G76 E
     case 15: // G76 L
+    case 16: // G76 D
     if (!metric.value) {
       value = value * 25.4;
     }
@@ -254,44 +298,48 @@ function setFinalNumber(value: number) {
       zpitch.value = Math.abs(value);
       break;
     case 6:
-      g76PPitch.value = Math.round(value * 1000000) / 1000000;
+      g76PPitch.value = roundG76Value(value);
       g76PresetName.value = null; // Clear preset name on manual change
       updatePitchFromG76();
       break;
     case 7:
-      g76ZEndPoint.value = Math.round(value * 1000000) / 1000000;
+      g76ZEndPoint.value = roundG76Value(value);
       g76PresetName.value = null; // Clear preset name on manual change
       break;
     case 8:
-      g76IOffset.value = Math.round(value * 1000000) / 1000000;
+      g76IOffset.value = roundG76Value(value);
       g76PresetName.value = null; // Clear preset name on manual change
       break;
     case 9:
-      g76JInitialDepth.value = Math.round(value * 1000000) / 1000000;
+      g76JInitialDepth.value = roundG76Value(value);
       g76PresetName.value = null; // Clear preset name on manual change
       break;
     case 10:
-      g76RDegression.value = Math.round(value * 1000000) / 1000000;
+      g76RDegression.value = roundG76Value(value);
       g76PresetName.value = null; // Clear preset name on manual change
       break;
     case 11:
-      g76KFullDepth.value = Math.round(value * 1000000) / 1000000;
+      g76KFullDepth.value = roundG76Value(value);
       g76PresetName.value = null; // Clear preset name on manual change
       break;
     case 12:
-      g76QCompoundAngle.value = Math.round(value * 1000000) / 1000000;
+      g76QCompoundAngle.value = roundG76Value(value);
       g76PresetName.value = null; // Clear preset name on manual change
       break;
     case 13:
-      g76HSpringPasses.value = Math.round(value * 1000000) / 1000000;
+      g76HSpringPasses.value = roundG76Value(value);
       g76PresetName.value = null; // Clear preset name on manual change
       break;
     case 14:
-      g76ETaperDistance.value = Math.round(value * 1000000) / 1000000;
+      g76ETaperDistance.value = roundG76Value(value);
       g76PresetName.value = null; // Clear preset name on manual change
       break;
     case 15:
-      g76LTaperEnd.value = Math.round(value * 1000000) / 1000000;
+      g76LTaperEnd.value = roundG76Value(value);
+      g76PresetName.value = null; // Clear preset name on manual change
+      break;
+    case 16:
+      g76DDiameter.value = roundG76Value(value);
       g76PresetName.value = null; // Clear preset name on manual change
       break;
   }
@@ -363,6 +411,9 @@ const numPadClicked = (key: string) => {
             break;
           case 15:
             g76LTaperEnd.value = null;
+            break;
+          case 16:
+            g76DDiameter.value = null;
             break;
         }
         numpadInputStage = NumpadInputStage.none;
@@ -525,6 +576,7 @@ function startPoll() {
           (((halIn as any).position_a - aaxisoffset) % 1) * 360
         );
         rpms.value = Math.abs((halIn as any).speed_rps * 60);
+        inCycle.value = (halIn as any).in_cycle || false;
       });
     } catch {
       // nop 
@@ -952,16 +1004,17 @@ const g76PresetClicked = () => {
         // Preset values are stored in metric units, convert if currently in imperial
         const conversionFactor = metric.value ? 1 : 1/25.4;
         
-        g76PPitch.value = Math.round((preset.P * conversionFactor) * 1000000) / 1000000;
-        g76ZEndPoint.value = Math.round((preset.Z * conversionFactor) * 1000000) / 1000000;
-        g76IOffset.value = Math.round((preset.I * conversionFactor) * 1000000) / 1000000;
-        g76JInitialDepth.value = Math.round((preset.J * conversionFactor) * 1000000) / 1000000;
-        g76RDegression.value = Math.round(preset.R * 1000000) / 1000000; // Degression factor is dimensionless
-        g76KFullDepth.value = Math.round((preset.K * conversionFactor) * 1000000) / 1000000;
-        g76QCompoundAngle.value = Math.round(preset.Q * 1000000) / 1000000; // Angle stays the same
-        g76HSpringPasses.value = Math.round(preset.H * 1000000) / 1000000; // Number of passes
-        g76ETaperDistance.value = Math.round((preset.E * conversionFactor) * 1000000) / 1000000;
-        g76LTaperEnd.value = Math.round(preset.L * 1000000) / 1000000; // Taper end specification
+        g76DDiameter.value = roundG76Value(preset.D, conversionFactor);
+        g76PPitch.value = roundG76Value(preset.P, conversionFactor);
+        g76ZEndPoint.value = roundG76Value(preset.Z, conversionFactor);
+        g76IOffset.value = roundG76Value(preset.I, conversionFactor);
+        g76JInitialDepth.value = roundG76Value(preset.J, conversionFactor);
+        g76RDegression.value = roundG76Value(preset.R); // Degression factor is dimensionless
+        g76KFullDepth.value = roundG76Value(preset.K, conversionFactor);
+        g76QCompoundAngle.value = roundG76Value(preset.Q); // Angle stays the same
+        g76HSpringPasses.value = roundG76Value(preset.H); // Number of passes
+        g76ETaperDistance.value = roundG76Value(preset.E, conversionFactor);
+        g76LTaperEnd.value = roundG76Value(preset.L); // Taper end specification
         g76PresetName.value = preset.name; // Store the preset name
         updatePitchFromG76();
       },
@@ -975,16 +1028,24 @@ const g76StartClicked = () => {
   treatOffClickAsEnter();
   entryActive.value = 0;
   
-  // Validate required parameters exist (LinuxCNC requires P, Z, K minimum)
-  if (g76PPitch.value === null || g76ZEndPoint.value === null || 
-      g76KFullDepth.value === null) {
-    console.error("G76: Missing required parameters (P, Z, K)");
-    alert("Error: Missing required G76 parameters. Please set P (pitch), Z (end point), and K (full depth) values.");
+  // Validate required parameters exist (LinuxCNC requires P, Z, K minimum, plus D for positioning)
+  if (g76DDiameter.value === null || g76PPitch.value === null || 
+      g76ZEndPoint.value === null || g76KFullDepth.value === null) {
+    console.error("G76: Missing required parameters (D, P, Z, K)");
+    alert("Error: Missing required G76 parameters. Please set D (diameter), P (pitch), Z (end point), and K (full depth) values.");
     return;
   }
   
   // Validate parameter ranges and values
   const errors = [];
+  
+  // D - Diameter (should be positive and reasonable)
+  if (g76DDiameter.value <= 0) {
+    errors.push("D (Diameter) must be positive");
+  }
+  if (g76DDiameter.value > 200) {
+    errors.push("D (Diameter) seems too large (>200mm), please verify");
+  }
   
   // P - Thread pitch (should be positive and reasonable)
   if (g76PPitch.value <= 0) {
@@ -1072,8 +1133,13 @@ const g76StartClicked = () => {
   
   console.log("G76 Command (LinuxCNC validated):", g76Command);
   
-  // Send the validated G76 command to LinuxCNC
-  putGCode({ move: "" });
+  // Position tool at starting position: X = diameter, Z = 2 * pitch away from Z0
+  const startZ = 2 * g76PPitch.value;
+  const startX = g76DDiameter.value;
+  const startPosCommand = `G0 X${startX} Z${startZ}`;
+    
+  // Send positioning and G76 commands to LinuxCNC
+  putGCode({ startPos: startPosCommand });
   putGCode({ cycle: g76Command });
 };
 
@@ -1090,6 +1156,7 @@ const g76StopClicked = () => {
 const g76ResetClicked = () => {
   treatOffClickAsEnter();
   entryActive.value = 0;
+  g76DDiameter.value = null;
   g76PPitch.value = null;
   g76ZEndPoint.value = null;
   g76IOffset.value = null;
@@ -1143,25 +1210,17 @@ const g76MetricClicked = () => {
   metric.value = !metric.value;
   
   // Convert G76 values between metric and imperial
-  if (metric.value) {
-    // Converting to metric (multiply by 25.4)
-    if (g76PPitch.value !== null) g76PPitch.value = Math.round(g76PPitch.value * 25.4 * 1000000) / 1000000;
-    if (g76ZEndPoint.value !== null) g76ZEndPoint.value = Math.round(g76ZEndPoint.value * 25.4 * 1000000) / 1000000;
-    if (g76QCompoundAngle.value !== null) g76QCompoundAngle.value = Math.round(g76QCompoundAngle.value * 25.4 * 1000000) / 1000000;
-    if (g76KFullDepth.value !== null) g76KFullDepth.value = Math.round(g76KFullDepth.value * 25.4 * 1000000) / 1000000;
-    if (g76JInitialDepth.value !== null) g76JInitialDepth.value = Math.round(g76JInitialDepth.value * 25.4 * 1000000) / 1000000;
-    // A (angle) stays the same
-    if (g76PPitch.value !== null) g76PPitch.value = Math.round(g76PPitch.value * 25.4 * 1000000) / 1000000;
-  } else {
-    // Converting to imperial (divide by 25.4)
-    if (g76PPitch.value !== null) g76PPitch.value = Math.round(g76PPitch.value / 25.4 * 1000000) / 1000000;
-    if (g76ZEndPoint.value !== null) g76ZEndPoint.value = Math.round(g76ZEndPoint.value / 25.4 * 1000000) / 1000000;
-    if (g76QCompoundAngle.value !== null) g76QCompoundAngle.value = Math.round(g76QCompoundAngle.value / 25.4 * 1000000) / 1000000;
-    if (g76KFullDepth.value !== null) g76KFullDepth.value = Math.round(g76KFullDepth.value / 25.4 * 1000000) / 1000000;
-    if (g76JInitialDepth.value !== null) g76JInitialDepth.value = Math.round(g76JInitialDepth.value / 25.4 * 1000000) / 1000000;
-    // A (angle) stays the same
-    if (g76PPitch.value !== null) g76PPitch.value = Math.round(g76PPitch.value / 25.4 * 1000000) / 1000000;
-  }
+  const conversionFactor = metric.value ? 25.4 : 1/25.4;
+  
+  // Convert dimensional parameters (those affected by unit conversion)
+  if (g76DDiameter.value !== null) g76DDiameter.value = roundG76Value(g76DDiameter.value, conversionFactor);
+  if (g76PPitch.value !== null) g76PPitch.value = roundG76Value(g76PPitch.value, conversionFactor);
+  if (g76ZEndPoint.value !== null) g76ZEndPoint.value = roundG76Value(g76ZEndPoint.value, conversionFactor);
+  if (g76IOffset.value !== null) g76IOffset.value = roundG76Value(g76IOffset.value, conversionFactor);
+  if (g76KFullDepth.value !== null) g76KFullDepth.value = roundG76Value(g76KFullDepth.value, conversionFactor);
+  if (g76JInitialDepth.value !== null) g76JInitialDepth.value = roundG76Value(g76JInitialDepth.value, conversionFactor);
+  if (g76ETaperDistance.value !== null) g76ETaperDistance.value = roundG76Value(g76ETaperDistance.value, conversionFactor);
+  // Q (angle), R (degression), H (passes), L (taper end) stay the same - no conversion needed
   g76PresetName.value = null; // Clear preset name when units change
   updatePitchFromG76();
 };
@@ -1209,13 +1268,27 @@ onMounted(() => {
         </button>
       </template>
       <template #end>
-        <button
-          @click="quitApplication"
-          class="w-full p-link flex align-items-center justify-content-start p-2 pl-4 text-color hover:surface-200 border-noround"
-        >
-          <i class="pi pi-sign-out" />
-          <span class="ml-2">Exit</span>
-        </button>
+        <div class="flex flex-column">
+          <!-- Industrial Stack Light -->
+          <div class="flex align-items-center justify-content-start p-2 pl-4 border-noround">
+            <div class="stack-light" :title="statusDisplay.title">
+              <div class="stack-light-base"></div>
+              <div :class="['stack-segment', 'segment-red', { 'active': machineStatus === 'error' }]"></div>
+              <div :class="['stack-segment', 'segment-amber', { 'active': false }]"></div>
+              <div :class="['stack-segment', 'segment-green', { 'active': machineStatus === 'running' }]"></div>
+              <div :class="['stack-segment', 'segment-white', { 'active': machineStatus === 'program' }]"></div>
+              <div :class="['stack-segment', 'segment-blue', { 'active': machineStatus === 'manual' }]"></div>
+            </div>
+            <span class="ml-3 text-sm font-semibold">{{ statusDisplay.text }}</span>
+          </div>
+          <button
+            @click="quitApplication"
+            class="w-full p-link flex align-items-center justify-content-start p-2 pl-4 text-color hover:surface-200 border-noround"
+          >
+            <i class="pi pi-sign-out" />
+            <span class="ml-2">Exit</span>
+          </button>
+        </div>
       </template>
     </Menu>
     <div v-if="selectedMenu == 0" class="m-2">
@@ -1554,6 +1627,18 @@ onMounted(() => {
             G76 Threading Canned Cycle (LinuxCNC){{ g76PresetName ? ` - ${g76PresetName}` : '' }}
           </div>
           <!-- Left Column -->
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end">D</div>
+          <div class="col-4 p-1">
+            <button
+              @click="numberClicked(16, g76DDiameter || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-2 truncate', { 'placeholder-text': entryActive != 16 && g76DDiameter === null }]"
+              :style="{ backgroundColor: entryActive == 16 ? '#666' : '#333' }"
+              :title="entryActive == 16 ? String(numberentry) : String(g76DDiameter ?? 'Diameter')"
+            >
+              {{ entryActive == 16 ? numberentry : (g76DDiameter ?? 'Diameter') }}
+            </button>
+          </div>
+          <!-- Right Column -->
           <div class="col-1 text-right p-0 flex align-items-center justify-content-end">P</div>
           <div class="col-4 p-1">
             <button
@@ -1683,46 +1768,39 @@ onMounted(() => {
           </div>
           <div class="col-2 p-0"></div>
           
-          <!-- Preset and Reset buttons -->
-          <div class="col-1 p-0"></div>
-          <div class="col-2 p-1">
-            <button
-              @click="g76PresetClicked"
-              class="w-full dro-font-mode button-mode p-2"
-              style="background: #555; color: #ffffff;"
-            >
-              ...
-            </button>
-          </div>
-          <div class="col-2 p-1">
-            <button
-              @click="g76ResetClicked"
-              class="w-full dro-font-mode button-mode p-2"
-              style="background: #555; color: #ffffff;"
-            >
-              Reset
-            </button>
-          </div>
-          <div class="col-2 p-0"></div>
           
           </div>
           
           <!-- Spacer to push buttons to bottom -->
           <div class="flex-grow-1"></div>
           
-          <!-- Start and Stop buttons centered as a group -->
+          <!-- Start, Stop, Preset and Reset buttons centered as a group -->
           <div class="flex justify-content-center gap-2 p-1">
+            <button
+              @click="g76PresetClicked"
+              class="dro-font-mode button-mode p-2"
+              style="background: #555; color: #ffffff; width: 6em;"
+            >
+              ...
+            </button>
+            <button
+              @click="g76ResetClicked"
+              class="dro-font-mode button-mode p-2"
+              style="background: #555; color: #ffffff; width: 6em;"
+            >
+              Reset
+            </button>
             <button
               @click="g76StartClicked"
               class="dro-font-mode button-mode p-2"
-              style="background: #22c55e; color: #ffffff; width: 8em;"
+              style="background: #22c55e; color: #ffffff; width: 6em;"
             >
               ⏵ Start
             </button>
             <button
               @click="g76StopClicked"
               class="dro-font-mode button-mode p-2"
-              style="background: #ef4444; color: #ffffff; width: 8em;"
+              style="background: #ef4444; color: #ffffff; width: 6em;"
             >
               ⏹ Stop
             </button>
@@ -1849,6 +1927,89 @@ body {
 
 .placeholder-text {
   color: #aaaaaa;
+}
+
+/* Industrial Stack Light Design */
+.stack-light {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stack-light-base {
+  width: 12px;
+  height: 4px;
+  background: #444;
+  border-radius: 0 0 2px 2px;
+  margin-top: 1px;
+}
+
+.stack-segment {
+  width: 10px;
+  height: 6px;
+  margin: 1px 0;
+  border-radius: 50%;
+  border: 1px solid #333;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* Inactive (darkened) states */
+.segment-red {
+  background: #441a1a;
+  border-color: #662222;
+}
+
+.segment-amber {
+  background: #442a0a;
+  border-color: #664411;
+}
+
+.segment-green {
+  background: #1a441a;
+  border-color: #226622;
+}
+
+.segment-blue {
+  background: #1a2244;
+  border-color: #223366;
+}
+
+.segment-white {
+  background: #444444;
+  border-color: #666666;
+}
+
+/* Active (illuminated) states with glow effect */
+.segment-red.active {
+  background: #ef4444;
+  border-color: #dc2626;
+  box-shadow: 0 0 8px #ef4444, inset 0 1px 2px rgba(255,255,255,0.3);
+}
+
+.segment-amber.active {
+  background: #f59e0b;
+  border-color: #d97706;
+  box-shadow: 0 0 8px #f59e0b, inset 0 1px 2px rgba(255,255,255,0.3);
+}
+
+.segment-green.active {
+  background: #22c55e;
+  border-color: #16a34a;
+  box-shadow: 0 0 8px #22c55e, inset 0 1px 2px rgba(255,255,255,0.3);
+}
+
+.segment-blue.active {
+  background: #3b82f6;
+  border-color: #2563eb;
+  box-shadow: 0 0 8px #3b82f6, inset 0 1px 2px rgba(255,255,255,0.3);
+}
+
+.segment-white.active {
+  background: #ffffff;
+  border-color: #e5e7eb;
+  box-shadow: 0 0 8px #ffffff, inset 0 1px 2px rgba(255,255,255,0.4);
 }
 
 </style>

@@ -3,6 +3,7 @@
     {
       "name": "M10 x 1.5",
       "description": "Metric M10 x 1.5 thread",
+      "D": 10,
       "P": 1.5,
       "Z": -25,
       "I": -0.075,
@@ -17,6 +18,7 @@
     {
       "name": "M12 x 1.75",
       "description": "Metric M12 x 1.75 thread",
+      "D": 12,
       "P": 1.75,
       "Z": -30,
       "I": -0.087,
@@ -31,6 +33,7 @@
     {
       "name": "M16 x 2.0",
       "description": "Metric M16 x 2.0 thread",
+      "D": 16,
       "P": 2.0,
       "Z": -35,
       "I": -0.1,
@@ -45,6 +48,7 @@
     {
       "name": "M20 x 2.5",
       "description": "Metric M20 x 2.5 thread",
+      "D": 20,
       "P": 2.5,
       "Z": -40,
       "I": -0.125,
@@ -59,6 +63,7 @@
     {
       "name": "M24 x 3.0",
       "description": "Metric M24 x 3.0 thread",
+      "D": 24,
       "P": 3.0,
       "Z": -45,
       "I": -0.15,
@@ -75,6 +80,7 @@
     {
       "name": "1/4-20 UNC",
       "description": "1/4 inch 20 TPI Unified Coarse",
+      "D": 6.35,
       "P": 1.27,
       "Z": -25.4,
       "I": -0.0635,
@@ -89,6 +95,7 @@
     {
       "name": "5/16-18 UNC",
       "description": "5/16 inch 18 TPI Unified Coarse",
+      "D": 7.938,
       "P": 1.411,
       "Z": -30.48,
       "I": -0.071,
@@ -103,6 +110,7 @@
     {
       "name": "3/8-16 UNC",
       "description": "3/8 inch 16 TPI Unified Coarse",
+      "D": 9.525,
       "P": 1.588,
       "Z": -35.56,
       "I": -0.079,
@@ -117,6 +125,7 @@
     {
       "name": "1/2-13 UNC",
       "description": "1/2 inch 13 TPI Unified Coarse",
+      "D": 12.7,
       "P": 1.954,
       "Z": -40.64,
       "I": -0.098,
@@ -131,6 +140,7 @@
     {
       "name": "5/8-11 UNC",
       "description": "5/8 inch 11 TPI Unified Coarse",
+      "D": 15.875,
       "P": 2.309,
       "Z": -45.72,
       "I": -0.115,
@@ -147,6 +157,7 @@
     {
       "name": "Acme 1/2-10",
       "description": "1/2 inch 10 TPI Acme thread",
+      "D": 12.7,
       "P": 2.54,
       "Z": -30,
       "I": -0.127,
@@ -161,6 +172,7 @@
     {
       "name": "Acme 5/8-8",
       "description": "5/8 inch 8 TPI Acme thread",
+      "D": 15.875,
       "P": 3.175,
       "Z": -35,
       "I": -0.159,
@@ -175,6 +187,7 @@
     {
       "name": "Pipe 1/8-27 NPT",
       "description": "1/8 inch National Pipe Thread",
+      "D": 10.287,
       "P": 0.941,
       "Z": -20,
       "I": -0.047,
@@ -189,6 +202,7 @@
     {
       "name": "Pipe 1/4-18 NPT",
       "description": "1/4 inch National Pipe Thread",
+      "D": 13.616,
       "P": 1.411,
       "Z": -25,
       "I": -0.071,
@@ -203,6 +217,7 @@
     {
       "name": "Trapezoidal 30x6",
       "description": "30mm x 6mm Trapezoidal thread",
+      "D": 30,
       "P": 6,
       "Z": -40,
       "I": -0.3,

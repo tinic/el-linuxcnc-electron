@@ -96,21 +96,21 @@ def write_gcode():
         c.mdi("O100 SUB")
         c.mdi("G7")
         c.mdi("G90")
-        position_command = json_data["position"]
-        c.mdi(position_command)
+        startPos_command = json_data["startPos"]
+        c.mdi(startPos_command)
         cycle_command = json_data["cycle"]
         c.mdi(cycle_command)
         c.mdi("O100 ENDSUB")
         c.wait_complete()
 
         c.mdi("O100 CALL")
-        print(f"Executed G-code: {position_command} {cycle_command}")
+        print(f"Executed G-code: {startPos_command} {cycle_command}")
         sys.stdout.flush()
         
         return {"status": "OK", "cycle": cycle_command}
         
     except Exception as e:
-        error_msg = f"Error executing G-code '{position_command} {cycle_command}': {str(e)}"
+        error_msg = f"Error executing G-code '{startPos_command} {cycle_command}': {str(e)}"
         print(error_msg)
         sys.stdout.flush()
         return {"status": "Error", "message": error_msg}, 500
