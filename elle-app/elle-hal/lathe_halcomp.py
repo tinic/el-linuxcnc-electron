@@ -146,8 +146,10 @@ def execute_threading():
             break
         c.wait_complete()
 
+        print(s.position)
+
         # Set thread-loop.ngc parameters using MDI
-        c.mdi("G7")       # Diameter mode
+        c.mdi("G7")       # Radius mode
         c.mdi("G90")      # Absolute positioning
         c.mdi("G21")      # Metric units (assuming parameters are in mm)
         c.mdi("F100")     # Set feed rate for G1 moves (100 mm/min)

@@ -35,7 +35,7 @@ o<thread-loop> sub
 #<Cut_Size> = 0.0
 #<X_Cut>=0.0
 #<Z_Cut>=0.0
-G0 X#<_X_Start> Z#<_Z_Start>     (Move to start point) 
+G0 X#<_X_Start> Z[#<_Z_Start> + #<_Pitch> * 4]                   (Move to start point) 
 o100 do
   o101 if [#<Cut_Size> EQ 0.0]
     #<Cut_Size> = #<_First_Cut>
@@ -51,19 +51,19 @@ o100 do
   #<X_Cut>=[#<X_Cut>+[#<Cut_Size> * #<kX>]] (X)
   #<Z_Cut>=[#<Z_Cut>+[#<Cut_Size> * #<kZ>]] (Z)
 ;  (debug,X_Cut = #<X_Cut>, Z_Cut #<Z_Cut>)
-  o110 if [ABS[#<X_Cut>] GE ABS[#<_X_Depth>]] (don't go too far)
+  o110 if [ABS[#<X_Cut>] GE ABS[#<_X_Depth>]]                   (don't go too far)
     #<X_Cut> = #<_X_Depth>
     #<Z_Cut> = #<_Z_Depth>
   o110 endif
-  G1X[#<_X_Start>+#<X_Cut>] Z[#<_Z_Start>+#<Z_Cut>]            (start point - cut size)
-  G4 P.01 (need for 2.7 TP)
-  G33 X[#<_X_End>+#<X_Cut>] Z[#<_Z_End>+#<Z_Cut>] K#<_Pitch>     (cut thread)
+  G1X[#<_X_Start>+#<X_Cut>] Z[#<_Z_Start>+#<Z_Cut>+#<_Pitch>*4] (start point - cut size)
+  G4 P.01                                                       (need for 2.7 TP)
+  G33 X[#<_X_End>+#<X_Cut>] Z[#<_Z_End>+#<Z_Cut>] K#<_Pitch>    (cut thread)
   G33 X#<_X_End> Z[#<_Z_End>+#<Z_Cut>+#<_Z_Pullout>] K#<_Pitch> (pull out)
-;	G95 (feed per rev)
-;	F#<_Pitch>  (same as pitch)
-  G1 X#<_X_End> Z[#<_Z_End>+#<Z_Cut>+#<_Z_Pullout>]  (pull out)
+;	G95                                                           (feed per rev)
+;	F#<_Pitch>                                                    (same as pitch)
+  G1 X#<_X_End> Z[#<_Z_End>+#<Z_Cut>+#<_Z_Pullout>]             (pull out)
   G0 X[#<_X_End>+#<_X_Pullout>]
-  G0 Z#<_Z_Start>
+  G0 Z[#<_Z_Start> + #<_Pitch> * 4]
   G0 X#<_X_Start>
   o120 if [ABS[#<X_Cut>] EQ ABS[#<_X_Depth>]]
     o121 if [#<_Spring_Cuts> GT 0] 
@@ -73,6 +73,7 @@ o100 do
     #<_Spring_Cuts>=[[#<_Spring_Cuts>]-1.] (decr spring passes) 
   o120 endif
 o100 while [[#<_Spring_Cuts>] GT -1.0]
+G0 X#<_X_Start> Z#<_Z_Start>
 
 ;G0 X[#<_X_Start>+#<_X_Depth>] z.250  (temp mark OD)
 ;G1Z.150

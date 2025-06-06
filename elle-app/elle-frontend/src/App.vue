@@ -546,6 +546,10 @@ const startHAL = () => {
   var userAgent = navigator.userAgent.toLowerCase();
   if (userAgent.indexOf(" electron/") > -1) {
     window.api.send("startHAL");
+    xpos.value = 0;
+    zpos.value = 0;
+    xaxisoffset = 0;
+    zaxisoffset = 0;
   }
 };
 
@@ -554,6 +558,10 @@ const stopHAL = () => {
   var userAgent = navigator.userAgent.toLowerCase();
   if (userAgent.indexOf(" electron/") > -1) {
     window.api.send("stopHAL");
+    xpos.value = 0;
+    zpos.value = 0;
+    xaxisoffset = 0;
+    zaxisoffset = 0;
   }
 };
 
@@ -1131,27 +1139,31 @@ const threadStartClicked = () => {
     return;
   }
    
-  // Send threading parameters to LinuxCNC HAL component for subroutine call
-  const threadingParams = {
-    XStart: formatForLinuxCNC(xpos.value), // Use current X position
-    ZStart: formatForLinuxCNC(threadPitch.value * 4), // Start a little behind so Z-Axis can accelerate
-    Pitch: formatForLinuxCNC(threadPitch.value),
-    XDepth: formatForLinuxCNC(threadXDepth.value || 0),
-    ZDepth: formatForLinuxCNC(threadZDepth.value || 0),
-    XEnd: formatForLinuxCNC(xpos.value + (threadXEndOffset.value || 0)),
-    ZEnd: formatForLinuxCNC(threadZEnd.value),
-    XPullout: formatForLinuxCNC(threadXPullout.value || 0.1),
-    ZPullout: formatForLinuxCNC(threadZPullout.value || 0.1),
-    FirstCut: formatForLinuxCNC(threadFirstCut.value || 0.1),
-    CutMult: formatForLinuxCNC(threadCutMult.value || 0.8),
-    MinCut: formatForLinuxCNC(threadMinCut.value || 0.05),
-    SpringCuts: Math.round(threadSpringCuts.value || 1)
-  };
-  
-  console.log("Threading Parameters:", threadingParams);
-  
-  // Send to HAL component to set parameters and call subroutine
-  putThreading(threadingParams);
+  getHalIn().then((halIn) => {
+    // Send threading parameters to LinuxCNC HAL component for subroutine call
+    const threadingParams = {
+      XPos: (halIn as any).position_x + xaxisoffset,
+      ZPos: (halIn as any).position_z + zaxisoffset,
+      XStart: formatForLinuxCNC((halIn as any).position_x + xaxisoffset),
+      ZStart: formatForLinuxCNC((halIn as any).position_z + zaxisoffset),
+      Pitch: formatForLinuxCNC(threadPitch.value || 0),
+      XDepth: formatForLinuxCNC(threadXDepth.value || 0),
+      ZDepth: formatForLinuxCNC(threadZDepth.value || 0),
+      XEnd: formatForLinuxCNC((halIn as any).position_x + xaxisoffset + (threadXEndOffset.value || 0)),
+      ZEnd: formatForLinuxCNC((halIn as any).position_z + zaxisoffset + (threadZEnd.value || 0)),
+      XPullout: formatForLinuxCNC(threadXPullout.value || 0.1),
+      ZPullout: formatForLinuxCNC(threadZPullout.value || 0.1),
+      FirstCut: formatForLinuxCNC(threadFirstCut.value || 0.1),
+      CutMult: formatForLinuxCNC(threadCutMult.value || 0.8),
+      MinCut: formatForLinuxCNC(threadMinCut.value || 0.05),
+      SpringCuts: Math.round(threadSpringCuts.value || 1)
+    };
+    
+    console.log("Threading Parameters:", threadingParams);
+    
+    // Send to HAL component to set parameters and call subroutine
+    putThreading(threadingParams);
+  });
 };
 
 const threadStopClicked = () => {
