@@ -57,7 +57,7 @@ o100 do
     #<X_Cut> = #<_X_Depth>
     #<Z_Cut> = #<_Z_Depth>
   o110 endif
-  G1X[#<_X_Start>+#<X_Cut>] Z[#<_Z_Start>+#<Z_Cut>+#<_Pitch>*4] (start point - cut size)
+  G1X[#<_X_Start>+#<X_Cut>] Z[#<_Z_Start>+#<Z_Cut>] (start point - cut size)
   G4 P.01                                                       (need for 2.7 TP)
   G33 X[#<_X_End>+#<X_Cut>] Z[#<_Z_End>+#<Z_Cut>] K#<_Pitch>    (cut thread)
   G33 X#<_X_End> Z[#<_Z_End>+#<Z_Cut>+#<_Z_Pullout>] K#<_Pitch> (pull out)
