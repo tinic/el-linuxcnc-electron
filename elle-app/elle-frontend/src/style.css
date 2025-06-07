@@ -1,5 +1,5 @@
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'iosevka', monospace;
   line-height: 1.5;
   font-weight: 400;
 
@@ -119,4 +119,24 @@ button:focus-visible {
   }
 }
 */
+
+/* Force Iosevka font family globally, but exclude icons */
+*:not([class*="pi-"]):not(.pi) {
+  font-family: 'iosevka', monospace !important;
+}
+
+/* Ensure PrimeVue components also use Iosevka, but exclude icons */
+.p-component:not([class*="pi-"]):not(.pi) {
+  font-family: 'iosevka', monospace !important;
+}
+
+/* Specifically apply Iosevka to text elements */
+p, span, div, button, input, textarea, label {
+  font-family: 'iosevka', monospace !important;
+}
+
+/* But preserve icon fonts */
+.pi, [class*="pi-"] {
+  font-family: 'primeicons' !important;
+}
 

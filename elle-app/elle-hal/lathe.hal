@@ -93,7 +93,7 @@ net pid-x-output        <=  pid.x.output
 loadrt hostmot2
 loadrt hm2_eth board_ip="10.10.10.10" config=" num_encoders=1 num_pwmgens=0 num_stepgens=5 sserial_port_0=00xxxx"
 
-setp hm2_7i96.0.watchdog.timeout_ns 100000000
+setp hm2_7i96.0.watchdog.timeout_ns 10000000
 
 ## A Axis encoder setup
 
@@ -220,7 +220,6 @@ net mux-x-stepper-enbl => hm2_7i96.0.stepgen.01.enable
 
 net mux-z-position-fb   => joint.1.motor-pos-fb
 net mux-x-position-fb   => joint.0.motor-pos-fb
-net mux-a-position-rv   => spindle.0.revs
 
 net jnt-z-pos-cmd       <= joint.1.motor-pos-cmd
 net jnt-z-vel-cmd       <= joint.1.vel-cmd
@@ -245,9 +244,6 @@ net pid-x-output        => mux2.3.in1 # hm2_7i96.0.stepgen.01.velocity-cmd
 ############################################################
 # Set up params for manual mode
 ############################################################
-
-net r-rps <= hm2_7i96.0.encoder.00.velocity
-net r-rps => lathe.speed_rps
 
 net mux-z-position-fb => lathe.position_z
 net mux-x-position-fb => lathe.position_x
@@ -320,12 +316,23 @@ net x-control-type => mux-gen.01.in-bit-00 # hm2_7i96.0.stepgen.01.control-type
 net x-velocity-cmd <= lathe.velocity_x_cmd
 net x-velocity-cmd => mux2.3.in0 # hm2_7i96.0.stepgen.01.velocity-cmd
 
+############################################################
+# Set up spindle
+############################################################
+
 # Connect spindle index enable for threading synchronization
 net spindle-index-enable spindle.0.index-enable <=> hm2_7i96.0.encoder.00.index-enable
 
+# Connect revs to spindle
+net mux-a-position-rv => spindle.0.revs
+
+# Connect calculated spindle velocity to various pins which need it
+net spindle-r-rps <= hm2_7i96.0.encoder.00.velocity
+net spindle-r-rps => lathe.speed_rps
+net spindle-r-rps => spindle.0.speed-in
+
 # Force spindle at-speed to always be true for mechanically synchronized spindle
 setp spindle.0.at-speed true
-setp iocontrol.0.emc-enable-in true
-net r-rps => spindle.0.speed-in
 
-#loadusr halshow
+# We don't have an estop button, so always set to true
+setp iocontrol.0.emc-enable-in true

@@ -191,15 +191,15 @@ const showLabelPopover = (event: Event, labelKey: string) => {
 const menuItems = ref([
   { separator: true },
   {
-    label: "Home",
-    icon: "pi pi-fw pi-home",
+    label: "Manual",
+    icon: "pi pi-fw pi-wrench",
     command: () => {
       selectedMenu.value = 0;
     },
   },
   {
-    label: "CC",
-    icon: "pi pi-fw pi-link",
+    label: "Program",
+    icon: "pi pi-fw pi-cog",
     command: () => {
       selectedMenu.value = 1;
     },
@@ -213,7 +213,7 @@ const menuItems = ref([
   },
   {
     label: "Settings",
-    icon: "pi pi-fw pi-cog",
+    icon: "pi pi-fw pi-sliders-v",
     command: () => {
       selectedMenu.value = 3;
     },
@@ -1306,6 +1306,7 @@ onMounted(() => {
             </div>
             <span class="ml-3 text-sm font-semibold">{{ statusDisplay.text }}</span>
           </div>
+          <div class="menu-separator"></div>
           <button
             @click="quitApplication"
             class="w-full p-link flex align-items-center justify-content-start p-2 pl-4 text-color hover:surface-200 border-noround"
@@ -1912,7 +1913,7 @@ onMounted(() => {
 
 <style scoped>
 .console-output {
-  font-family: "iosevka", "Consolas", "Monaco", "Liberation Mono", "Lucida Console", monospace !important;
+  font-family: "iosevka" !important;
   font-size: 1em;
   line-height: 1.2;
   height: 100% !important;
@@ -2096,6 +2097,12 @@ body {
 
 .cursor-pointer:hover {
   color: #aaaaaa;
+}
+
+.menu-separator {
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.12);
+  margin: 0.5rem 0;
 }
 
 </style>
