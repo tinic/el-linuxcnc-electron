@@ -2,6 +2,7 @@ export {};
 
 declare global {
     interface Window {
-        api: api
+        api: api;
+        settings: settings;
     }
 }

@@ -35,6 +35,7 @@ interface Props {
   entryActive: number;
   metric: boolean;
   cursorpos: number;
+  diameterMode: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -54,6 +55,7 @@ const props = withDefaults(defineProps<Props>(), {
   entryActive: 0,
   metric: true,
   cursorpos: 0,
+  diameterMode: false,
 });
 
 enum ZeroEntry {
@@ -243,9 +245,10 @@ const unitClicked = () => {
 };
 
 const xposLabel = computed(() => {
+  const prefix = props.diameterMode ? '⌽' : ' ';
   return props.entryActive == NumberEntry.xpos
-    ? '<span style="color:#ff0000"> X|</span>'
-    : '<span style="color:#aaaaaa"> X|</span>';
+    ? `<span style="color:#ff0000">${prefix}X|</span>`
+    : `<span style="color:#aaaaaa">${prefix}X|</span>`;
 });
 
 const zposLabel = computed(() => {

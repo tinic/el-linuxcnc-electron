@@ -16,6 +16,15 @@ const selectedMenu = ref(0);
 const xpos = ref(0);
 const zpos = ref(0);
 const apos = ref(0);
+
+// Computed display positions for diameter mode
+const displayXPos = computed(() => {
+  return diameterMode.value ? xpos.value * 2 : xpos.value;
+});
+
+const displayZPos = computed(() => {
+  return zpos.value; // Z position is always radius, not affected by diameter mode
+});
 const rpms = ref(0);
 const programRunning = ref(false);
 const errorState = ref(false);
@@ -73,6 +82,47 @@ const xpitchlabel = ref("…");
 const zpitchlabel = ref("…");
 const xpitchangle = ref(0);
 const metric = ref(true);
+const diameterMode = ref(false);
+const defaultMetricOnStartup = ref(true);
+const isQuitting = ref(false);
+
+// Settings functions
+const loadSettings = async () => {
+  var userAgent = navigator.userAgent.toLowerCase();
+  if (userAgent.indexOf(" electron/") > -1) {
+    try {
+      console.log("Attempting to load settings...");
+      console.log("window.settings:", window.settings);
+      if (window.settings && window.settings.get) {
+        const settings = await window.settings.get();
+        console.log("Settings loaded successfully:", settings);
+        diameterMode.value = settings.diameterMode;
+        defaultMetricOnStartup.value = settings.defaultMetricOnStartup;
+        metric.value = settings.defaultMetricOnStartup;
+      } else {
+        console.error("window.settings is not available");
+      }
+    } catch (error) {
+      console.error("Failed to load settings:", error);
+    }
+  }
+};
+
+const saveSettings = async () => {
+  if (isQuitting.value) return; // Don't save settings when quitting
+  
+  var userAgent = navigator.userAgent.toLowerCase();
+  if (userAgent.indexOf(" electron/") > -1) {
+    try {
+      await window.settings.save({
+        diameterMode: diameterMode.value,
+        defaultMetricOnStartup: defaultMetricOnStartup.value,
+      });
+    } catch (error) {
+      console.error("Failed to save settings:", error);
+    }
+  }
+};
 const cursorpos = ref(0);
 
 let zforward: boolean = true;
@@ -249,7 +299,9 @@ const numberClicked = (entry: number, value: number) => {
   numbersClicked.length = 0;
   numpadInputStage = NumpadInputStage.start;
   switch (entry) {
-    case 1:
+    case 1: // X position - handle diameter mode
+    numberentry.value = numbersPrevious = metric.value ? (diameterMode.value ? value * 2 : value) : (diameterMode.value ? value * 2 : value) / 25.4;
+    break;
     case 2:
     case 4:
     case 5:
@@ -331,9 +383,11 @@ function setFinalNumber(value: number) {
   }
   switch (entryActive.value) {
     case 1:
-      xaxisset = value;
+      // Convert from display value to actual position if in diameter mode
+      const actualXValue = diameterMode.value ? value / 2 : value;
+      xaxisset = actualXValue;
       xaxissetscheduled = true;
-      xpos.value = value;
+      xpos.value = actualXValue;
       break;
     case 2:
       zaxisset = value;
@@ -565,9 +619,22 @@ const stopHAL = () => {
   }
 };
 
-const quitApplication = () => {
+const quitApplication = async () => {
   var userAgent = navigator.userAgent.toLowerCase();
+  
   if (userAgent.indexOf(" electron/") > -1) {
+    isQuitting.value = true;
+    
+    // Save settings one final time before quitting
+    try {
+      await window.settings.save({
+        diameterMode: diameterMode.value,
+        defaultMetricOnStartup: defaultMetricOnStartup.value,
+      });
+    } catch (error) {
+      console.error("Failed to save final settings:", error);
+    }
+    
     window.api.send("quit");
   }
 };
@@ -985,6 +1052,11 @@ watch(selectedMenu, () => {
   scheduleHALOut();
 });
 
+// Watch settings and save them when they change
+watch([diameterMode, defaultMetricOnStartup], () => {
+  saveSettings();
+});
+
 const PitchSelector = defineAsyncComponent(
   () => import("./components/PitchSelector.vue")
 );
@@ -1288,7 +1360,10 @@ const threadMetricClicked = () => {
   updatePitchFromThread();
 };
 
-onMounted(() => {
+onMounted(async () => {
+  // Load settings first
+  await loadSettings();
+  
   var userAgent = navigator.userAgent.toLowerCase();
   if (userAgent.indexOf(" electron/") > -1) {
     window.api.receive("halStarted", () => {
@@ -1360,8 +1435,8 @@ onMounted(() => {
         <DRODisplay
           class="mr-2 h-min"
           :entryActive="entryActive"
-          :xpos="xpos"
-          :zpos="zpos"
+          :xpos="displayXPos"
+          :zpos="displayZPos"
           :apos="apos"
           :rpms="rpms"
           :xpitch="xpitch"
@@ -1375,6 +1450,7 @@ onMounted(() => {
           :zpitchlabel="zpitchlabel"
           :metric="metric"
           :cursorpos="cursorpos"
+          :diameterMode="diameterMode"
           @numberClicked="numberClicked"
           @zeroClicked="zeroClicked"
           @pitchClicked="pitchClicked"
@@ -1592,8 +1668,8 @@ onMounted(() => {
         <DRODisplay
           class="mr-2 h-min"
           :entryActive="entryActive"
-          :xpos="xpos"
-          :zpos="zpos"
+          :xpos="displayXPos"
+          :zpos="displayZPos"
           :apos="apos"
           :rpms="rpms"
           :xpitch="xpitch"
@@ -1607,6 +1683,7 @@ onMounted(() => {
           :zpitchlabel="zpitchlabel"
           :metric="metric"
           :cursorpos="cursorpos"
+          :diameterMode="diameterMode"
           @numberClicked="numberClicked"
           @zeroClicked="zeroClicked"
           @pitchClicked="pitchClicked"
@@ -1942,9 +2019,63 @@ onMounted(() => {
     </div>
     <div
       v-if="selectedMenu == 3"
-      class="flex-grow-1 flex align-items-center justify-content-center"
+      class="flex-grow-1 p-4"
     >
-      Settings
+      <div class="dro-font-mode">
+        <h2 class="mb-4">Settings</h2>
+        
+        <div class="grid grid-nogutter">
+          <!-- Diameter Mode Setting -->
+          <div class="col-12 mb-4">
+            <div class="grid grid-nogutter align-items-center">
+              <div class="col-6 text-right pr-4">
+                <label class="text-lg font-semibold">Display Mode:</label>
+              </div>
+              <div class="col-6">
+                <div class="flex gap-3">
+                  <button
+                    @click="diameterMode = false"
+                    :class="['button-mode p-2 px-4', { 'bg-primary': !diameterMode }]"
+                  >
+                    Radius
+                  </button>
+                  <button
+                    @click="diameterMode = true"
+                    :class="['button-mode p-2 px-4', { 'bg-primary': diameterMode }]"
+                  >
+                    Diameter
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Default Units Setting -->
+          <div class="col-12 mb-4">
+            <div class="grid grid-nogutter align-items-center">
+              <div class="col-6 text-right pr-4">
+                <label class="text-lg font-semibold">Default Units:</label>
+              </div>
+              <div class="col-6">
+                <div class="flex gap-3">
+                  <button
+                    @click="defaultMetricOnStartup = true"
+                    :class="['button-mode p-2 px-4', { 'bg-primary': defaultMetricOnStartup }]"
+                  >
+                    Metric (mm)
+                  </button>
+                  <button
+                    @click="defaultMetricOnStartup = false"
+                    :class="['button-mode p-2 px-4', { 'bg-primary': !defaultMetricOnStartup }]"
+                  >
+                    Imperial (inch)
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -2141,6 +2272,11 @@ body {
   height: 1px;
   background-color: rgba(255, 255, 255, 0.12);
   margin: 0.5rem 0;
+}
+
+.bg-primary {
+  background-color: #3b82f6 !important;
+  color: white !important;
 }
 
 </style>

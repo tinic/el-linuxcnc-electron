@@ -13,7 +13,7 @@
     "url": "https://github.com/tinic/el-linuxcnc-electron.git"
   },
   "scripts": {
-    "build": "tsc && cp elle-electron/preload.ts dist/preload.js && sed -i 's/import.*from.*electron.*/const { contextBridge, ipcRenderer } = require(\"electron\");/' dist/preload.js && sed -i 's/:any//g' dist/preload.js",
+    "build": "tsc && tsc -p tsconfig.preload.json",
     "watch": "nodemon --exec yarn serve:electron",
     "start": "yarn nightly:rename && concurrently -k \"yarn serve:front\" \"yarn watch\"",
     "front:setup": "cd elle-frontend && yarn",

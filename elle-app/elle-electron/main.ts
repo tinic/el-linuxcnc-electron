@@ -63,7 +63,31 @@ async function createWindow() {
             name: app.getName(),
         };
     });
+
 }
+
+// Settings handlers (global)
+ipcMain.handle('getSettings', () => {
+    return {
+        diameterMode: (appConfig as any).get("setting.diameterMode"),
+        defaultMetricOnStartup: (appConfig as any).get("setting.defaultMetricOnStartup"),
+    };
+});
+
+ipcMain.handle('saveSettings', (event, settings) => {
+    try {
+        const currentSettings = (appConfig as any).get('setting', {});
+        (appConfig as any).set('setting', {
+            ...currentSettings,
+            diameterMode: settings.diameterMode,
+            defaultMetricOnStartup: settings.defaultMetricOnStartup,
+        });
+        return true;
+    } catch (error) {
+        console.error('Failed to save settings:', error);
+        throw error;
+    }
+});
 
 // Silence Intel GPU dmesg noise 
 //app.commandLine.appendSwitch('ignore-gpu-blacklist');
