@@ -20,6 +20,8 @@
 ;#<_Cut_Mult>    =    (PROGRESSIVE MULTIPLIER .8 to 1.0)
 ;#<_Min_Cut>     =    (MIN CUT SIZE)
 ;#<_Spring_Cuts> =    (SPRING CUTS)
+;#<_X_Return>    =    (X RETURN POINT)
+;#<_Z_Return>    =    (Z RETURN POINT)
 
 o<thread-loop> sub
 (validate inputs)
@@ -35,7 +37,7 @@ o<thread-loop> sub
 #<Cut_Size> = 0.0
 #<X_Cut>=0.0
 #<Z_Cut>=0.0
-G0 X#<_X_Start> Z[#<_Z_Start> + #<_Pitch> * 4]                   (Move to start point) 
+G0 X#<_X_Start> Z#<_Z_Start>                                   (Move to start point) 
 o100 do
   o101 if [#<Cut_Size> EQ 0.0]
     #<Cut_Size> = #<_First_Cut>
@@ -63,7 +65,7 @@ o100 do
 ;	F#<_Pitch>                                                    (same as pitch)
   G1 X#<_X_End> Z[#<_Z_End>+#<Z_Cut>+#<_Z_Pullout>]             (pull out)
   G0 X[#<_X_End>+#<_X_Pullout>]
-  G0 Z[#<_Z_Start> + #<_Pitch> * 4]
+  G0 Z#<_Z_Start>
   G0 X#<_X_Start>
   o120 if [ABS[#<X_Cut>] EQ ABS[#<_X_Depth>]]
     o121 if [#<_Spring_Cuts> GT 0] 
@@ -73,7 +75,7 @@ o100 do
     #<_Spring_Cuts>=[[#<_Spring_Cuts>]-1.] (decr spring passes) 
   o120 endif
 o100 while [[#<_Spring_Cuts>] GT -1.0]
-G0 X#<_X_Start> Z#<_Z_Start>
+G0 X#<_X_Return> Z#<_Z_Return>
 
 ;G0 X[#<_X_Start>+#<_X_Depth>] z.250  (temp mark OD)
 ;G1Z.150

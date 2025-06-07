@@ -169,6 +169,8 @@ def execute_threading():
         c.mdi(f"#<_Cut_Mult> = {float(json_data['CutMult']):.6f}")
         c.mdi(f"#<_Min_Cut> = {float(json_data['MinCut']):.6f}")
         c.mdi(f"#<_Spring_Cuts> = {int(json_data['SpringCuts'])}")
+        c.mdi(f"#<_X_Return> = {int(json_data['XReturn'])}")
+        c.mdi(f"#<_Z_Return> = {int(json_data['ZReturn'])}")
 
         # Call the thread-loop subroutine
         c.mdi("o<thread-loop> call")

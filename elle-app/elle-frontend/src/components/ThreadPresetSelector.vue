@@ -11,7 +11,7 @@ interface ThreadPreset {
   Pitch: number;     // Pitch
   XDepth: number;    // X Depth
   ZDepth: number;    // Z Depth
-  XEndOffset: number; // X End Offset (0 for straight threads, offset for tapered threads)
+  Angle: number;     // Thread angle in degrees (0 for straight threads, angle for tapered threads)
   ZEnd: number;      // Z End
   XPullout: number;  // X Pullout
   ZPullout: number;  // Z Pullout

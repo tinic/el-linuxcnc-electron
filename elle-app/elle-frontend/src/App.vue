@@ -126,7 +126,7 @@ const selectedCannedCycle = ref(CannedCycle.none);
 const threadPitch = ref<number | null>(null);
 const threadXDepth = ref<number | null>(null);
 const threadZDepth = ref<number | null>(null);
-const threadXEndOffset = ref<number | null>(null);
+const threadAngle = ref<number | null>(null);
 const threadZEnd = ref<number | null>(null);
 const threadXPullout = ref<number | null>(null);
 const threadZPullout = ref<number | null>(null);
@@ -145,7 +145,7 @@ const threadingDescriptions: { [key: string]: string } = {
   'P': 'Thread pitch - distance between threads',
   'XD': 'X Depth - cross-slide cutting depth\n(negative for external, positive for internal)',
   'ZD': 'Z Depth - longitudinal cutting depth\n(zero for straight threads)',
-  'XE': 'X End - final X position offset\n(zero for straight threads)',
+  'A': 'Angle - thread taper angle in degrees\n(zero for straight threads)',
   'ZE': 'Z End - final Z position\n(usually negative for regular right hand threads)',
   'XP': 'X Pullout - cross-slide retract distance\n(positive for external, negative for internal)',
   'ZP': 'Z Pullout - spindle retract distance',
@@ -256,7 +256,7 @@ const numberClicked = (entry: number, value: number) => {
     case 6: // Thread Pitch
     case 7: // Thread X Depth
     case 8: // Thread Z Depth
-    case 9: // Thread X End
+    case 9: // Thread Angle
     case 10: // Thread Z End
     case 11: // Thread X Pullout
     case 12: // Thread Z Pullout
@@ -313,7 +313,7 @@ function setFinalNumber(value: number) {
     case 6: // Thread Pitch
     case 7: // Thread X Depth
     case 8: // Thread Z Depth
-    case 9: // Thread X End
+    case 9: // Thread Angle
     case 10: // Thread Z End
     case 11: // Thread X Pullout
     case 12: // Thread Z Pullout
@@ -365,7 +365,7 @@ function setFinalNumber(value: number) {
       threadPresetName.value = null; // Clear preset name on manual change
       break;
     case 9:
-      threadXEndOffset.value = roundThreadValue(value);
+      threadAngle.value = roundThreadValue(value);
       threadPresetName.value = null; // Clear preset name on manual change
       break;
     case 10:
@@ -446,7 +446,7 @@ const numPadClicked = (key: string) => {
             threadZDepth.value = null;
             break;
           case 9:
-            threadXEndOffset.value = null;
+            threadAngle.value = null;
             break;
           case 10:
             threadZEnd.value = null;
@@ -1071,7 +1071,7 @@ const threadPresetClicked = () => {
         threadPitch.value = roundThreadValue(preset.Pitch, conversionFactor);
         threadXDepth.value = roundThreadValue(preset.XDepth, conversionFactor);
         threadZDepth.value = roundThreadValue(preset.ZDepth, conversionFactor);
-        threadXEndOffset.value = roundThreadValue(preset.XEndOffset, conversionFactor);
+        threadAngle.value = roundThreadValue(preset.Angle || 0); // Angle is dimensionless
         threadZEnd.value = roundThreadValue(preset.ZEnd, conversionFactor);
         threadXPullout.value = roundThreadValue(preset.XPullout, conversionFactor);
         threadZPullout.value = roundThreadValue(preset.ZPullout, conversionFactor);
@@ -1093,9 +1093,9 @@ const threadStartClicked = () => {
   entryActive.value = 0;
   
   // Validate required parameters exist for thread-loop.ngc
-  if (threadPitch.value === null || threadXEndOffset.value === null || threadZEnd.value === null) {
+  if (threadPitch.value === null || threadZEnd.value === null) {
     console.error("Threading: Missing required parameters");
-    alert("Error: Missing required threading parameters. Please set Pitch, X End, and Z End values.");
+    alert("Error: Missing required threading parameters. Please set Pitch and Z End values.");
     return;
   }
   
@@ -1140,23 +1140,61 @@ const threadStartClicked = () => {
   }
    
   getHalIn().then((halIn) => {
+    // Extract current position and threading values into local variables
+    const currentXPos = (halIn as any).position_x + xaxisoffset;
+    const currentZPos = (halIn as any).position_z + zaxisoffset;
+    
+    const pitch = threadPitch.value || 0;
+    const xDepth = threadXDepth.value || 0;
+    const zDepth = threadZDepth.value || 0;
+    const angle = threadAngle.value || 0;
+    const zEnd = threadZEnd.value || 0;
+    const xPullout = threadXPullout.value || 0.1;
+    const zPullout = threadZPullout.value || 0.1;
+    const firstCut = threadFirstCut.value || 0.1;
+    const cutMult = threadCutMult.value || 0.8;
+    const minCut = threadMinCut.value || 0.05;
+    const springCuts = threadSpringCuts.value || 1;
+    
+    // Calculate lead-in distance (was previously done in thread_loop.ngc)
+    const leadIn = pitch * 4;
+    
+    // For miter threads, calculate X positions at actual start and end positions
+    // The user-specified positions are where cutting should occur
+    const userZStart = 0; // Current Z position
+    const userZEnd = zEnd; // User-specified end position
+    const actualThreadLength = Math.abs(userZEnd - userZStart + zDepth);
+    
+    // Calculate X offset for the actual thread cutting distance (without lead-in)
+    const xEndOffset = angle !== 0 ? actualThreadLength * Math.tan(angle * Math.PI / 180) : 0;
+    
+    // Calculate start position accounting for lead-in
+    const actualZStart = userZStart + leadIn; // Move back by lead-in
+    const actualXStart = angle !== 0 ? leadIn * Math.tan(angle * Math.PI / 180) : 0;
+    
+    // Calculate end position for tool movement (where tool actually moves to)
+    const toolZEnd = userZEnd - leadIn; // Tool end includes lead-out
+    const toolXEnd = xEndOffset; // X end offset for the cutting portion
+    
     // Send threading parameters to LinuxCNC HAL component for subroutine call
     const threadingParams = {
-      XPos: (halIn as any).position_x + xaxisoffset,
-      ZPos: (halIn as any).position_z + zaxisoffset,
-      XStart: formatForLinuxCNC((halIn as any).position_x + xaxisoffset),
-      ZStart: formatForLinuxCNC((halIn as any).position_z + zaxisoffset),
-      Pitch: formatForLinuxCNC(threadPitch.value || 0),
-      XDepth: formatForLinuxCNC(threadXDepth.value || 0),
-      ZDepth: formatForLinuxCNC(threadZDepth.value || 0),
-      XEnd: formatForLinuxCNC((halIn as any).position_x + xaxisoffset + (threadXEndOffset.value || 0)),
-      ZEnd: formatForLinuxCNC((halIn as any).position_z + zaxisoffset + (threadZEnd.value || 0)),
-      XPullout: formatForLinuxCNC(threadXPullout.value || 0.1),
-      ZPullout: formatForLinuxCNC(threadZPullout.value || 0.1),
-      FirstCut: formatForLinuxCNC(threadFirstCut.value || 0.1),
-      CutMult: formatForLinuxCNC(threadCutMult.value || 0.8),
-      MinCut: formatForLinuxCNC(threadMinCut.value || 0.05),
-      SpringCuts: Math.round(threadSpringCuts.value || 1)
+      XPos: currentXPos,
+      ZPos: currentZPos,
+      XStart: formatForLinuxCNC(currentXPos - actualXStart), // Adjusted start position for miter
+      ZStart: formatForLinuxCNC(currentZPos + actualZStart), // Start position with lead-in
+      Pitch: formatForLinuxCNC(pitch),
+      XDepth: formatForLinuxCNC(xDepth),
+      ZDepth: formatForLinuxCNC(zDepth),
+      XEnd: formatForLinuxCNC(currentXPos + xEndOffset), // Where cutting ends (user-specified end)
+      ZEnd: formatForLinuxCNC(currentZPos + userZEnd), // Where cutting ends (user-specified end)
+      XReturn: formatForLinuxCNC(currentXPos), // Return to original X position
+      ZReturn: formatForLinuxCNC(currentZPos), // Return to original Z position
+      XPullout: formatForLinuxCNC(xPullout),
+      ZPullout: formatForLinuxCNC(zPullout),
+      FirstCut: formatForLinuxCNC(firstCut),
+      CutMult: formatForLinuxCNC(cutMult),
+      MinCut: formatForLinuxCNC(minCut),
+      SpringCuts: Math.round(springCuts)
     };
     
     console.log("Threading Parameters:", threadingParams);
@@ -1182,7 +1220,7 @@ const threadResetClicked = () => {
   threadPitch.value = null;
   threadXDepth.value = null;
   threadZDepth.value = null;
-  threadXEndOffset.value = null;
+  threadAngle.value = null;
   threadZEnd.value = null;
   threadXPullout.value = null;
   threadZPullout.value = null;
@@ -1239,7 +1277,7 @@ const threadMetricClicked = () => {
   if (threadPitch.value !== null) threadPitch.value = roundThreadValue(threadPitch.value, conversionFactor);
   if (threadXDepth.value !== null) threadXDepth.value = roundThreadValue(threadXDepth.value, conversionFactor);
   if (threadZDepth.value !== null) threadZDepth.value = roundThreadValue(threadZDepth.value, conversionFactor);
-  if (threadXEndOffset.value !== null) threadXEndOffset.value = roundThreadValue(threadXEndOffset.value, conversionFactor);
+  // Angle is dimensionless - no conversion needed
   if (threadZEnd.value !== null) threadZEnd.value = roundThreadValue(threadZEnd.value, conversionFactor);
   if (threadXPullout.value !== null) threadXPullout.value = roundThreadValue(threadXPullout.value, conversionFactor);
   if (threadZPullout.value !== null) threadZPullout.value = roundThreadValue(threadZPullout.value, conversionFactor);
@@ -1584,7 +1622,7 @@ onMounted(() => {
           class="grid dro-font-mode grid-nogutter p-3 pr-4 m-0"
           style="width: 18em"
         >
-          <div class="col-12 align-content-center">Canned Cycles</div>
+          <div class="col-12 align-content-center">Program</div>
           <button
             @click="cannedCycleClicked(CannedCycle.threading)"
             size="large"
@@ -1597,7 +1635,7 @@ onMounted(() => {
                 style="color: #ff0000"
               />
               <i v-else class="pi pi-circle mr-3" />
-              Threading Subroutine
+              Threading
             </span>
           </button>
           <button
@@ -1650,7 +1688,7 @@ onMounted(() => {
         <div v-if="selectedCannedCycle == CannedCycle.threading" class="flex flex-column dro-font-mode p-1" style="width: 43em;">
           <div class="grid grid-nogutter flex-none">
           <div class="col-12 align-content-center mb-2">
-            Threading Subroutine (thread-loop.ngc){{ threadPresetName ? ` - ${threadPresetName}` : '' }}
+            Threading (thread-loop.ngc){{ threadPresetName ? ` - ${threadPresetName}` : '' }}
           </div>
           <!-- Note: X Start uses current position, Z Start is always 0 -->
           
@@ -1707,15 +1745,15 @@ onMounted(() => {
               {{ entryActive == 10 ? numberentry : (threadZEnd ?? 'Z End') }}
             </button>
           </div>
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'XE')">XE</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'A')">A</div>
           <div class="col-4 p-1">
             <button
-              @click="numberClicked(9, threadXEndOffset || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 9 && threadXEndOffset === null }]"
+              @click="numberClicked(9, threadAngle || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 9 && threadAngle === null }]"
               :style="{ backgroundColor: entryActive == 9 ? '#666' : '#333' }"
-              :title="entryActive == 9 ? String(numberentry) : String(threadXEndOffset ?? 'X End')"
+              :title="entryActive == 9 ? String(numberentry) : String(threadAngle ?? 'Angle')"
             >
-              {{ entryActive == 9 ? numberentry : (threadXEndOffset ?? 'X End') }}
+              {{ entryActive == 9 ? numberentry : (threadAngle ?? 'Angle') }}
             </button>
           </div>
           <div class="col-2 p-0"></div>
@@ -1844,8 +1882,8 @@ onMounted(() => {
           <Popover :ref="(el) => threadingPopovers['ZD'] = el" class="threading-popover">
             <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ threadingDescriptions['ZD'] }}</div>
           </Popover>
-          <Popover :ref="(el) => threadingPopovers['XE'] = el" class="threading-popover">
-            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ threadingDescriptions['XE'] }}</div>
+          <Popover :ref="(el) => threadingPopovers['A'] = el" class="threading-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ threadingDescriptions['A'] }}</div>
           </Popover>
           <Popover :ref="(el) => threadingPopovers['ZE'] = el" class="threading-popover">
             <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ threadingDescriptions['ZE'] }}</div>
