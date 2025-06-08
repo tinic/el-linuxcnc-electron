@@ -17,6 +17,22 @@ const xpos = ref(0);
 const zpos = ref(0);
 const apos = ref(0);
 
+// Debug coordinates
+const halPositionX = ref(0);
+const halPositionZ = ref(0);
+const linuxcncActualX = ref(0);
+const linuxcncActualZ = ref(0);
+const linuxcncJointX = ref(0);
+const linuxcncJointZ = ref(0);
+const halRawX = ref(0);
+const halRawZ = ref(0);
+const g5xOffsetX = ref(0);
+const g5xOffsetZ = ref(0);
+const g92OffsetX = ref(0);
+const g92OffsetZ = ref(0);
+const toolOffsetX = ref(0);
+const toolOffsetZ = ref(0);
+
 // Computed display positions for diameter mode
 const displayXPos = computed(() => {
   return diameterMode.value ? xpos.value * 2 : xpos.value;
@@ -707,6 +723,22 @@ function startPoll() {
         rpms.value = Math.abs((halIn as any).speed_rps * 60);
         programRunning.value = (halIn as any).program_running || false;
         errorState.value = (halIn as any).error_state || false;
+        
+        // Debug coordinates
+        halPositionX.value = (halIn as any).position_x || 0;
+        halPositionZ.value = (halIn as any).position_z || 0;
+        linuxcncActualX.value = (halIn as any).linuxcnc_actual_x || 0;
+        linuxcncActualZ.value = (halIn as any).linuxcnc_actual_z || 0;
+        linuxcncJointX.value = (halIn as any).linuxcnc_joint_x || 0;
+        linuxcncJointZ.value = (halIn as any).linuxcnc_joint_z || 0;
+        halRawX.value = (halIn as any).hal_raw_x || 0;
+        halRawZ.value = (halIn as any).hal_raw_z || 0;
+        g5xOffsetX.value = (halIn as any).g5x_offset_x || 0;
+        g5xOffsetZ.value = (halIn as any).g5x_offset_z || 0;
+        g92OffsetX.value = (halIn as any).g92_offset_x || 0;
+        g92OffsetZ.value = (halIn as any).g92_offset_z || 0;
+        toolOffsetX.value = (halIn as any).tool_offset_x || 0;
+        toolOffsetZ.value = (halIn as any).tool_offset_z || 0;
       });
     } catch {
       // nop 
@@ -1213,8 +1245,10 @@ const threadStartClicked = () => {
    
   getHalIn().then((halIn) => {
     // Extract current position and threading values into local variables
-    const currentXPos = (halIn as any).position_x + xaxisoffset;
-    const currentZPos = (halIn as any).position_z + zaxisoffset;
+    // Use HAL positions as source of truth for machine position
+    const currentXPos = (halIn as any).position_x - xaxisoffset;
+    const currentZPos = (halIn as any).position_z - zaxisoffset;
+    const currentAPos = (halIn as any).position_a - aaxisoffset;
     
     const pitch = threadPitch.value || 0;
     const xDepth = threadXDepth.value || 0;
@@ -1250,8 +1284,9 @@ const threadStartClicked = () => {
     
     // Send threading parameters to LinuxCNC HAL component for subroutine call
     const threadingParams = {
-      XPos: currentXPos,
-      ZPos: currentZPos,
+      XPos: formatForLinuxCNC(currentXPos),
+      ZPos: formatForLinuxCNC(currentZPos),
+      APos: formatForLinuxCNC(currentAPos),
       XStart: formatForLinuxCNC(currentXPos - actualXStart), // Adjusted start position for miter
       ZStart: formatForLinuxCNC(currentZPos + actualZStart), // Start position with lead-in
       Pitch: formatForLinuxCNC(pitch),
@@ -1427,6 +1462,25 @@ onMounted(async () => {
             <i class="pi pi-sign-out" />
             <span class="ml-2">Exit</span>
           </button>
+          <div class="menu-separator"></div>
+          <div class="debug-coordinates p-2 pl-4 text-xs">
+            <div class="text-color-secondary mb-1">Debug Coordinates</div>
+            <div class="coordinate-line">UI X: {{ xpos.toFixed(4) }}</div>
+            <div class="coordinate-line">UI Z: {{ zpos.toFixed(4) }}</div>
+            <div class="coordinate-line">HAL X: {{ halPositionX.toFixed(4) }}</div>
+            <div class="coordinate-line">HAL Z: {{ halPositionZ.toFixed(4) }}</div>
+            <div class="coordinate-line">CNC X: {{ linuxcncActualX.toFixed(4) }}</div>
+            <div class="coordinate-line">CNC Z: {{ linuxcncActualZ.toFixed(4) }}</div>
+            <div class="coordinate-line">Jnt X: {{ linuxcncJointX.toFixed(4) }}</div>
+            <div class="coordinate-line">Jnt Z: {{ linuxcncJointZ.toFixed(4) }}</div>
+            <div class="coordinate-line">Raw X: {{ halRawX.toFixed(4) }}</div>
+            <div class="coordinate-line">Raw Z: {{ halRawZ.toFixed(4) }}</div>
+            <div class="coordinate-line">G5X Z: {{ g5xOffsetZ.toFixed(4) }}</div>
+            <div class="coordinate-line">G92 Z: {{ g92OffsetZ.toFixed(4) }}</div>
+            <div class="coordinate-line">Tool Z: {{ toolOffsetZ.toFixed(4) }}</div>
+            <div class="coordinate-line">X Offset: {{ xaxisoffset.toFixed(4) }}</div>
+            <div class="coordinate-line">Z Offset: {{ zaxisoffset.toFixed(4) }}</div>
+          </div>
         </div>
       </template>
     </Menu>
@@ -2277,6 +2331,25 @@ body {
 .bg-primary {
   background-color: #3b82f6 !important;
   color: white !important;
+}
+
+/* Debug coordinates styling */
+.debug-coordinates {
+  font-family: "iosevka", monospace;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  border-left: 2px solid #555;
+  margin-left: 1rem;
+}
+
+.coordinate-line {
+  margin-bottom: 0.25rem;
+  color: #cccccc;
+}
+
+.text-color-secondary {
+  color: #888888;
+  font-weight: bold;
 }
 
 </style>

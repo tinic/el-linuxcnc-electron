@@ -72,7 +72,22 @@ def read_hal_in():
         "position_a": hal_pin_position_a.get(),
         "speed_rps": hal_pin_speed_rps.get(),
         "program_running": program_running,
-        "error_state": error_state
+        "error_state": error_state,
+        "linuxcnc_actual_x": s.actual_position[0],  # X axis actual position from LinuxCNC
+        "linuxcnc_actual_z": s.actual_position[2],  # Z axis actual position from LinuxCNC
+        "linuxcnc_joint_x": s.joint_actual_position[0],  # Joint 0 (X) actual position
+        "linuxcnc_joint_z": s.joint_actual_position[1],   # Joint 1 (Z) actual position
+        "hal_raw_x": hal_pin_position_x.get(),  # Raw HAL pin for debugging
+        "hal_raw_z": hal_pin_position_z.get(),   # Raw HAL pin for debugging
+        "g5x_offset_x": s.g5x_offset[0],  # Work coordinate system offset X
+        "g5x_offset_z": s.g5x_offset[2],  # Work coordinate system offset Z
+        "g92_offset_x": s.g92_offset[0],  # G92 offset X
+        "g92_offset_z": s.g92_offset[2],  # G92 offset Z
+        "tool_offset_x": s.tool_offset[0],  # Tool offset X
+        "tool_offset_z": s.tool_offset[2],   # Tool offset Z
+        "spindle_enabled": s.spindle[0]['enabled'],  # Spindle enabled state
+        "spindle_speed": s.spindle[0]['speed'],      # Spindle speed
+        "spindle_direction": s.spindle[0]['direction']  # Spindle direction
     }
 
 @app.put("/hal/abort")
@@ -150,10 +165,19 @@ def execute_threading():
 
         # Set thread-loop.ngc parameters using MDI
         c.mdi("G8")       # Radius mode
+        c.wait_complete()
         c.mdi("G90")      # Absolute positioning
+        c.wait_complete()
         c.mdi("G21")      # Metric units (assuming parameters are in mm)
+        c.wait_complete()
+        c.mdi(f"G10 L20 P1 X{float(json_data['XPos']):.6f} Z{float(json_data['ZPos']):.6f}")
+        c.wait_complete()
+        c.mdi("G54")      # Use work coordinates
+        c.wait_complete()
         c.mdi("F100")     # Set feed rate for G1 moves (100 mm/min)
+        c.wait_complete()
         c.mdi("M3S500")   # Start spindle at 500 RPM
+        c.wait_complete()
         
         # Set thread-loop parameters
         c.mdi(f"#<_X_Start> = {float(json_data['XStart']):.6f}")
@@ -171,6 +195,7 @@ def execute_threading():
         c.mdi(f"#<_Spring_Cuts> = {int(json_data['SpringCuts'])}")
         c.mdi(f"#<_X_Return> = {int(json_data['XReturn'])}")
         c.mdi(f"#<_Z_Return> = {int(json_data['ZReturn'])}")
+        c.wait_complete()
 
         # Call the thread-loop subroutine
         c.mdi("o<thread-loop> call")
