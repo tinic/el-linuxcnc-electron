@@ -12,25 +12,15 @@ import DRODisplay from "./components/DRODisplay.vue";
 import ThreadPresetSelector from "./components/ThreadPresetSelector.vue";
 import OperationPreview from "./components/OperationPreview.vue";
 import Backplot from "./Backplot";
-import { useHAL } from "./composables/useHAL"
+import { useHAL } from "./composables/useHAL";
+import { useCannedCycles, ThreadingEntryType } from "./composables/useCannedCycles";
 
 enum EntryType {
   xPosition = 1,
   zPosition = 2,
   aPosition = 3,
   xPitch = 4,
-  zPitch = 5,
-  threadPitch = 6,
-  threadXDepth = 7,
-  threadZDepth = 8,
-  threadAngle = 9,
-  threadZEnd = 10,
-  threadXPullout = 11,
-  threadZPullout = 12,
-  threadFirstCut = 13,
-  threadCutMult = 14,
-  threadMinCut = 15,
-  threadSpringCuts = 16
+  zPitch = 5
 }
 
 enum MenuType {
@@ -74,6 +64,35 @@ const {
   zstepperactive,
   updateHALOut
 } = useHAL();
+
+const {
+  threadPitch,
+  threadXDepth,
+  threadZDepth,
+  threadAngle,
+  threadZEnd,
+  threadXPullout,
+  threadZPullout,
+  threadFirstCut,
+  threadCutMult,
+  threadMinCut,
+  threadSpringCuts,
+  threadPresetName,
+  threadDiameter,
+  threadingPopovers,
+  currentPopoverLabel,
+  threadingDescriptions,
+  roundThreadValue,
+  formatForLinuxCNC,
+  showLabelPopover,
+  validateThreadingParameters,
+  generateThreadingParams,
+  openThreadPresetDialog,
+  resetThreadingParameters,
+  convertThreadingParameters,
+  setThreadingParameter,
+  clearThreadingParameter
+} = useCannedCycles();
 
 
 // Computed display positions for diameter mode
@@ -198,21 +217,6 @@ enum CannedCycle {
 }
 const selectedCannedCycle = ref(CannedCycle.none);
 
-// Threading Subroutine parameters
-// Note: XStart uses current X position, ZStart is always 0
-const threadPitch = ref<number | null>(null);
-const threadXDepth = ref<number | null>(null);
-const threadZDepth = ref<number | null>(null);
-const threadAngle = ref<number | null>(null);
-const threadZEnd = ref<number | null>(null);
-const threadXPullout = ref<number | null>(null);
-const threadZPullout = ref<number | null>(null);
-const threadFirstCut = ref<number | null>(null);
-const threadCutMult = ref<number | null>(null);
-const threadMinCut = ref<number | null>(null);
-const threadSpringCuts = ref<number | null>(null);
-const threadPresetName = ref<string | null>(null);
-const threadDiameter = ref<string | null>(null);
 
 
 // Operation Preview state
@@ -221,58 +225,10 @@ const showBackplot = ref(false);
 const currentOperation = ref<any>(null);
 const pendingOperationExecution = ref<(() => void) | null>(null);
 
-// Popover refs and state
-const threadingPopovers = ref<Record<string, any>>({});
-const currentPopoverLabel = ref("");
 
-// Threading parameter descriptions
-const threadingDescriptions: { [key: string]: string } = {
-  'P': 'Thread pitch - distance between threads',
-  'D': 'Major Diameter / Tap Drill Size\n(major thread diameter and recommended drill size)',
-  'XD': 'X Depth - cross-slide cutting depth\n(negative for external, positive for internal)',
-  'ZD': 'Z Depth - longitudinal cutting depth\n(zero for straight threads)',
-  'A': 'Angle - thread taper angle in degrees\n(zero for straight threads)',
-  'ZE': 'Z End - final Z position\n(usually negative for regular right hand threads)',
-  'XP': 'X Pullout - cross-slide retract distance\n(positive for external, negative for internal)',
-  'ZP': 'Z Pullout - spindle retract distance',
-  'FC': 'First Cut - initial cutting depth',
-  'CM': 'Cut Multiplier - depth reduction factor\n(0.5-1.0)',
-  'MC': 'Min Cut - minimum cutting depth',
-  'SC': 'Spring Cuts - number of finishing passes'
-};
 
-// Helper function to round threading values with optional unit conversion
-const roundThreadValue = (value: number, conversionFactor: number = 1): number => {
-  const result = Math.round((value * conversionFactor) * 1000000) / 1000000;
-  return parseFloat(result.toFixed(6));
-};
 
-// Helper function to format numbers for LinuxCNC (prevents scientific notation)
-const formatForLinuxCNC = (value: number): number => {
-  return parseFloat(value.toFixed(6));
-};
 
-// Show popover with parameter description
-const showLabelPopover = (event: Event, labelKey: string) => {
-  const popover = threadingPopovers.value[labelKey];
-  if (!popover) return;
-  
-  // If clicking the same label that's currently showing, hide it
-  if (currentPopoverLabel.value === labelKey && popover.visible) {
-    popover.hide();
-    currentPopoverLabel.value = "";
-    return;
-  }
-  
-  // Hide any currently visible popover
-  if (currentPopoverLabel.value && threadingPopovers.value[currentPopoverLabel.value]) {
-    threadingPopovers.value[currentPopoverLabel.value].hide();
-  }
-  
-  // Show the new popover
-  currentPopoverLabel.value = labelKey;
-  popover.show(event);
-};
 
 const menuItems = ref([
   { separator: true },
@@ -341,20 +297,20 @@ const numberClicked = (entry: number, value: number) => {
     case EntryType.zPosition:
     case EntryType.xPitch:
     case EntryType.zPitch:
-    case EntryType.threadPitch:
-    case EntryType.threadXDepth:
-    case EntryType.threadZDepth:
-    case EntryType.threadAngle:
-    case EntryType.threadZEnd:
-    case EntryType.threadXPullout:
-    case EntryType.threadZPullout:
-    case EntryType.threadFirstCut:
-    case EntryType.threadMinCut:
+    case ThreadingEntryType.threadPitch:
+    case ThreadingEntryType.threadXDepth:
+    case ThreadingEntryType.threadZDepth:
+    case ThreadingEntryType.threadAngle:
+    case ThreadingEntryType.threadZEnd:
+    case ThreadingEntryType.threadXPullout:
+    case ThreadingEntryType.threadZPullout:
+    case ThreadingEntryType.threadFirstCut:
+    case ThreadingEntryType.threadMinCut:
     numberentry.value = numbersPrevious = metric.value ? value : value / 25.4;
     break;
     case EntryType.aPosition:
-    case EntryType.threadCutMult:
-    case EntryType.threadSpringCuts:
+    case ThreadingEntryType.threadCutMult:
+    case ThreadingEntryType.threadSpringCuts:
     numberentry.value = numbersPrevious = value;
     break;
   }
@@ -398,22 +354,22 @@ function setFinalNumber(value: number) {
     case EntryType.zPosition:
     case EntryType.xPitch:
     case EntryType.zPitch:
-    case EntryType.threadPitch:
-    case EntryType.threadXDepth:
-    case EntryType.threadZDepth:
-    case EntryType.threadAngle:
-    case EntryType.threadZEnd:
-    case EntryType.threadXPullout:
-    case EntryType.threadZPullout:
-    case EntryType.threadFirstCut:
-    case EntryType.threadMinCut:
+    case ThreadingEntryType.threadPitch:
+    case ThreadingEntryType.threadXDepth:
+    case ThreadingEntryType.threadZDepth:
+    case ThreadingEntryType.threadAngle:
+    case ThreadingEntryType.threadZEnd:
+    case ThreadingEntryType.threadXPullout:
+    case ThreadingEntryType.threadZPullout:
+    case ThreadingEntryType.threadFirstCut:
+    case ThreadingEntryType.threadMinCut:
     if (!metric.value) {
       value = value * 25.4;
     }
     break;
     case EntryType.aPosition:
-    case EntryType.threadCutMult:
-    case EntryType.threadSpringCuts:
+    case ThreadingEntryType.threadCutMult:
+    case ThreadingEntryType.threadSpringCuts:
     break;
   }
   switch (entryActive.value) {
@@ -436,61 +392,39 @@ function setFinalNumber(value: number) {
     case EntryType.zPitch:
       zpitch.value = Math.abs(value);
       break;
-    case EntryType.threadPitch:
-      threadPitch.value = roundThreadValue(value);
-      threadPresetName.value = null; // Clear preset name on manual change
-      threadDiameter.value = null;
+    case ThreadingEntryType.threadPitch:
+      setThreadingParameter(ThreadingEntryType.threadPitch, value);
       updatePitchFromThread();
       break;
-    case EntryType.threadXDepth:
-      threadXDepth.value = roundThreadValue(value);
-      threadPresetName.value = null;
-      threadDiameter.value = null;
+    case ThreadingEntryType.threadXDepth:
+      setThreadingParameter(ThreadingEntryType.threadXDepth, value);
       break;
-    case EntryType.threadZDepth:
-      threadZDepth.value = roundThreadValue(value);
-      threadPresetName.value = null;
-      threadDiameter.value = null;
+    case ThreadingEntryType.threadZDepth:
+      setThreadingParameter(ThreadingEntryType.threadZDepth, value);
       break;
-    case EntryType.threadAngle:
-      threadAngle.value = roundThreadValue(value);
-      threadPresetName.value = null;
-      threadDiameter.value = null;
+    case ThreadingEntryType.threadAngle:
+      setThreadingParameter(ThreadingEntryType.threadAngle, value);
       break;
-    case EntryType.threadZEnd:
-      threadZEnd.value = roundThreadValue(value);
-      threadPresetName.value = null;
-      threadDiameter.value = null;
+    case ThreadingEntryType.threadZEnd:
+      setThreadingParameter(ThreadingEntryType.threadZEnd, value);
       break;
-    case EntryType.threadXPullout:
-      threadXPullout.value = roundThreadValue(value);
-      threadPresetName.value = null;
-      threadDiameter.value = null;
+    case ThreadingEntryType.threadXPullout:
+      setThreadingParameter(ThreadingEntryType.threadXPullout, value);
       break;
-    case EntryType.threadZPullout:
-      threadZPullout.value = roundThreadValue(value);
-      threadPresetName.value = null;
-      threadDiameter.value = null;
+    case ThreadingEntryType.threadZPullout:
+      setThreadingParameter(ThreadingEntryType.threadZPullout, value);
       break;
-    case EntryType.threadFirstCut:
-      threadFirstCut.value = roundThreadValue(value);
-      threadPresetName.value = null;
-      threadDiameter.value = null;
+    case ThreadingEntryType.threadFirstCut:
+      setThreadingParameter(ThreadingEntryType.threadFirstCut, value);
       break;
-    case EntryType.threadCutMult:
-      threadCutMult.value = roundThreadValue(value);
-      threadPresetName.value = null;
-      threadDiameter.value = null;
+    case ThreadingEntryType.threadCutMult:
+      setThreadingParameter(ThreadingEntryType.threadCutMult, value);
       break;
-    case EntryType.threadMinCut:
-      threadMinCut.value = roundThreadValue(value);
-      threadPresetName.value = null;
-      threadDiameter.value = null;
+    case ThreadingEntryType.threadMinCut:
+      setThreadingParameter(ThreadingEntryType.threadMinCut, value);
       break;
-    case EntryType.threadSpringCuts:
-      threadSpringCuts.value = roundThreadValue(value);
-      threadPresetName.value = null;
-      threadDiameter.value = null;
+    case ThreadingEntryType.threadSpringCuts:
+      setThreadingParameter(ThreadingEntryType.threadSpringCuts, value);
       break;
   }
   numpadInputStage = NumpadInputStage.none;
@@ -532,38 +466,38 @@ const numPadClicked = (key: string) => {
       if (numbersClicked.length === 0) {
         // Reset threading fields to null when fully erased
         switch (entryActive.value) {
-          case EntryType.threadPitch:
-            threadPitch.value = null;
+          case ThreadingEntryType.threadPitch:
+            clearThreadingParameter(ThreadingEntryType.threadPitch);
             break;
-          case EntryType.threadXDepth:
-            threadXDepth.value = null;
+          case ThreadingEntryType.threadXDepth:
+            clearThreadingParameter(ThreadingEntryType.threadXDepth);
             break;
-          case EntryType.threadZDepth:
-            threadZDepth.value = null;
+          case ThreadingEntryType.threadZDepth:
+            clearThreadingParameter(ThreadingEntryType.threadZDepth);
             break;
-          case EntryType.threadAngle:
-            threadAngle.value = null;
+          case ThreadingEntryType.threadAngle:
+            clearThreadingParameter(ThreadingEntryType.threadAngle);
             break;
-          case EntryType.threadZEnd:
-            threadZEnd.value = null;
+          case ThreadingEntryType.threadZEnd:
+            clearThreadingParameter(ThreadingEntryType.threadZEnd);
             break;
-          case EntryType.threadXPullout:
-            threadXPullout.value = null;
+          case ThreadingEntryType.threadXPullout:
+            clearThreadingParameter(ThreadingEntryType.threadXPullout);
             break;
-          case EntryType.threadZPullout:
-            threadZPullout.value = null;
+          case ThreadingEntryType.threadZPullout:
+            clearThreadingParameter(ThreadingEntryType.threadZPullout);
             break;
-          case EntryType.threadFirstCut:
-            threadFirstCut.value = null;
+          case ThreadingEntryType.threadFirstCut:
+            clearThreadingParameter(ThreadingEntryType.threadFirstCut);
             break;
-          case EntryType.threadCutMult:
-            threadCutMult.value = null;
+          case ThreadingEntryType.threadCutMult:
+            clearThreadingParameter(ThreadingEntryType.threadCutMult);
             break;
-          case EntryType.threadMinCut:
-            threadMinCut.value = null;
+          case ThreadingEntryType.threadMinCut:
+            clearThreadingParameter(ThreadingEntryType.threadMinCut);
             break;
-          case EntryType.threadSpringCuts:
-            threadSpringCuts.value = null;
+          case ThreadingEntryType.threadSpringCuts:
+            clearThreadingParameter(ThreadingEntryType.threadSpringCuts);
             break;
         }
         numpadInputStage = NumpadInputStage.none;
@@ -905,204 +839,68 @@ const pitchClicked = (axis: string) => {
   });
 };
 
-const threadPresetClicked = () => {
-  treatOffClickAsEnter();
-  entryActive.value = 0;
-  const dialogRef = dialog.open(ThreadPresetSelector, {
-    props: {
-      header: "Select Threading Preset",
-      style: {
-        width: "70vw",
-      },
-      breakpoints: {
-        "960px": "75vw",
-        "640px": "90vw",
-      },
-      position: "top",
-      modal: true,
-    },
-    emits: {
-      onSelected: (preset: any) => {
-        // Preset values are stored in metric units, convert if currently in imperial
-        const conversionFactor = metric.value ? 1 : 1/25.4;
-        
-        // Note: XStart uses current position, ZStart is always 0, XEndOffset is 0 for straight threads
-        threadPitch.value = roundThreadValue(preset.Pitch, conversionFactor);
-        threadXDepth.value = roundThreadValue(preset.XDepth, conversionFactor);
-        threadZDepth.value = roundThreadValue(preset.ZDepth, conversionFactor);
-        threadAngle.value = roundThreadValue(preset.Angle || 0); // Angle is dimensionless
-        threadZEnd.value = roundThreadValue(preset.ZEnd, conversionFactor);
-        threadXPullout.value = roundThreadValue(preset.XPullout, conversionFactor);
-        threadZPullout.value = roundThreadValue(preset.ZPullout, conversionFactor);
-        threadFirstCut.value = roundThreadValue(preset.FirstCut, conversionFactor);
-        threadCutMult.value = roundThreadValue(preset.CutMult); // Dimensionless
-        threadMinCut.value = roundThreadValue(preset.MinCut, conversionFactor);
-        threadSpringCuts.value = roundThreadValue(preset.SpringCuts); // Number of passes
-        threadPresetName.value = preset.name; // Store the preset name
-        threadDiameter.value = preset.Diameter || null; // Store diameter info (informational only)
-        updatePitchFromThread();
-      },
-    },
-    templates: {},
-    onClose: (options) => {},
-  });
-};
 
-const threadStartClicked = () => {
+const threadStartClicked = async () => {
   treatOffClickAsEnter();
   entryActive.value = 0;
   
-  // Validate required parameters
-  if (threadPitch.value === null || threadZEnd.value === null) {
-    console.error("Threading: Missing required parameters");
-    alert("Error: Missing required threading parameters. Please set Pitch and Z End values.");
+  // Validate and execute threading using composable
+  const isValid = validateThreadingParameters();
+  if (!isValid) {
     return;
   }
   
-  // Validate parameter ranges and values
-  const errors = [];
-  
-  // Pitch validation
-  if (threadPitch.value <= 0) {
-    errors.push("Pitch must be positive");
-  }
-  if (threadPitch.value > 10) {
-    errors.push("Pitch seems too large (>10mm), please verify");
-  }
-  
-  // Optional parameter validation
-  if (threadXDepth.value !== null && Math.abs(threadXDepth.value) > 10) {
-    errors.push("X Depth seems too large (>10mm), please verify");
-  }
-  
-  if (threadFirstCut.value !== null && threadFirstCut.value <= 0) {
-    errors.push("First Cut must be positive");
-  }
-  
-  if (threadCutMult.value !== null && (threadCutMult.value < 0.5 || threadCutMult.value > 1.0)) {
-    errors.push("Cut Multiplier should be between 0.5 and 1.0");
-  }
-  
-  if (threadMinCut.value !== null && threadMinCut.value <= 0) {
-    errors.push("Min Cut must be positive");
-  }
-  
-  if (threadSpringCuts.value !== null && (threadSpringCuts.value < 0 || threadSpringCuts.value > 10)) {
-    errors.push("Spring Cuts should be between 0 and 10");
-  }
-  
-  // Show errors if any
-  if (errors.length > 0) {
-    const errorMessage = "Threading Parameter Validation Errors:\n\n" + errors.join("\n");
-    console.error("Threading Validation failed:", errors);
-    alert(errorMessage);
-    return;
-  }
-   
-  getHalIn().then((halIn) => {
-    // Extract current position and threading values into local variables
-    // Use HAL positions as source of truth for machine position
+  // Get HAL positions and generate threading operation
+  try {
+    const halIn = await getHalIn();
     const currentXPos = (halIn as any).position_x - getAxisOffset('x');
     const currentZPos = (halIn as any).position_z - getAxisOffset('z');
     const currentAPos = (halIn as any).position_a - getAxisOffset('a');
+    const params = generateThreadingParams(currentXPos, currentZPos, currentAPos);
     
-    const pitch = threadPitch.value || 0;
-    const xDepth = threadXDepth.value || 0;
-    const zDepth = threadZDepth.value || 0;
-    const angle = threadAngle.value || 0;
-    const zEnd = threadZEnd.value || 0;
-    const xPullout = threadXPullout.value || 0.1;
-    const zPullout = threadZPullout.value || 0.1;
-    const firstCut = threadFirstCut.value || 0.1;
-    const cutMult = threadCutMult.value || 0.8;
-    const minCut = threadMinCut.value || 0.05;
-    const springCuts = threadSpringCuts.value || 1;
-    
-    // Calculate lead-in distance (was previously done in thread_loop.ngc)
-    const leadIn = pitch * 4;
-    
-    // For miter threads, calculate X positions at actual start and end positions
-    // The user-specified positions are where cutting should occur
-    const userZStart = 0; // Current Z position
-    const userZEnd = zEnd; // User-specified end position
-    const actualThreadLength = Math.abs(userZEnd - userZStart + zDepth);
-    
-    // Calculate X offset for the actual thread cutting distance (without lead-in)
-    const xEndOffset = angle !== 0 ? actualThreadLength * Math.tan(angle * Math.PI / 180) : 0;
-    
-    // Calculate start position accounting for lead-in
-    const actualZStart = userZStart + leadIn; // Move back by lead-in
-    const actualXStart = angle !== 0 ? leadIn * Math.tan(angle * Math.PI / 180) : 0;
-    
-    // Calculate end position for tool movement (where tool actually moves to)
-    const toolZEnd = userZEnd - leadIn; // Tool end includes lead-out
-    const toolXEnd = xEndOffset; // X end offset for the cutting portion
-    
-    // Send threading parameters to LinuxCNC HAL component for subroutine call
-    const threadingParams = {
-      XPos: formatForLinuxCNC(currentXPos),
-      ZPos: formatForLinuxCNC(currentZPos),
-      APos: formatForLinuxCNC(currentAPos),
-      XStart: formatForLinuxCNC(currentXPos - actualXStart), // Adjusted start position for miter
-      ZStart: formatForLinuxCNC(currentZPos + actualZStart), // Start position with lead-in
-      Pitch: formatForLinuxCNC(pitch),
-      XDepth: formatForLinuxCNC(xDepth),
-      ZDepth: formatForLinuxCNC(zDepth),
-      XEnd: formatForLinuxCNC(currentXPos + xEndOffset), // Where cutting ends (user-specified end)
-      ZEnd: formatForLinuxCNC(currentZPos + userZEnd), // Where cutting ends (user-specified end)
-      XReturn: formatForLinuxCNC(currentXPos), // Return to original X position
-      ZReturn: formatForLinuxCNC(currentZPos), // Return to original Z position
-      XPullout: formatForLinuxCNC(xPullout),
-      ZPullout: formatForLinuxCNC(zPullout),
-      FirstCut: formatForLinuxCNC(firstCut),
-      CutMult: formatForLinuxCNC(cutMult),
-      MinCut: formatForLinuxCNC(minCut),
-      SpringCuts: Math.round(springCuts)
-    };
-    
-    
-    // Generate G-code for preview first
-    generateThreadingGcode(threadingParams).then(result => {
-      if (result && result.gcode) {
-        // Create G-code string for backplot
-        const gcodeString = result.gcode.join('\n');
-        const gcodeBase64 = btoa(gcodeString);
+    // Generate G-code for preview
+    const result = await generateThreadingGcode(params);
+    if (result && result.gcode) {
+      // Create G-code string for backplot
+      const gcodeString = result.gcode.join('\n');
+      const gcodeBase64 = btoa(gcodeString);
+      
+      // Send to backplot generator
+      const backplotData = await putLinuxCNC("backplot", { gcode: gcodeBase64 });
+      if (backplotData) {
+        // Create operation data for preview
+        const operationData = {
+          name: "Threading Operation",
+          type: "threading",
+          parameters: {
+            Pitch: threadPitch.value,
+            XDepth: threadXDepth.value,
+            ZDepth: threadZDepth.value,
+            ZEnd: threadZEnd.value,
+            Angle: threadAngle.value,
+            XPullout: threadXPullout.value,
+            ZPullout: threadZPullout.value,
+            FirstCut: threadFirstCut.value,
+            CutMult: threadCutMult.value,
+            MinCut: threadMinCut.value,
+            SpringCuts: threadSpringCuts.value
+          },
+          gcode: result.gcode,
+          backplotData: backplotData
+        };
         
-        // Send to backplot generator
-        putLinuxCNC("backplot", { gcode: gcodeBase64 }).then(backplotData => {
-          if (backplotData) {
-            // Create operation data for preview
-            const operationData = {
-              name: "Threading Operation",
-              type: "threading",
-              parameters: {
-                Pitch: threadPitch.value,
-                XDepth: threadXDepth.value,
-                ZDepth: threadZDepth.value,
-                ZEnd: threadZEnd.value,
-                Angle: threadAngle.value,
-                XPullout: threadXPullout.value,
-                ZPullout: threadZPullout.value,
-                FirstCut: threadFirstCut.value,
-                CutMult: threadCutMult.value,
-                MinCut: threadMinCut.value,
-                SpringCuts: threadSpringCuts.value
-              },
-              gcode: result.gcode,
-              backplotData: backplotData
-            };
-            
-            // Show preview dialog with callback to execute threading
-            const putThreadingCallback = () => {
-              putThreading(threadingParams);
-            };
-            
-            showOperationPreviewDialog(operationData, putThreadingCallback);
-          }
-        });
+        // Show preview dialog with callback to execute threading
+        const putThreadingCallback = () => {
+          putThreading(params);
+        };
+        
+        showOperationPreviewDialog(operationData, putThreadingCallback);
       }
-    });
-  });
+    }
+  } catch (error) {
+    console.error("Threading operation failed:", error);
+    alert("Failed to start threading operation. Please check parameters and try again.");
+  }
 };
 
 const threadStopClicked = () => {
@@ -1122,19 +920,8 @@ const threadResetClicked = () => {
   // Hide backplot
   showBackplot.value = false;
   
-  threadPitch.value = null;
-  threadXDepth.value = null;
-  threadZDepth.value = null;
-  threadAngle.value = null;
-  threadZEnd.value = null;
-  threadXPullout.value = null;
-  threadZPullout.value = null;
-  threadFirstCut.value = null;
-  threadCutMult.value = null;
-  threadMinCut.value = null;
-  threadSpringCuts.value = null;
-  threadPresetName.value = null;
-  threadDiameter.value = null;
+  // Reset all threading parameters using composable function
+  resetThreadingParameters();
   updatePitchFromThread();
 };
 
@@ -1176,22 +963,8 @@ const threadMetricClicked = () => {
   treatOffClickAsEnter();
   metric.value = !metric.value;
   
-  // Convert threading values between metric and imperial
-  const conversionFactor = metric.value ? 25.4 : 1/25.4;
-  
-  // Convert dimensional parameters (those affected by unit conversion)
-  if (threadPitch.value !== null) threadPitch.value = roundThreadValue(threadPitch.value, conversionFactor);
-  if (threadXDepth.value !== null) threadXDepth.value = roundThreadValue(threadXDepth.value, conversionFactor);
-  if (threadZDepth.value !== null) threadZDepth.value = roundThreadValue(threadZDepth.value, conversionFactor);
-  // Angle is dimensionless - no conversion needed
-  if (threadZEnd.value !== null) threadZEnd.value = roundThreadValue(threadZEnd.value, conversionFactor);
-  if (threadXPullout.value !== null) threadXPullout.value = roundThreadValue(threadXPullout.value, conversionFactor);
-  if (threadZPullout.value !== null) threadZPullout.value = roundThreadValue(threadZPullout.value, conversionFactor);
-  if (threadFirstCut.value !== null) threadFirstCut.value = roundThreadValue(threadFirstCut.value, conversionFactor);
-  if (threadMinCut.value !== null) threadMinCut.value = roundThreadValue(threadMinCut.value, conversionFactor);
-  // CutMult and SpringCuts are dimensionless - no conversion needed
-  threadPresetName.value = null; // Clear preset name when units change
-  threadDiameter.value = null; // Clear diameter info when units change
+  // Convert threading values using composable function
+  convertThreadingParameters(metric.value);
   updatePitchFromThread();
 };
 
@@ -1627,12 +1400,12 @@ onUnmounted(() => {
           <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'P')">P</div>
           <div class="col-4 p-1">
             <button
-              @click="numberClicked(EntryType.threadPitch, threadPitch || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 6 && threadPitch === null }]"
-              :style="{ backgroundColor: entryActive == 6 ? '#666' : '#333' }"
-              :title="entryActive == 6 ? String(numberentry) : String(threadPitch ?? 'Pitch')"
+              @click="numberClicked(ThreadingEntryType.threadPitch, threadPitch || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != ThreadingEntryType.threadPitch && threadPitch === null }]"
+              :style="{ backgroundColor: entryActive == ThreadingEntryType.threadPitch ? '#666' : '#333' }"
+              :title="entryActive == ThreadingEntryType.threadPitch ? String(numberentry) : String(threadPitch ?? 'Pitch')"
             >
-              {{ entryActive == 6 ? numberentry : (threadPitch ?? 'Pitch') }}
+              {{ entryActive == ThreadingEntryType.threadPitch ? numberentry : (threadPitch ?? 'Pitch') }}
             </button>
           </div>
           <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'D')">D</div>
@@ -1651,23 +1424,23 @@ onUnmounted(() => {
           <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'ZD')">ZD</div>
           <div class="col-4 p-1">
             <button
-              @click="numberClicked(EntryType.threadZDepth, threadZDepth || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 8 && threadZDepth === null }]"
-              :style="{ backgroundColor: entryActive == 8 ? '#666' : '#333' }"
-              :title="entryActive == 8 ? String(numberentry) : String(threadZDepth ?? 'Z Depth')"
+              @click="numberClicked(ThreadingEntryType.threadZDepth, threadZDepth || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != ThreadingEntryType.threadZDepth && threadZDepth === null }]"
+              :style="{ backgroundColor: entryActive == ThreadingEntryType.threadZDepth ? '#666' : '#333' }"
+              :title="entryActive == ThreadingEntryType.threadZDepth ? String(numberentry) : String(threadZDepth ?? 'Z Depth')"
             >
-              {{ entryActive == 8 ? numberentry : (threadZDepth ?? 'Z Depth') }}
+              {{ entryActive == ThreadingEntryType.threadZDepth ? numberentry : (threadZDepth ?? 'Z Depth') }}
             </button>
           </div>
           <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'XD')">XD</div>
           <div class="col-4 p-1">
             <button
-              @click="numberClicked(EntryType.threadXDepth, threadXDepth || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 7 && threadXDepth === null }]"
-              :style="{ backgroundColor: entryActive == 7 ? '#666' : '#333' }"
-              :title="entryActive == 7 ? String(numberentry) : String(threadXDepth ?? 'X Depth')"
+              @click="numberClicked(ThreadingEntryType.threadXDepth, threadXDepth || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != ThreadingEntryType.threadXDepth && threadXDepth === null }]"
+              :style="{ backgroundColor: entryActive == ThreadingEntryType.threadXDepth ? '#666' : '#333' }"
+              :title="entryActive == ThreadingEntryType.threadXDepth ? String(numberentry) : String(threadXDepth ?? 'X Depth')"
             >
-              {{ entryActive == 7 ? numberentry : (threadXDepth ?? 'X Depth') }}
+              {{ entryActive == ThreadingEntryType.threadXDepth ? numberentry : (threadXDepth ?? 'X Depth') }}
             </button>
           </div>
           <div class="col-2 p-0"></div>
@@ -1676,23 +1449,23 @@ onUnmounted(() => {
           <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'ZE')">ZE</div>
           <div class="col-4 p-1">
             <button
-              @click="numberClicked(EntryType.threadZEnd, threadZEnd || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 10 && threadZEnd === null }]"
-              :style="{ backgroundColor: entryActive == 10 ? '#666' : '#333' }"
-              :title="entryActive == 10 ? String(numberentry) : String(threadZEnd ?? 'Z End')"
+              @click="numberClicked(ThreadingEntryType.threadZEnd, threadZEnd || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != ThreadingEntryType.threadZEnd && threadZEnd === null }]"
+              :style="{ backgroundColor: entryActive == ThreadingEntryType.threadZEnd ? '#666' : '#333' }"
+              :title="entryActive == ThreadingEntryType.threadZEnd ? String(numberentry) : String(threadZEnd ?? 'Z End')"
             >
-              {{ entryActive == 10 ? numberentry : (threadZEnd ?? 'Z End') }}
+              {{ entryActive == ThreadingEntryType.threadZEnd ? numberentry : (threadZEnd ?? 'Z End') }}
             </button>
           </div>
           <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'A')">A</div>
           <div class="col-4 p-1">
             <button
-              @click="numberClicked(EntryType.threadAngle, threadAngle || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 9 && threadAngle === null }]"
-              :style="{ backgroundColor: entryActive == 9 ? '#666' : '#333' }"
-              :title="entryActive == 9 ? String(numberentry) : String(threadAngle ?? 'Angle')"
+              @click="numberClicked(ThreadingEntryType.threadAngle, threadAngle || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != ThreadingEntryType.threadAngle && threadAngle === null }]"
+              :style="{ backgroundColor: entryActive == ThreadingEntryType.threadAngle ? '#666' : '#333' }"
+              :title="entryActive == ThreadingEntryType.threadAngle ? String(numberentry) : String(threadAngle ?? 'Angle')"
             >
-              {{ entryActive == 9 ? numberentry : (threadAngle ?? 'Angle') }}
+              {{ entryActive == ThreadingEntryType.threadAngle ? numberentry : (threadAngle ?? 'Angle') }}
             </button>
           </div>
           <div class="col-2 p-0"></div>
@@ -1701,23 +1474,23 @@ onUnmounted(() => {
           <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'ZP')">ZP</div>
           <div class="col-4 p-1">
             <button
-              @click="numberClicked(EntryType.threadZPullout, threadZPullout || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 12 && threadZPullout === null }]"
-              :style="{ backgroundColor: entryActive == 12 ? '#666' : '#333' }"
-              :title="entryActive == 12 ? String(numberentry) : String(threadZPullout ?? 'Z Pullout')"
+              @click="numberClicked(ThreadingEntryType.threadZPullout, threadZPullout || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != ThreadingEntryType.threadZPullout && threadZPullout === null }]"
+              :style="{ backgroundColor: entryActive == ThreadingEntryType.threadZPullout ? '#666' : '#333' }"
+              :title="entryActive == ThreadingEntryType.threadZPullout ? String(numberentry) : String(threadZPullout ?? 'Z Pullout')"
             >
-              {{ entryActive == 12 ? numberentry : (threadZPullout ?? 'Z Pullout') }}
+              {{ entryActive == ThreadingEntryType.threadZPullout ? numberentry : (threadZPullout ?? 'Z Pullout') }}
             </button>
           </div>
           <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'XP')">XP</div>
           <div class="col-4 p-1">
             <button
-              @click="numberClicked(EntryType.threadXPullout, threadXPullout || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 11 && threadXPullout === null }]"
-              :style="{ backgroundColor: entryActive == 11 ? '#666' : '#333' }"
-              :title="entryActive == 11 ? String(numberentry) : String(threadXPullout ?? 'X Pullout')"
+              @click="numberClicked(ThreadingEntryType.threadXPullout, threadXPullout || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != ThreadingEntryType.threadXPullout && threadXPullout === null }]"
+              :style="{ backgroundColor: entryActive == ThreadingEntryType.threadXPullout ? '#666' : '#333' }"
+              :title="entryActive == ThreadingEntryType.threadXPullout ? String(numberentry) : String(threadXPullout ?? 'X Pullout')"
             >
-              {{ entryActive == 11 ? numberentry : (threadXPullout ?? 'X Pullout') }}
+              {{ entryActive == ThreadingEntryType.threadXPullout ? numberentry : (threadXPullout ?? 'X Pullout') }}
             </button>
           </div>
           <div class="col-2 p-0"></div>
@@ -1726,23 +1499,23 @@ onUnmounted(() => {
           <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'CM')">CM</div>
           <div class="col-4 p-1">
             <button
-              @click="numberClicked(EntryType.threadCutMult, threadCutMult || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 14 && threadCutMult === null }]"
-              :style="{ backgroundColor: entryActive == 14 ? '#666' : '#333' }"
-              :title="entryActive == 14 ? String(numberentry) : String(threadCutMult ?? 'Cut Multiplier')"
+              @click="numberClicked(ThreadingEntryType.threadCutMult, threadCutMult || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != ThreadingEntryType.threadCutMult && threadCutMult === null }]"
+              :style="{ backgroundColor: entryActive == ThreadingEntryType.threadCutMult ? '#666' : '#333' }"
+              :title="entryActive == ThreadingEntryType.threadCutMult ? String(numberentry) : String(threadCutMult ?? 'Cut Multiplier')"
             >
-              {{ entryActive == 14 ? numberentry : (threadCutMult ?? 'Cut Multiplier') }}
+              {{ entryActive == ThreadingEntryType.threadCutMult ? numberentry : (threadCutMult ?? 'Cut Multiplier') }}
             </button>
           </div>
           <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'FC')">FC</div>
           <div class="col-4 p-1">
             <button
-              @click="numberClicked(EntryType.threadFirstCut, threadFirstCut || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 13 && threadFirstCut === null }]"
-              :style="{ backgroundColor: entryActive == 13 ? '#666' : '#333' }"
-              :title="entryActive == 13 ? String(numberentry) : String(threadFirstCut ?? 'First Cut')"
+              @click="numberClicked(ThreadingEntryType.threadFirstCut, threadFirstCut || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != ThreadingEntryType.threadFirstCut && threadFirstCut === null }]"
+              :style="{ backgroundColor: entryActive == ThreadingEntryType.threadFirstCut ? '#666' : '#333' }"
+              :title="entryActive == ThreadingEntryType.threadFirstCut ? String(numberentry) : String(threadFirstCut ?? 'First Cut')"
             >
-              {{ entryActive == 13 ? numberentry : (threadFirstCut ?? 'First Cut') }}
+              {{ entryActive == ThreadingEntryType.threadFirstCut ? numberentry : (threadFirstCut ?? 'First Cut') }}
             </button>
           </div>
           <div class="col-2 p-0"></div>
@@ -1751,23 +1524,23 @@ onUnmounted(() => {
           <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'SC')">SC</div>
           <div class="col-4 p-1">
             <button
-              @click="numberClicked(EntryType.threadSpringCuts, threadSpringCuts || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 16 && threadSpringCuts === null }]"
-              :style="{ backgroundColor: entryActive == 16 ? '#666' : '#333' }"
-              :title="entryActive == 16 ? String(numberentry) : String(threadSpringCuts ?? 'Spring Cuts')"
+              @click="numberClicked(ThreadingEntryType.threadSpringCuts, threadSpringCuts || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != ThreadingEntryType.threadSpringCuts && threadSpringCuts === null }]"
+              :style="{ backgroundColor: entryActive == ThreadingEntryType.threadSpringCuts ? '#666' : '#333' }"
+              :title="entryActive == ThreadingEntryType.threadSpringCuts ? String(numberentry) : String(threadSpringCuts ?? 'Spring Cuts')"
             >
-              {{ entryActive == 16 ? numberentry : (threadSpringCuts ?? 'Spring Cuts') }}
+              {{ entryActive == ThreadingEntryType.threadSpringCuts ? numberentry : (threadSpringCuts ?? 'Spring Cuts') }}
             </button>
           </div>
           <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'MC')">MC</div>
           <div class="col-4 p-1">
             <button
-              @click="numberClicked(EntryType.threadMinCut, threadMinCut || 0)"
-              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != 15 && threadMinCut === null }]"
-              :style="{ backgroundColor: entryActive == 15 ? '#666' : '#333' }"
-              :title="entryActive == 15 ? String(numberentry) : String(threadMinCut ?? 'Min Cut')"
+              @click="numberClicked(ThreadingEntryType.threadMinCut, threadMinCut || 0)"
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != ThreadingEntryType.threadMinCut && threadMinCut === null }]"
+              :style="{ backgroundColor: entryActive == ThreadingEntryType.threadMinCut ? '#666' : '#333' }"
+              :title="entryActive == ThreadingEntryType.threadMinCut ? String(numberentry) : String(threadMinCut ?? 'Min Cut')"
             >
-              {{ entryActive == 15 ? numberentry : (threadMinCut ?? 'Min Cut') }}
+              {{ entryActive == ThreadingEntryType.threadMinCut ? numberentry : (threadMinCut ?? 'Min Cut') }}
             </button>
           </div>
           <div class="col-2 p-0"></div>
@@ -1782,7 +1555,7 @@ onUnmounted(() => {
           <!-- Start, Stop, Preset and Reset buttons centered as a group -->
           <div class="flex justify-content-center gap-2 p-1">
             <button
-              @click="threadPresetClicked"
+              @click="openThreadPresetDialog(metric, updatePitchFromThread)"
               class="dro-font-mode button-mode p-2"
               style="background: #555; color: #ffffff; width: 6em;"
             >
