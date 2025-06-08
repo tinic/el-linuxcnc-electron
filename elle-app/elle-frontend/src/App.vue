@@ -201,6 +201,7 @@ const threadCutMult = ref<number | null>(null);
 const threadMinCut = ref<number | null>(null);
 const threadSpringCuts = ref<number | null>(null);
 const threadPresetName = ref<string | null>(null);
+const threadDiameter = ref<string | null>(null);
 
 // Popover refs and state
 const threadingPopovers = ref<Record<string, any>>({});
@@ -209,6 +210,7 @@ const currentPopoverLabel = ref("");
 // Threading parameter descriptions
 const threadingDescriptions: { [key: string]: string } = {
   'P': 'Thread pitch - distance between threads',
+  'D': 'Major Diameter / Tap Drill Size\n(major thread diameter and recommended drill size)',
   'XD': 'X Depth - cross-slide cutting depth\n(negative for external, positive for internal)',
   'ZD': 'Z Depth - longitudinal cutting depth\n(zero for straight threads)',
   'A': 'Angle - thread taper angle in degrees\n(zero for straight threads)',
@@ -424,47 +426,58 @@ function setFinalNumber(value: number) {
     case 6:
       threadPitch.value = roundThreadValue(value);
       threadPresetName.value = null; // Clear preset name on manual change
+      threadDiameter.value = null;
       updatePitchFromThread();
       break;
     case 7:
       threadXDepth.value = roundThreadValue(value);
       threadPresetName.value = null; // Clear preset name on manual change
+      threadDiameter.value = null;
       break;
     case 8:
       threadZDepth.value = roundThreadValue(value);
       threadPresetName.value = null; // Clear preset name on manual change
+      threadDiameter.value = null;
       break;
     case 9:
       threadAngle.value = roundThreadValue(value);
       threadPresetName.value = null; // Clear preset name on manual change
+      threadDiameter.value = null;
       break;
     case 10:
       threadZEnd.value = roundThreadValue(value);
       threadPresetName.value = null; // Clear preset name on manual change
+      threadDiameter.value = null;
       break;
     case 11:
       threadXPullout.value = roundThreadValue(value);
       threadPresetName.value = null; // Clear preset name on manual change
+      threadDiameter.value = null;
       break;
     case 12:
       threadZPullout.value = roundThreadValue(value);
       threadPresetName.value = null; // Clear preset name on manual change
+      threadDiameter.value = null;
       break;
     case 13:
       threadFirstCut.value = roundThreadValue(value);
       threadPresetName.value = null; // Clear preset name on manual change
+      threadDiameter.value = null;
       break;
     case 14:
       threadCutMult.value = roundThreadValue(value);
       threadPresetName.value = null; // Clear preset name on manual change
+      threadDiameter.value = null;
       break;
     case 15:
       threadMinCut.value = roundThreadValue(value);
       threadPresetName.value = null; // Clear preset name on manual change
+      threadDiameter.value = null;
       break;
     case 16:
       threadSpringCuts.value = roundThreadValue(value);
       threadPresetName.value = null; // Clear preset name on manual change
+      threadDiameter.value = null;
       break;
   }
   numpadInputStage = NumpadInputStage.none;
@@ -1184,6 +1197,7 @@ const threadPresetClicked = () => {
         threadMinCut.value = roundThreadValue(preset.MinCut, conversionFactor);
         threadSpringCuts.value = roundThreadValue(preset.SpringCuts); // Number of passes
         threadPresetName.value = preset.name; // Store the preset name
+        threadDiameter.value = preset.Diameter || null; // Store diameter info (informational only)
         updatePitchFromThread();
       },
     },
@@ -1336,6 +1350,7 @@ const threadResetClicked = () => {
   threadMinCut.value = null;
   threadSpringCuts.value = null;
   threadPresetName.value = null;
+  threadDiameter.value = null;
   updatePitchFromThread();
 };
 
@@ -1392,6 +1407,7 @@ const threadMetricClicked = () => {
   if (threadMinCut.value !== null) threadMinCut.value = roundThreadValue(threadMinCut.value, conversionFactor);
   // CutMult and SpringCuts are dimensionless - no conversion needed
   threadPresetName.value = null; // Clear preset name when units change
+  threadDiameter.value = null; // Clear diameter info when units change
   updatePitchFromThread();
 };
 
@@ -1835,8 +1851,16 @@ onMounted(async () => {
               {{ entryActive == 6 ? numberentry : (threadPitch ?? 'Pitch') }}
             </button>
           </div>
-          <div class="col-1 p-0"></div>
-          <div class="col-4 p-0"></div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'D')">D</div>
+          <div class="col-4 p-1">
+            <div
+              :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': threadDiameter === null }]"
+              :style="{ backgroundColor: '#333', color: '#999', cursor: 'default' }"
+              :title="threadDiameter ?? 'Major Ø / Drill Size'"
+            >
+              {{ threadDiameter ?? 'Major Ø / Drill' }}
+            </div>
+          </div>
           <div class="col-2 p-0"></div>
           
           <!-- Row 2 -->
@@ -2006,6 +2030,9 @@ onMounted(async () => {
           <!-- Threading Label Popovers -->
           <Popover :ref="(el) => threadingPopovers['P'] = el" class="threading-popover">
             <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ threadingDescriptions['P'] }}</div>
+          </Popover>
+          <Popover :ref="(el) => threadingPopovers['D'] = el" class="threading-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ threadingDescriptions['D'] }}</div>
           </Popover>
           <Popover :ref="(el) => threadingPopovers['XD'] = el" class="threading-popover">
             <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ threadingDescriptions['XD'] }}</div>
