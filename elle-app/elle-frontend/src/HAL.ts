@@ -3,6 +3,7 @@ let halInURL = "http://localhost:8000/hal/hal_in";
 let linuxcncURL = "http://localhost:8001/linuxcnc/";
 let threadingURL = "http://localhost:8000/hal/threading";
 let threadingGenerateURL = "http://localhost:8000/hal/threading/generate";
+let cleanupURL = "http://localhost:8000/hal/cleanup";
 let abortURL = "http://localhost:8000/hal/abort";
 let estopURL = "http://localhost:8000/hal/estop";
 
@@ -13,6 +14,7 @@ if (userAgent.indexOf(" electron/") < 0) {
   linuxcncURL = "http://lathev2:8001/linuxcnc/";
   threadingURL = "http://lathev2:8000/hal/threading";
   threadingGenerateURL = "http://lathev2:8000/hal/threading/generate";
+  cleanupURL = "http://lathev2:8000/hal/cleanup";
   abortURL = "http://lathev2:8000/hal/abort";
   estopURL = "http://lathev2:8000/hal/estop";
 }
@@ -55,6 +57,22 @@ export async function generateThreadingGcode(threadingParams: Object) {
     return result;
   } catch {
     // nop
+  }
+  return {};
+}
+
+export async function cleanupCannedCycles() {
+  try {
+    const response = await fetch(cleanupURL, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    });
+    const result = await response.json();
+    return result;
+  } catch {
   }
   return {};
 }

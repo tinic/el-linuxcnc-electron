@@ -304,7 +304,6 @@ def generate_threading_gcode_core(params, for_backplot=False):
 
 @app.put("/hal/threading/generate")
 def generate_threading():
-    """Generate G-code for threading without executing it"""
     json_data = request.json
     
     if not json_data:
@@ -353,21 +352,21 @@ def execute_threading():
         c.wait_complete()
 
         gcode_lines = generate_threading_gcode_core(json_data, for_backplot=False)
-                
-        ngc_filename = "thread-expanded.ngc"
+        
+        ngc_filename = "canned-cycle.ngc"
         ngc_path = os.path.join(os.getcwd(), ngc_filename)
         
         with open(ngc_path, 'w') as f:
-            f.write("o<thread-expanded> sub\n")
+            f.write("o<canned-cycle> sub\n")
             for line in gcode_lines:
                 f.write(f"{line}\n")
-            f.write("o<thread-expanded> endsub\n")
+            f.write("o<canned-cycle> endsub\n")
         
-        c.mdi(f"o<{ngc_filename[:-4]}> call")
+        c.mdi("o<canned-cycle> call")
         
         return {
             "status": "OK", 
-            "message": f"Threading subroutine {ngc_filename} started",
+            "message": "Canned cycle started",
             "gcode": gcode_lines,
             "subroutine_file": ngc_filename
         }
@@ -377,28 +376,26 @@ def execute_threading():
         return {"status": "Error", "message": error_msg}, 500
 
 
-@app.put("/hal/threading/cleanup")
-def cleanup_threading_files():
-    """Clean up temporary threading .ngc files"""
+@app.put("/hal/cleanup")
+def cleanup_canned_cycle_files():
+    """Clean up temporary canned cycle .ngc files"""
     import os
-    import glob
     
     try:
-        pattern = os.path.join(os.getcwd(), "thread-expanded*.ngc")
         files_removed = []
+        ngc_path = os.path.join(os.getcwd(), "canned-cycle.ngc")
         
-        for file_path in glob.glob(pattern):
+        if os.path.exists(ngc_path):
             try:
-                os.remove(file_path)
-                files_removed.append(os.path.basename(file_path))
+                os.remove(ngc_path)
+                files_removed.append("canned-cycle.ngc")
             except OSError as e:
                 pass
         
-        message = f"Cleaned up {len(files_removed)} threading files"
+        message = f"Cleaned up {len(files_removed)} canned cycle files"
         if files_removed:
             message += f": {', '.join(files_removed)}"
             
-        
         return {
             "status": "OK",
             "message": message,
@@ -406,7 +403,7 @@ def cleanup_threading_files():
         }
         
     except Exception as e:
-        error_msg = f"Error cleaning up threading files: {str(e)}"
+        error_msg = f"Error cleaning up canned cycle files: {str(e)}"
         return {"status": "Error", "message": error_msg}, 500
 
 

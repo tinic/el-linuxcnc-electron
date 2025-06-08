@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, defineAsyncComponent } from "vue";
+import { ref, onMounted, onUnmounted, computed, watch, defineAsyncComponent } from "vue";
 import { useDialog } from "primevue/usedialog";
 import Popover from "primevue/popover";
 import Dialog from "primevue/dialog";
@@ -12,7 +12,7 @@ import DRODisplay from "./components/DRODisplay.vue";
 import ThreadPresetSelector from "./components/ThreadPresetSelector.vue";
 import OperationPreview from "./components/OperationPreview.vue";
 import Backplot from "./Backplot";
-import { putHalOut, putLinuxCNC, getHalIn, putAbort, putEmergencyStop, putThreading, generateThreadingGcode } from "./HAL"
+import { putHalOut, putLinuxCNC, getHalIn, putAbort, putEmergencyStop, putThreading, generateThreadingGcode, cleanupCannedCycles } from "./HAL"
 
 enum EntryType {
   xPosition = 1,
@@ -1387,6 +1387,7 @@ const threadStopClicked = () => {
   
   // Abort current operation (gentler than emergency stop)
   putAbort();
+  cleanupCannedCycles();
 };
 
 const threadResetClicked = () => {
@@ -1483,6 +1484,7 @@ onMounted(async () => {
 
     window.api.receive("halStopped", () => {
       endPoll();
+      cleanupCannedCycles();
     });
 
     window.api.receive("halStdout", (event: any, arg: any) => {
@@ -1495,6 +1497,10 @@ onMounted(async () => {
     startPoll();
     updateHALOut();
   }
+});
+
+onUnmounted(() => {
+  cleanupCannedCycles();
 });
 </script>
 
