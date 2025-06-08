@@ -2,8 +2,8 @@
   "name": "elle-app",
   "type": "module",
   "majorversion": "1.0",
-  "gitversion": "113",
-  "version": "1.0.113",
+  "gitversion": "143",
+  "version": "1.0.143",
   "description": "Electronic Leadscrew for LinuxCNC",
   "main": "./dist/main.js",
   "license": "MIT",
@@ -71,7 +71,7 @@
   },
   "build": {
     "appId": "net.tinic.elle.app",
-    "productName": "Elle-Nightly",
+    "productName": "Elle",
     "copyright": "Copyright © 2023 ${author}",
     "publish": [
       {
