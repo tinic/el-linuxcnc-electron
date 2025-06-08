@@ -72,22 +72,7 @@ def read_hal_in():
         "position_a": hal_pin_position_a.get(),
         "speed_rps": hal_pin_speed_rps.get(),
         "program_running": program_running,
-        "error_state": error_state,
-        "linuxcnc_actual_x": s.actual_position[0],  # X axis actual position from LinuxCNC
-        "linuxcnc_actual_z": s.actual_position[2],  # Z axis actual position from LinuxCNC
-        "linuxcnc_joint_x": s.joint_actual_position[0],  # Joint 0 (X) actual position
-        "linuxcnc_joint_z": s.joint_actual_position[1],   # Joint 1 (Z) actual position
-        "hal_raw_x": hal_pin_position_x.get(),  # Raw HAL pin for debugging
-        "hal_raw_z": hal_pin_position_z.get(),   # Raw HAL pin for debugging
-        "g5x_offset_x": s.g5x_offset[0],  # Work coordinate system offset X
-        "g5x_offset_z": s.g5x_offset[2],  # Work coordinate system offset Z
-        "g92_offset_x": s.g92_offset[0],  # G92 offset X
-        "g92_offset_z": s.g92_offset[2],  # G92 offset Z
-        "tool_offset_x": s.tool_offset[0],  # Tool offset X
-        "tool_offset_z": s.tool_offset[2],   # Tool offset Z
-        "spindle_enabled": s.spindle[0]['enabled'],  # Spindle enabled state
-        "spindle_speed": s.spindle[0]['speed'],      # Spindle speed
-        "spindle_direction": s.spindle[0]['direction']  # Spindle direction
+        "error_state": error_state
     }
 
 @app.put("/hal/abort")
