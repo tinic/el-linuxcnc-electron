@@ -105,84 +105,6 @@ def emergency_stop():
         error_msg = f"Error during emergency stop: {str(e)}"
         return {"status": "Error", "message": error_msg}, 500
 
-@app.put("/hal/threading_original")
-def execute_threading_original():
-    json_data = request.json
-    
-    if not json_data:
-        return {"status": "Error", "message": "Missing threading parameters"}, 400
-
-    c.state(linuxcnc.STATE_ON)
-    c.wait_complete()
-
-    try:
-        s = linuxcnc.stat()
-        while True:
-            s.poll()
-            if s.estop:
-                return {"status": "Error", "message": "Machine is in ESTOP state"}, 400
-            if not s.enabled:
-                return {"status": "Error", "message": "Machine is not enabled"}, 400
-            if not s.homed:
-                return {"status": "Error", "message": "Machine is not homed"}, 400
-            if s.interp_state != linuxcnc.INTERP_IDLE:
-                return {"status": "Error", "message": "Interpreter is not idle"}, 400
-            if s.task_mode != linuxcnc.MODE_MDI:
-                c.mode(linuxcnc.MODE_MDI)
-                time.sleep(0.1)
-                continue
-            break
-        c.wait_complete()
-
-
-        # Build G-code array for threading operation
-        gcode_lines = []
-        
-        # Set thread-loop.ngc parameters using MDI
-        gcode_lines.append("G8")  # Radius mode
-        gcode_lines.append("G90")  # Absolute positioning
-        gcode_lines.append("G21")  # Metric units (assuming parameters are in mm)
-        gcode_lines.append(f"G10 L20 P1 X{float(json_data['XPos']):.6f} Z{float(json_data['ZPos']):.6f}")
-        gcode_lines.append("G54")  # Use work coordinates
-        gcode_lines.append("F100")  # Set feed rate for G1 moves (100 mm/min)
-        gcode_lines.append("M3S500")  # Start spindle at 500 RPM
-        
-        # Set thread-loop parameters
-        gcode_lines.append(f"#<_X_Start> = {float(json_data['XStart']):.6f}")
-        gcode_lines.append(f"#<_Z_Start> = {float(json_data['ZStart']):.6f}")
-        gcode_lines.append(f"#<_Pitch> = {float(json_data['Pitch']):.6f}")
-        gcode_lines.append(f"#<_X_Depth> = {float(json_data['XDepth']):.6f}")
-        gcode_lines.append(f"#<_Z_Depth> = {float(json_data['ZDepth']):.6f}")
-        gcode_lines.append(f"#<_X_End> = {float(json_data['XEnd']):.6f}")
-        gcode_lines.append(f"#<_Z_End> = {float(json_data['ZEnd']):.6f}")
-        gcode_lines.append(f"#<_X_Pullout> = {float(json_data['XPullout']):.6f}")
-        gcode_lines.append(f"#<_Z_Pullout> = {float(json_data['ZPullout']):.6f}")
-        gcode_lines.append(f"#<_First_Cut> = {float(json_data['FirstCut']):.6f}")
-        gcode_lines.append(f"#<_Cut_Mult> = {float(json_data['CutMult']):.6f}")
-        gcode_lines.append(f"#<_Min_Cut> = {float(json_data['MinCut']):.6f}")
-        gcode_lines.append(f"#<_Spring_Cuts> = {int(json_data['SpringCuts'])}")
-        gcode_lines.append(f"#<_X_Return> = {int(json_data['XReturn'])}")
-        gcode_lines.append(f"#<_Z_Return> = {int(json_data['ZReturn'])}")
-        
-        # Call the thread-loop subroutine
-        gcode_lines.append("o<thread-loop> call")
-        
-        # Execute each G-code line via MDI
-        for gcode_line in gcode_lines:
-            c.mdi(gcode_line)
-            c.wait_complete()
-        
-        
-        return {
-            "status": "OK", 
-            "message": "Threading subroutine executed",
-            "gcode": gcode_lines
-        }
-        
-    except Exception as e:
-        error_msg = f"Error executing threading subroutine: {str(e)}"
-        return {"status": "Error", "message": error_msg}, 500
-
 
 def generate_threading_gcode_core(params, for_backplot=False):
     import math
@@ -203,7 +125,7 @@ def generate_threading_gcode_core(params, for_backplot=False):
     x_return = float(params['XReturn'])
     z_return = float(params['ZReturn'])
     
-    # Calculate compound distance and direction ratios (from thread-loop.ngc lines 32-35)
+    # Calculate compound distance and direction ratios
     compound_dist = math.sqrt(x_depth * x_depth + z_depth * z_depth)
     k_x = x_depth / compound_dist if compound_dist != 0 else 0
     k_z = z_depth / compound_dist if compound_dist != 0 else 0

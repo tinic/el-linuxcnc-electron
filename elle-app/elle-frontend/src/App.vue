@@ -33,7 +33,14 @@ enum EntryType {
   threadSpringCuts = 16
 }
 
-const selectedMenu = ref(0);
+enum MenuType {
+  manual = 0,
+  cannedCycles = 1,
+  halStatus = 2,
+  settings = 3
+}
+
+const selectedMenu = ref(MenuType.manual);
 
 // Polled over REST
 const xpos = ref(0);
@@ -50,7 +57,7 @@ const displayZPos = computed(() => {
   return zpos.value; // Z position is always radius, not affected by diameter mode
 });
 const rpms = ref(0);
-const programRunning = ref(false);
+const cannedCycleRunning = ref(false);
 const errorState = ref(false);
 
 // Machine status computed from various states
@@ -61,15 +68,15 @@ const machineStatus = computed(() => {
   }
   
   // Running any cycle takes priority
-  if (programRunning.value) {
+  if (cannedCycleRunning.value) {
     return 'running'; // Green - machine running/in cycle
   }
   
   // Mode-based status when not running
-  if (selectedMenu.value === 0) {
+  if (selectedMenu.value === MenuType.manual) {
     return 'manual'; // Blue - manual mode (Home menu)
-  } else if (selectedMenu.value === 1) {
-    return 'program'; // White - canned cycle mode ready
+  } else if (selectedMenu.value === MenuType.cannedCycles) {
+    return 'cannedCycle'; // White - canned cycle mode ready
   }
   
   return 'idle'; // Fallback - should rarely be used
@@ -83,8 +90,8 @@ const statusDisplay = computed(() => {
       return { text: 'RUNNING', class: 'status-running', title: 'Machine: Running/In Cycle' };
     case 'manual':
       return { text: 'MANUAL', class: 'status-manual', title: 'Machine: Manual Mode' };
-    case 'program':
-      return { text: 'PROGRAM', class: 'status-program', title: 'Machine: Canned Cycle Mode' };
+    case 'cannedCycle':
+      return { text: 'CANNED CYCLE', class: 'status-cannedCycle', title: 'Machine: Canned Cycle Mode' };
     case 'idle':
       return { text: 'IDLE', class: 'status-idle', title: 'Machine: Idle' };
     default:
@@ -192,7 +199,7 @@ enum CannedCycle {
 }
 const selectedCannedCycle = ref(CannedCycle.none);
 
-// Threading Subroutine parameters (thread-loop.ngc)
+// Threading Subroutine parameters
 // Note: XStart uses current X position, ZStart is always 0
 const threadPitch = ref<number | null>(null);
 const threadXDepth = ref<number | null>(null);
@@ -274,28 +281,28 @@ const menuItems = ref([
     label: "Manual",
     icon: "pi pi-fw pi-wrench",
     command: () => {
-      selectedMenu.value = 0;
+      selectedMenu.value = MenuType.manual;
     },
   },
   {
-    label: "Program",
+    label: "Canned Cycles",
     icon: "pi pi-fw pi-cog",
     command: () => {
-      selectedMenu.value = 1;
+      selectedMenu.value = MenuType.cannedCycles;
     },
   },
   {
     label: "HAL",
     icon: "pi pi-fw pi-link",
     command: () => {
-      selectedMenu.value = 2;
+      selectedMenu.value = MenuType.halStatus;
     },
   },
   {
     label: "Settings",
     icon: "pi pi-fw pi-sliders-v",
     command: () => {
-      selectedMenu.value = 3;
+      selectedMenu.value = MenuType.settings;
     },
   },
   { separator: true },
@@ -767,7 +774,7 @@ function startPoll() {
           (((halIn as any).position_a - aaxisoffset) % 1) * 360
         );
         rpms.value = Math.abs((halIn as any).speed_rps * 60);
-        programRunning.value = (halIn as any).program_running || false;
+        cannedCycleRunning.value = (halIn as any).program_running || false;
         errorState.value = (halIn as any).error_state || false;
       });
     } catch {
@@ -819,7 +826,7 @@ function startPoll() {
     }
     if (halOutScheduled) {
       halOutScheduled = false;
-      if (selectedMenu.value == 0) {
+      if (selectedMenu.value == MenuType.manual) {
         let halOut = {
           control_source: false,
           forward_z: zforward ? -zpitch.value : +zpitch.value,
@@ -830,7 +837,7 @@ function startPoll() {
           enable_stepper_x: xstepperactive.value,
         };
         putHalOut(halOut);
-      } else if (selectedMenu.value == 1) {
+      } else if (selectedMenu.value == MenuType.cannedCycles) {
         selectedDirectionMode.value = DirectionMode.hold;
         selectedFeedMode.value = FeedMode.backCompound;
         let halOut = {
@@ -1227,7 +1234,7 @@ const threadStartClicked = () => {
   treatOffClickAsEnter();
   entryActive.value = 0;
   
-  // Validate required parameters exist for thread-loop.ngc
+  // Validate required parameters
   if (threadPitch.value === null || threadZEnd.value === null) {
     console.error("Threading: Missing required parameters");
     alert("Error: Missing required threading parameters. Please set Pitch and Z End values.");
@@ -1431,7 +1438,7 @@ const updatePitchFromThread = () => {
     zpitchlabel.value = "…";
   }
   
-  // For thread-loop, if we have Z depth (compound threading), calculate cross feed
+  // If we have Z depth (compound threading), calculate cross feed
   if (threadZDepth.value !== null && threadZDepth.value !== 0 && threadXDepth.value !== null) {
     // Calculate compound angle from X and Z depths
     const angle = Math.atan2(Math.abs(threadZDepth.value), Math.abs(threadXDepth.value)) * (180 / Math.PI);
@@ -1451,7 +1458,7 @@ const threadMetricClicked = () => {
   treatOffClickAsEnter();
   metric.value = !metric.value;
   
-  // Convert thread-loop values between metric and imperial
+  // Convert threading values between metric and imperial
   const conversionFactor = metric.value ? 25.4 : 1/25.4;
   
   // Convert dimensional parameters (those affected by unit conversion)
@@ -1477,7 +1484,7 @@ onMounted(async () => {
   var userAgent = navigator.userAgent.toLowerCase();
   if (userAgent.indexOf(" electron/") > -1) {
     window.api.receive("halStarted", () => {
-      selectedMenu.value = 0;
+      selectedMenu.value = MenuType.manual;
       startPoll();
       updateHALOut();
     });
@@ -1491,7 +1498,7 @@ onMounted(async () => {
       halStdoutText.value += event as string;
     });
 
-    selectedMenu.value = 2;
+    selectedMenu.value = MenuType.halStatus;
     startHAL();
   } else {
     startPoll();
@@ -1529,7 +1536,7 @@ onUnmounted(() => {
               <div :class="['stack-segment', 'segment-red', { 'active': machineStatus === 'error' }]"></div>
               <div :class="['stack-segment', 'segment-amber', { 'active': false }]"></div>
               <div :class="['stack-segment', 'segment-green', { 'active': machineStatus === 'running' }]"></div>
-              <div :class="['stack-segment', 'segment-white', { 'active': machineStatus === 'program' }]"></div>
+              <div :class="['stack-segment', 'segment-white', { 'active': machineStatus === 'cannedCycle' }]"></div>
               <div :class="['stack-segment', 'segment-blue', { 'active': machineStatus === 'manual' }]"></div>
             </div>
             <span class="ml-3 text-sm font-semibold">{{ statusDisplay.text }}</span>
@@ -1545,7 +1552,7 @@ onUnmounted(() => {
         </div>
       </template>
     </Menu>
-    <div v-if="selectedMenu == 0" class="m-2">
+    <div v-if="selectedMenu == MenuType.manual" class="m-2">
       <div class="flex flex-row">
         <DRODisplay
           class="mr-2 h-min"
@@ -1776,7 +1783,7 @@ onUnmounted(() => {
       <DynamicDialog />
     </div>
     <div
-      v-if="selectedMenu == 1"
+      v-if="selectedMenu == MenuType.cannedCycles"
       class="flex-grow-1 flex flex-column p-2"
     >
       <div class="flex flex-row">
@@ -1814,7 +1821,7 @@ onUnmounted(() => {
           class="grid dro-font-mode grid-nogutter p-3 pr-4 m-0"
           style="width: 18em"
         >
-          <div class="col-12 align-content-center">Program</div>
+          <div class="col-12 align-content-center">Canned Cycles</div>
           <button
             @click="cannedCycleClicked(CannedCycle.threading)"
             size="large"
@@ -1880,7 +1887,7 @@ onUnmounted(() => {
         <div v-if="selectedCannedCycle == CannedCycle.threading" class="flex flex-column dro-font-mode p-1" style="width: 43em;">
           <div class="grid grid-nogutter flex-none">
           <div class="col-12 align-content-center mb-2">
-            Threading (thread-loop.ngc){{ threadPresetName ? ` - ${threadPresetName}` : '' }}
+            Threading{{ threadPresetName ? ` - ${threadPresetName}` : '' }}
           </div>
           <!-- Note: X Start uses current position, Z Start is always 0 -->
           
@@ -2133,7 +2140,7 @@ onUnmounted(() => {
       </Dialog>
     </div>
     <div
-      v-if="selectedMenu == 2"
+      v-if="selectedMenu == MenuType.halStatus"
       class="flex-grow-1 flex flex-column"
     >
       <Toolbar class="flex-none p-1">
@@ -2163,7 +2170,7 @@ onUnmounted(() => {
       />
     </div>
     <div
-      v-if="selectedMenu == 3"
+      v-if="selectedMenu == MenuType.settings"
       class="flex-grow-1 p-4"
     >
       <div class="dro-font-mode">
