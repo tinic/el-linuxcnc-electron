@@ -1130,7 +1130,6 @@ const PitchSelector = defineAsyncComponent(
   () => import("./components/PitchSelector.vue")
 );
 
-// G76PresetSelector is now imported directly above
 
 function pitchForAngle(pitch: number, angle: number) {
   return pitch * Math.tan(angle * (Math.PI / 180));
