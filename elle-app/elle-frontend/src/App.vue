@@ -12,7 +12,7 @@ import DRODisplay from "./components/DRODisplay.vue";
 import ThreadPresetSelector from "./components/ThreadPresetSelector.vue";
 import OperationPreview from "./components/OperationPreview.vue";
 import Backplot from "./Backplot";
-import { putHalOut, putLinuxCNC, getHalIn, putAbort, putEmergencyStop, putThreading, generateThreadingGcode, cleanupCannedCycles } from "./HAL"
+import { useHAL } from "./composables/useHAL"
 
 enum EntryType {
   xPosition = 1,
@@ -42,10 +42,38 @@ enum MenuType {
 
 const selectedMenu = ref(MenuType.manual);
 
-// Polled over REST
-const xpos = ref(0);
-const zpos = ref(0);
-const apos = ref(0);
+const {
+  xpos,
+  zpos,
+  apos,
+  rpms,
+  cannedCycleRunning,
+  errorState,
+  putHalOut,
+  putLinuxCNC,
+  getHalIn,
+  putAbort,
+  putEmergencyStop,
+  putThreading,
+  generateThreadingGcode,
+  cleanupCannedCycles,
+  startPoll,
+  endPoll,
+  stopJogNow,
+  setAxisOffset,
+  scheduleHALOut,
+  setButtonTime,
+  scheduleButtonUp,
+  getAxisOffset,
+  setAxisValue,
+  xpitch,
+  zpitch,
+  xpitchactive,
+  zpitchactive,
+  xstepperactive,
+  zstepperactive,
+  updateHALOut
+} = useHAL();
 
 
 // Computed display positions for diameter mode
@@ -56,9 +84,6 @@ const displayXPos = computed(() => {
 const displayZPos = computed(() => {
   return zpos.value; // Z position is always radius, not affected by diameter mode
 });
-const rpms = ref(0);
-const cannedCycleRunning = ref(false);
-const errorState = ref(false);
 
 // Machine status computed from various states
 const machineStatus = computed(() => {
@@ -98,14 +123,6 @@ const statusDisplay = computed(() => {
       return { text: 'UNKNOWN', class: 'status-unknown', title: 'Machine: Unknown Status' };
   }
 });
-
-// Pushed over REST
-const xpitch = ref(0.1);
-const zpitch = ref(0.1);
-const xpitchactive = ref(false);
-const zpitchactive = ref(false);
-const xstepperactive = ref(false);
-const zstepperactive = ref(false);
 
 // Internal
 const numberentry = ref(0);
@@ -153,24 +170,6 @@ const saveSettings = async () => {
 };
 const cursorpos = ref(0);
 
-let zforward: boolean = true;
-let xforward: boolean = true;
-let xaxisoffset: number = 0;
-let zaxisoffset: number = 0;
-let aaxisoffset: number = 0;
-let xaxisset: number = 0;
-let zaxisset: number = 0;
-let aaxisset: number = 0;
-let xaxissetscheduled: boolean = false;
-let zaxissetscheduled: boolean = false;
-let aaxissetscheduled: boolean = false;
-
-let buttonuptime: number = 0;
-let buttondowntime: number = 0;
-let buttonlefttime: number = 0;
-let buttonrighttime: number = 0;
-let buttonupscheduled: boolean = false;
-let updateInterval: NodeJS.Timeout;
 
 enum FeedMode {
   none = 0,
@@ -420,18 +419,15 @@ function setFinalNumber(value: number) {
   switch (entryActive.value) {
     case EntryType.xPosition:
       const actualXValue = diameterMode.value ? value / 2 : value;
-      xaxisset = actualXValue;
-      xaxissetscheduled = true;
+      setAxisValue('x', actualXValue);
       xpos.value = actualXValue;
       break;
     case EntryType.zPosition:
-      zaxisset = value;
-      zaxissetscheduled = true;
+      setAxisValue('z', value);
       zpos.value = value;
       break;
     case EntryType.aPosition:
-      aaxisset = value;
-      aaxissetscheduled = true;
+      setAxisValue('a', value);
       apos.value = value;
       break;
     case EntryType.xPitch:
@@ -612,18 +608,15 @@ const zeroClicked = (entry: number) => {
   entryActive.value = 0;
   switch (entry) {
     case EntryType.xPosition:
-      xaxisset = 0;
-      xaxissetscheduled = true;
+      setAxisValue('x', 0);
       scheduleHALOut();
       break;
     case EntryType.zPosition:
-      zaxisset = 0;
-      zaxissetscheduled = true;
+      setAxisValue('z', 0);
       scheduleHALOut();
       break;
     case EntryType.aPosition:
-      aaxisset = 0;
-      aaxissetscheduled = true;
+      setAxisValue('a', 0);
       scheduleHALOut();
       break;
   }
@@ -648,8 +641,8 @@ const startHAL = () => {
     window.api.send("startHAL");
     xpos.value = 0;
     zpos.value = 0;
-    xaxisoffset = 0;
-    zaxisoffset = 0;
+    setAxisOffset('x', 0);
+    setAxisOffset('z', 0);
   }
 };
 
@@ -660,8 +653,8 @@ const stopHAL = () => {
     window.api.send("stopHAL");
     xpos.value = 0;
     zpos.value = 0;
-    xaxisoffset = 0;
-    zaxisoffset = 0;
+    setAxisOffset('x', 0);
+    setAxisOffset('z', 0);
   }
 };
 
@@ -736,128 +729,6 @@ const onPreviewCancel = () => {
   currentOperation.value = null;
 };
 
-let halOutScheduled: boolean = false;
-
-function stopJogNow() {
-  buttonuptime = 0;
-  buttondowntime = 0;
-  buttonlefttime = 0;
-  buttonrighttime = 0;
-  let halOut = {
-    control_stop_now: 1,
-  };
-  putHalOut(halOut);
-}
-
-function startPoll() {
-  updateInterval = setInterval(() => {
-    try {
-      getHalIn().then((halIn) => {
-        if (xaxissetscheduled) {
-          xaxissetscheduled = false;
-          xaxisoffset = (halIn as any).position_x - xaxisset;
-          xaxisset = 0;
-        }
-        if (zaxissetscheduled) {
-          zaxissetscheduled = false;
-          zaxisoffset = (halIn as any).position_z - zaxisset;
-          zaxisset = 0;
-        }
-        if (aaxissetscheduled) {
-          aaxissetscheduled = false;
-          aaxisoffset = (halIn as any).position_a - ((aaxisset / 360) % 1);
-          aaxisset = 0;
-        }  
-        zpos.value = (halIn as any).position_z - zaxisoffset;
-        xpos.value = (halIn as any).position_x - xaxisoffset;
-        apos.value = Math.abs(
-          (((halIn as any).position_a - aaxisoffset) % 1) * 360
-        );
-        rpms.value = Math.abs((halIn as any).speed_rps * 60);
-        cannedCycleRunning.value = (halIn as any).program_running || false;
-        errorState.value = (halIn as any).error_state || false;
-      });
-    } catch {
-      // nop 
-    }  
-    if (buttonuptime > 0) {
-      halOutScheduled = false;
-      let velocity = (Date.now() / 1000 - buttonuptime) * 3;
-      velocity = Math.min(velocity, 3.0);
-      let halOut = {
-        control_x_type: 1,
-        velocity_x_cmd: -velocity,
-      };
-      putHalOut(halOut);
-    }
-    if (buttondowntime > 0) {
-      halOutScheduled = false;
-      let velocity = (Date.now() / 1000 - buttondowntime) * 3;
-      velocity = Math.min(velocity, 3.0);
-      let halOut = {
-        control_x_type: 1,
-        velocity_x_cmd: +velocity,
-      };
-      putHalOut(halOut);
-    }
-    if (buttonlefttime > 0) {
-      halOutScheduled = false;
-      let velocity = (Date.now() / 1000 - buttonlefttime) * 3;
-      velocity = Math.min(velocity, 6.0);
-      let halOut = {
-        control_z_type: 1,
-        velocity_z_cmd: -velocity,
-      };
-      putHalOut(halOut);
-    }
-    if (buttonrighttime > 0) {
-      halOutScheduled = false;
-      let velocity = (Date.now() / 1000 - buttonrighttime) * 3;
-      velocity = Math.min(velocity, 6.0);
-      let halOut = {
-        control_z_type: 1,
-        velocity_z_cmd: +velocity,
-      };
-      putHalOut(halOut);
-    }
-    if (buttonupscheduled) {
-      buttonupscheduled = false;
-      stopJogNow();
-    }
-    if (halOutScheduled) {
-      halOutScheduled = false;
-      if (selectedMenu.value == MenuType.manual) {
-        let halOut = {
-          control_source: false,
-          forward_z: zforward ? -zpitch.value : +zpitch.value,
-          forward_x: xforward ? +xpitch.value : -xpitch.value,
-          enable_z: zpitchactive.value,
-          enable_x: xpitchactive.value,
-          enable_stepper_z: zstepperactive.value,
-          enable_stepper_x: xstepperactive.value,
-        };
-        putHalOut(halOut);
-      } else if (selectedMenu.value == MenuType.cannedCycles) {
-        selectedDirectionMode.value = DirectionMode.hold;
-        selectedFeedMode.value = FeedMode.backCompound;
-        let halOut = {
-          control_source: true,
-          forward_z: zforward ? -zpitch.value : +zpitch.value,
-          forward_x: xforward ? +xpitch.value : -xpitch.value,
-          enable_z: true,
-          enable_x: true,
-          enable_stepper_z: true,
-          enable_stepper_x: true,
-        };
-        putHalOut(halOut);
-      }
-    }
-  }, 33.33333);
-}
-
-function endPoll() {
-  clearTimeout(updateInterval);
-}
 
 const forwardIcon = computed(() => {
   switch (selectedFeedMode.value) {
@@ -915,206 +786,54 @@ const cannedCycleClicked = (cycle: CannedCycle) => {
 };
 
 const touchStartUp = () => {
-  buttonuptime = Date.now() / 1000;
+  setButtonTime('up', Date.now() / 1000);
 };
 
 const touchEndUp = () => {
-  buttonupscheduled = true;
+  scheduleButtonUp();
   stopJogNow();
 };
 
 const touchStartLeft = () => {
-  buttonlefttime = Date.now() / 1000;
+  setButtonTime('left', Date.now() / 1000);
 };
 
 const touchEndLeft = () => {
-  buttonupscheduled = true;
+  scheduleButtonUp();
   stopJogNow();
 };
 
 const touchStartRight = () => {
-  buttonrighttime = Date.now() / 1000;
+  setButtonTime('right', Date.now() / 1000);
 };
 
 const touchEndRight = () => {
   stopJogNow();
-  buttonupscheduled = true;
+  scheduleButtonUp();
 };
 
 const touchStartDown = () => {
-  buttondowntime = Date.now() / 1000;
+  setButtonTime('down', Date.now() / 1000);
 };
 
 const touchEndDown = () => {
-  buttonupscheduled = true;
+  scheduleButtonUp();
   stopJogNow();
 };
 
 const touchStop = () => {
-  buttonupscheduled = true;
+  scheduleButtonUp();
   stopJogNow();
 };
 
-function scheduleHALOut() {
-  halOutScheduled = true;
-}
 
-function updateHALOut() {
-  switch (selectedFeedMode.value) {
-    case FeedMode.longitudinal:
-      switch (selectedDirectionMode.value) {
-        case DirectionMode.forward:
-          zstepperactive.value = true;
-          xstepperactive.value = false;
-          zpitchactive.value = true;
-          xpitchactive.value = false;
-          zforward = true;
-          xforward = true;
-          break;
-        case DirectionMode.reverse:
-          zstepperactive.value = true;
-          xstepperactive.value = false;
-          zpitchactive.value = true;
-          xpitchactive.value = false;
-          zforward = false;
-          xforward = false;
-          break;
-        case DirectionMode.hold:
-          zstepperactive.value = false;
-          xstepperactive.value = false;
-          zpitchactive.value = true;
-          xpitchactive.value = false;
-          zforward = true;
-          xforward = true;
-          break;
-        case DirectionMode.idle:
-          zstepperactive.value = false;
-          xstepperactive.value = false;
-          zpitchactive.value = false;
-          xpitchactive.value = false;
-          zforward = true;
-          xforward = true;
-          break;
-      }
-      break;
-    case FeedMode.cross:
-      switch (selectedDirectionMode.value) {
-        case DirectionMode.forward:
-          zstepperactive.value = false;
-          xstepperactive.value = true;
-          zpitchactive.value = false;
-          xpitchactive.value = true;
-          zforward = true;
-          xforward = false;
-          break;
-        case DirectionMode.reverse:
-          zstepperactive.value = false;
-          xstepperactive.value = true;
-          zpitchactive.value = false;
-          xpitchactive.value = true;
-          zforward = false;
-          xforward = true;
-          break;
-        case DirectionMode.hold:
-          zstepperactive.value = false;
-          xstepperactive.value = false;
-          zpitchactive.value = false;
-          xpitchactive.value = true;
-          zforward = true;
-          xforward = true;
-          break;
-        case DirectionMode.idle:
-          zstepperactive.value = false;
-          xstepperactive.value = false;
-          zpitchactive.value = false;
-          xpitchactive.value = false;
-          zforward = true;
-          xforward = true;
-          break;
-      }
-      break;
-    case FeedMode.frontCompound:
-      switch (selectedDirectionMode.value) {
-        case DirectionMode.forward:
-          zstepperactive.value = true;
-          xstepperactive.value = true;
-          zpitchactive.value = true;
-          xpitchactive.value = true;
-          zforward = true;
-          xforward = true;
-          break;
-        case DirectionMode.reverse:
-          zstepperactive.value = true;
-          xstepperactive.value = true;
-          zpitchactive.value = true;
-          xpitchactive.value = true;
-          zforward = false;
-          xforward = false;
-          break;
-        case DirectionMode.hold:
-          zstepperactive.value = false;
-          xstepperactive.value = false;
-          zpitchactive.value = true;
-          xpitchactive.value = true;
-          zforward = true;
-          xforward = true;
-          break;
-        case DirectionMode.idle:
-          zstepperactive.value = false;
-          xstepperactive.value = false;
-          zpitchactive.value = false;
-          xpitchactive.value = false;
-          zforward = true;
-          xforward = true;
-          break;
-      }
-      break;
-    case FeedMode.backCompound:
-      switch (selectedDirectionMode.value) {
-        case DirectionMode.forward:
-          zstepperactive.value = true;
-          xstepperactive.value = true;
-          zpitchactive.value = true;
-          xpitchactive.value = true;
-          zforward = true;
-          xforward = false;
-          break;
-        case DirectionMode.reverse:
-          zstepperactive.value = true;
-          xstepperactive.value = true;
-          zpitchactive.value = true;
-          xpitchactive.value = true;
-          zforward = false;
-          xforward = true;
-          break;
-        case DirectionMode.hold:
-          zstepperactive.value = false;
-          xstepperactive.value = false;
-          zpitchactive.value = true;
-          xpitchactive.value = true;
-          zforward = true;
-          xforward = false;
-          break;
-        case DirectionMode.idle:
-          zstepperactive.value = false;
-          xstepperactive.value = false;
-          zpitchactive.value = false;
-          xpitchactive.value = false;
-          zforward = true;
-          xforward = false;
-          break;
-      }
-      break;
-  }
-  scheduleHALOut();
-}
 
 watch([selectedFeedMode, selectedDirectionMode], () => {
-  updateHALOut();
+  updateHALOut(selectedFeedMode, selectedDirectionMode, FeedMode, DirectionMode);
 });
 
 watch([zpitch, xpitch], () => {
-  updateHALOut();
+  updateHALOut(selectedFeedMode, selectedDirectionMode, FeedMode, DirectionMode);
 });
 
 watch(selectedMenu, () => {
@@ -1283,9 +1002,9 @@ const threadStartClicked = () => {
   getHalIn().then((halIn) => {
     // Extract current position and threading values into local variables
     // Use HAL positions as source of truth for machine position
-    const currentXPos = (halIn as any).position_x - xaxisoffset;
-    const currentZPos = (halIn as any).position_z - zaxisoffset;
-    const currentAPos = (halIn as any).position_a - aaxisoffset;
+    const currentXPos = (halIn as any).position_x - getAxisOffset('x');
+    const currentZPos = (halIn as any).position_z - getAxisOffset('z');
+    const currentAPos = (halIn as any).position_a - getAxisOffset('a');
     
     const pitch = threadPitch.value || 0;
     const xDepth = threadXDepth.value || 0;
@@ -1374,11 +1093,11 @@ const threadStartClicked = () => {
             };
             
             // Show preview dialog with callback to execute threading
-            const executeThreading = () => {
+            const putThreadingCallback = () => {
               putThreading(threadingParams);
             };
             
-            showOperationPreviewDialog(operationData, executeThreading);
+            showOperationPreviewDialog(operationData, putThreadingCallback);
           }
         });
       }
@@ -1484,8 +1203,15 @@ onMounted(async () => {
   if (userAgent.indexOf(" electron/") > -1) {
     window.api.receive("halStarted", () => {
       selectedMenu.value = MenuType.manual;
-      startPoll();
-      updateHALOut();
+      startPoll({
+        selectedMenu,
+        MenuType,
+        DirectionMode,
+        FeedMode,
+        selectedDirectionMode,
+        selectedFeedMode
+      });
+      updateHALOut(selectedFeedMode, selectedDirectionMode, FeedMode, DirectionMode);
     });
 
     window.api.receive("halStopped", () => {
@@ -1500,8 +1226,15 @@ onMounted(async () => {
     selectedMenu.value = MenuType.halStatus;
     startHAL();
   } else {
-    startPoll();
-    updateHALOut();
+    startPoll({
+      selectedMenu,
+      MenuType,
+      DirectionMode,
+      FeedMode,
+      selectedDirectionMode,
+      selectedFeedMode
+    });
+    updateHALOut(selectedFeedMode, selectedDirectionMode, FeedMode, DirectionMode);
   }
 });
 
