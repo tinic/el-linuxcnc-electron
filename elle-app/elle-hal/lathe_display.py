@@ -97,9 +97,7 @@ class BackplotGenerator(rs274.glcanon.GlCanonDraw):
                 initcode = self.inifile.find("RS274NGC", "RS274NGC_STARTUP_CODE") or ""
                 result, seq = self.load_preview(filepath, self.canon, "G21", initcode)
                 if result > gcode.MIN_ERROR:
-                    print(
-                        "In line {}, error: {}".format(str(seq), gcode.strerror(result))
-                    )
+                    pass
         finally:
             pass
 
@@ -192,16 +190,86 @@ class BackplotGenerator(rs274.glcanon.GlCanonDraw):
             data.append({"type": "dwell", "line": currentline, "dwell": trav})
 
         data.sort(key=sortByLine)
+        
+        min_x = min_y = min_z = float('inf')
+        max_x = max_y = max_z = float('-inf')
+        
+        for entry in data:
+            entry_type = entry["type"]
+            if entry_type in ["feed", "arcfeed", "trav"]:
+                moves = entry.get(entry_type, [])
+                for move in moves:
+                    coords = move.get("coords", [])
+                    if len(coords) >= 6:
+                        min_x = min(min_x, coords[0])
+                        min_y = min(min_y, coords[1])
+                        min_z = min(min_z, coords[2])
+                        max_x = max(max_x, coords[0])
+                        max_y = max(max_y, coords[1])
+                        max_z = max(max_z, coords[2])
+                        
+                        min_x = min(min_x, coords[3])
+                        min_y = min(min_y, coords[4])
+                        min_z = min(min_z, coords[5])
+                        max_x = max(max_x, coords[3])
+                        max_y = max(max_y, coords[4])
+                        max_z = max(max_z, coords[5])
+        
+        if min_x == float('inf'):
+            min_x = min_y = min_z = -1.0
+            max_x = max_y = max_z = 1.0
+        
+        center_x = (min_x + max_x) / 2
+        center_y = (min_y + max_y) / 2
+        center_z = (min_z + max_z) / 2
+        
+        range_x = abs(max_x - min_x)
+        range_y = abs(max_y - min_y) 
+        range_z = abs(max_z - min_z)
+        max_range = max(range_x, range_y, range_z)
+        
+        scale_factor = 2.0 / max_range if max_range > 0 else 1.0
+        
+        for entry in data:
+            entry_type = entry["type"]
+            if entry_type in ["feed", "arcfeed", "trav"]:
+                moves = entry.get(entry_type, [])
+                for move in moves:
+                    coords = move.get("coords", [])
+                    if len(coords) >= 6:
+                        x1 = (coords[0] - center_x) * scale_factor
+                        y1 = (coords[1] - center_y) * scale_factor
+                        z1 = (coords[2] - center_z) * scale_factor
+                        
+                        x2 = (coords[3] - center_x) * scale_factor
+                        y2 = (coords[4] - center_y) * scale_factor
+                        z2 = (coords[5] - center_z) * scale_factor
+                        
+                        coords[0] = z1
+                        coords[1] = y1
+                        coords[2] = x1
+                        
+                        coords[3] = z2
+                        coords[4] = y2
+                        coords[5] = x2
+        
+        norm_min_x = (min_x - center_x) * scale_factor
+        norm_min_y = (min_y - center_y) * scale_factor
+        norm_min_z = (min_z - center_z) * scale_factor
+        norm_max_x = (max_x - center_x) * scale_factor
+        norm_max_y = (max_y - center_y) * scale_factor
+        norm_max_z = (max_z - center_z) * scale_factor
+        
+        min_x = norm_min_z
+        min_y = norm_min_y
+        min_z = norm_min_x
+        max_x = norm_max_z
+        max_y = norm_max_y
+        max_z = norm_max_x
+        
         rootData = {
             "backplot": data,
-            "extents": [
-                self.canon.min_extents_zero_rxy[0],
-                self.canon.min_extents_zero_rxy[1],
-                self.canon.min_extents_zero_rxy[2],
-                self.canon.max_extents_zero_rxy[0],
-                self.canon.max_extents_zero_rxy[1],
-                self.canon.max_extents_zero_rxy[2],
-            ],
+            "extents": [min_x, min_y, min_z, max_x, max_y, max_z],
         }
         return json.dumps(rootData, separators=(",", ":"))
 
@@ -223,7 +291,9 @@ def backplot():
         lathe_init_path = os.path.join(os.getcwd(), "lathe.ini")
         bp = BackplotGenerator(lathe_init_path)
         bp.load(file_path)
-        return bp.toJson()
+        
+        result = bp.toJson()
+        return result
 
 
 if __name__ == "__main__":

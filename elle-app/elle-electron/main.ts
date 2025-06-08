@@ -84,7 +84,6 @@ ipcMain.handle('saveSettings', (event, settings) => {
         });
         return true;
     } catch (error) {
-        console.error('Failed to save settings:', error);
         throw error;
     }
 });
@@ -102,7 +101,6 @@ app.whenReady().then(async () => {
             const { installExt } = await import("./installDevTool.js");
             await installExt();
         } catch (e) {
-            console.log("Can not install extension!");
         }
     }
     createWindow();

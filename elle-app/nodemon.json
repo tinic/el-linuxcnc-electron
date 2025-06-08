@@ -1,4 +1,6 @@
 {
-    "watch": ["elle-electron/*", "elle-frontend/*", "elle-frontend/*/*"],
-    "ext": "js,css,ts,json,vue"
+    "watch": ["elle-electron/**/*", "elle-frontend/**/*"],
+    "ext": "js,css,ts,json,vue",
+    "ignore": ["elle-frontend/node_modules/**/*", "elle-frontend/dist/**/*"],
+    "delay": 500
 }

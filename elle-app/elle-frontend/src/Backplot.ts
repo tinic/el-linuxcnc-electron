@@ -37,8 +37,8 @@ export default class Backplot {
   });
 
   backplotMaterial: LineMaterial = new LineMaterial({
-    color: 0xffffff,
-    linewidth: 1,
+    color: 0x00ff00,
+    linewidth: 3,
     resolution: new THREE.Vector2(800, 600),
   });
 
@@ -55,26 +55,26 @@ export default class Backplot {
     let color1 = new THREE.Color(0x0000ff);
 
     this.backplotMaterial2 = new LineMaterial({
-      color: 0xff00ff,
-      linewidth: 1,
+      color: 0x808080,
+      linewidth: 2,
       resolution: new THREE.Vector2(800, 600),
     });
 
     this.backplotMaterial3 = new LineMaterial({
-      color: 0xff00ff,
-      linewidth: 3,
+      color: 0x00ff00,
+      linewidth: 4,
       resolution: new THREE.Vector2(800, 600),
     });
 
     for (let c = 0; c < 256; c++) {
       this.backplotMaterial0[c] = new LineMaterial({
-        color: color0.lerpHSL(color1, c / 32768).getHex(),
-        linewidth: 1,
+        color: 0x606060,
+        linewidth: 2,
         resolution: new THREE.Vector2(800, 600),
       });
 
       this.backplotMaterial1[c] = new LineMaterial({
-        color: color0.lerpHSL(color1, c / 32768).getHex(),
+        color: 0x00ff00,
         linewidth: 4,
         resolution: new THREE.Vector2(800, 600),
       });
@@ -216,7 +216,6 @@ export default class Backplot {
           }
           break;
         case "dwell":
-          console.log("dwell not implemented!");
           break;
       }
     }
