@@ -272,7 +272,7 @@ const numberClicked = (entry: number, value: number) => {
   numpadInputStage = NumpadInputStage.start;
   switch (entry) {
     case EntryType.xPosition:
-    numberentry.value = numbersPrevious = metric.value ? (diameterMode.value ? value * 2 : value) : (diameterMode.value ? value * 2 : value) / 25.4;
+    numberentry.value = numbersPrevious = metric.value ? value : value / 25.4;
     break;
     case EntryType.zPosition:
     case EntryType.xPitch:
