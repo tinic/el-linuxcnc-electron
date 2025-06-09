@@ -11,7 +11,6 @@ import Numpad from "./components/Numpad.vue";
 import DRODisplay from "./components/DRODisplay.vue";
 import ThreadPresetSelector from "./components/ThreadPresetSelector.vue";
 import OperationPreview from "./components/OperationPreview.vue";
-import Backplot from "./Backplot";
 import { useHAL } from "./composables/useHAL";
 import { useCannedCycles, ThreadingEntryType } from "./composables/useCannedCycles";
 
@@ -612,33 +611,6 @@ const quitApplication = async () => {
   }
 };
 
-const rendererC = ref();
-
-const gcodeUploader = async (event: any) => {
-  const file = event.files[0];
-  const reader = new FileReader();
-  reader.readAsText(file);
-  reader.onloadend = function () {
-    putLinuxCNC("backplot", { gcode: btoa(reader.result as string) }).then(
-      (json) => {
-        const renderer = rendererC.value as RendererPublicInterface;
-        renderer.scene?.clear();
-
-        let backplot = new Backplot(json, renderer);
-        backplot.addBoundingBoxToScene();
-        backplot.addBackplotToScene();
-
-        let xlin: number = 0;
-        let xinc: number = backplot.tlin / 600;
-        renderer.onBeforeRender(() => {
-          backplot.updateProgress(xlin);
-          xlin += xinc;
-          xlin %= backplot.tlin;
-        });
-      }
-    );
-  };
-};
 
 
 // Generic operation preview system

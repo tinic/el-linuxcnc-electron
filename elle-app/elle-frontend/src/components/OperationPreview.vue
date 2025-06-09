@@ -53,7 +53,6 @@ import { ref, onMounted, computed, watch } from "vue";
 import { Camera, Renderer, RendererPublicInterface, Scene } from "troisjs";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import Backplot from "../Backplot";
 
 interface OperationData {
   name: string;
