@@ -751,8 +751,8 @@ watch([diameterMode, defaultMetricOnStartup], () => {
   saveSettings();
 });
 
-const PitchSelector = defineAsyncComponent(
-  () => import("./components/PitchSelector.vue")
+const PitchPresetSelector = defineAsyncComponent(
+  () => import("./components/PitchPresetSelector.vue")
 );
 
 
@@ -764,7 +764,7 @@ const dialog = useDialog();
 const pitchClicked = (axis: string) => {
   treatOffClickAsEnter();
   entryActive.value = 0;
-  const dialogRef = dialog.open(PitchSelector, {
+  const dialogRef = dialog.open(PitchPresetSelector, {
     props: {
       header: "Select Pitch",
       style: {

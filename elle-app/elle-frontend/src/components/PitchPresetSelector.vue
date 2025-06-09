@@ -2,7 +2,7 @@
 import { onMounted, inject } from "vue";
 import { useDialog } from "primevue/usedialog";
 
-import json from "../assets/presets.json";
+import json from "../assets/manualpresets.json";
 
 import DialogRef from "primevue/dialog";
 
