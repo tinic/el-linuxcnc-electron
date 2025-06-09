@@ -3,6 +3,8 @@ let halInURL = "http://localhost:8000/hal/hal_in";
 let linuxcncURL = "http://localhost:8001/linuxcnc/";
 let threadingURL = "http://localhost:8000/hal/threading";
 let threadingGenerateURL = "http://localhost:8000/hal/threading/generate";
+let turningURL = "http://localhost:8000/hal/turning";
+let turningGenerateURL = "http://localhost:8000/hal/turning/generate";
 let cleanupURL = "http://localhost:8000/hal/cleanup";
 let abortURL = "http://localhost:8000/hal/abort";
 let estopURL = "http://localhost:8000/hal/estop";
@@ -14,6 +16,8 @@ if (userAgent.indexOf(" electron/") < 0) {
   linuxcncURL = "http://lathev2:8001/linuxcnc/";
   threadingURL = "http://lathev2:8000/hal/threading";
   threadingGenerateURL = "http://lathev2:8000/hal/threading/generate";
+  turningURL = "http://lathev2:8000/hal/turning";
+  turningGenerateURL = "http://lathev2:8000/hal/turning/generate";
   cleanupURL = "http://lathev2:8000/hal/cleanup";
   abortURL = "http://lathev2:8000/hal/abort";
   estopURL = "http://lathev2:8000/hal/estop";
@@ -52,6 +56,40 @@ export async function generateThreadingGcode(threadingParams: Object) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(threadingParams),
+    });
+    const result = await response.json();
+    return result;
+  } catch {
+    // nop
+  }
+  return {};
+}
+
+export async function putTurning(turningParams: Object) {
+  try {
+    const response = await fetch(turningURL, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(turningParams),
+    });
+    const result = await response.json();
+    return result;
+  } catch {
+    // nop
+  }
+  return {};
+}
+
+export async function generateTurningGcode(turningParams: Object) {
+  try {
+    const response = await fetch(turningGenerateURL, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(turningParams),
     });
     const result = await response.json();
     return result;

@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { putHalOut, putLinuxCNC, getHalIn, putAbort, putEmergencyStop, putThreading, generateThreadingGcode, cleanupCannedCycles } from '../HAL';
+import { putHalOut, putLinuxCNC, getHalIn, putAbort, putEmergencyStop, putThreading, generateThreadingGcode, putTurning, generateTurningGcode, cleanupCannedCycles } from '../HAL';
 
 export function useHAL() {
     const xpos = ref(0);
@@ -373,6 +373,8 @@ export function useHAL() {
         putEmergencyStop,
         putThreading,
         generateThreadingGcode,
+        putTurning,
+        generateTurningGcode,
         cleanupCannedCycles,
         startPoll,
         endPoll,

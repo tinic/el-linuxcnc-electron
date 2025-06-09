@@ -21,6 +21,18 @@ export enum ThreadingEntryType {
     threadSpringCuts = 16
 }
 
+export enum TurningEntryType {
+    turningXStart = 17,
+    turningXEnd = 18,
+    turningZStart = 19,
+    turningZEnd = 20,
+    turningFeedRate = 21,
+    turningStepDown = 22,
+    turningRoughingPasses = 23,
+    turningFinishingAllowance = 24,
+    turningTaperAngle = 25
+}
+
 export function useCannedCycles() {
     const dialog = useDialog();
 
@@ -39,20 +51,26 @@ export function useCannedCycles() {
     const threadPresetName = ref<string | null>(null);
     const threadDiameter = ref<string | null>(null);
 
+    // Turning parameters
+    const turningXStart = ref<number | null>(null);
+    const turningXEnd = ref<number | null>(null);
+    const turningZStart = ref<number | null>(null);
+    const turningZEnd = ref<number | null>(null);
+    const turningFeedRate = ref<number | null>(null);
+    const turningStepDown = ref<number | null>(null);
+    const turningRoughingPasses = ref<number | null>(null);
+    const turningFinishingAllowance = ref<number | null>(null);
+    const turningTaperAngle = ref<number | null>(null);
+    const turningPresetName = ref<string | null>(null);
+    
     // Future cycle parameters
     const drillDepth = ref<number | null>(null);
     const drillPeckDepth = ref<number | null>(null);
     const drillRetractHeight = ref<number | null>(null);
-    
-    const turningStartX = ref<number | null>(null);
-    const turningEndX = ref<number | null>(null);
-    const turningStartZ = ref<number | null>(null);
-    const turningEndZ = ref<number | null>(null);
-    const turningCutDepth = ref<number | null>(null);
-    const turningFeedRate = ref<number | null>(null);
 
     // UI state
     const threadingPopovers = ref<Record<string, any>>({});
+    const turningPopovers = ref<Record<string, any>>({});
     const currentPopoverLabel = ref("");
 
     // Threading parameter descriptions
@@ -71,8 +89,21 @@ export function useCannedCycles() {
         'SC': 'Spring Cuts - number of finishing passes'
     };
 
+    // Turning parameter descriptions
+    const turningDescriptions: { [key: string]: string } = {
+        'XS': 'X Start - starting diameter position\n(current tool position)',
+        'XE': 'X End - final diameter after turning\n(target diameter)',
+        'ZS': 'Z Start - starting Z position\n(current tool position)',
+        'ZE': 'Z End - final Z position\n(length of cut)',
+        'F': 'Feed Rate - cutting speed\n(mm/min or in/min)',
+        'SD': 'Step Down - depth per roughing pass\n(material removed per pass)',
+        'RP': 'Roughing Passes - number of rough cuts\n(before finishing pass)',
+        'FA': 'Finishing Allowance - material left for finish\n(removed in final pass)',
+        'TA': 'Taper Angle - angle of taper cut\n(0° for straight turning)'
+    };
+
     // Helper functions
-    const roundThreadValue = (value: number, conversionFactor: number = 1): number => {
+    const roundParameterValue = (value: number, conversionFactor: number = 1): number => {
         const result = Math.round((value * conversionFactor) * 1000000) / 1000000;
         return parseFloat(result.toFixed(6));
     };
@@ -93,6 +124,24 @@ export function useCannedCycles() {
         
         if (currentPopoverLabel.value && threadingPopovers.value[currentPopoverLabel.value]) {
             threadingPopovers.value[currentPopoverLabel.value].hide();
+        }
+        
+        currentPopoverLabel.value = labelKey;
+        popover.show(event);
+    };
+
+    const showTurningLabelPopover = (event: Event, labelKey: string) => {
+        const popover = turningPopovers.value[labelKey];
+        if (!popover) return;
+        
+        if (currentPopoverLabel.value === labelKey && popover.visible) {
+            popover.hide();
+            currentPopoverLabel.value = "";
+            return;
+        }
+        
+        if (currentPopoverLabel.value && turningPopovers.value[currentPopoverLabel.value]) {
+            turningPopovers.value[currentPopoverLabel.value].hide();
         }
         
         currentPopoverLabel.value = labelKey;
@@ -197,17 +246,17 @@ export function useCannedCycles() {
                 onSelected: (preset: any) => {
                     const conversionFactor = metric ? 1 : 1/25.4;
                     
-                    threadPitch.value = roundThreadValue(preset.Pitch, conversionFactor);
-                    threadXDepth.value = roundThreadValue(preset.XDepth, conversionFactor);
-                    threadZDepth.value = roundThreadValue(preset.ZDepth, conversionFactor);
-                    threadAngle.value = roundThreadValue(preset.Angle || 0);
-                    threadZEnd.value = roundThreadValue(preset.ZEnd, conversionFactor);
-                    threadXPullout.value = roundThreadValue(preset.XPullout, conversionFactor);
-                    threadZPullout.value = roundThreadValue(preset.ZPullout, conversionFactor);
-                    threadFirstCut.value = roundThreadValue(preset.FirstCut, conversionFactor);
-                    threadCutMult.value = roundThreadValue(preset.CutMult);
-                    threadMinCut.value = roundThreadValue(preset.MinCut, conversionFactor);
-                    threadSpringCuts.value = roundThreadValue(preset.SpringCuts);
+                    threadPitch.value = roundParameterValue(preset.Pitch, conversionFactor);
+                    threadXDepth.value = roundParameterValue(preset.XDepth, conversionFactor);
+                    threadZDepth.value = roundParameterValue(preset.ZDepth, conversionFactor);
+                    threadAngle.value = roundParameterValue(preset.Angle || 0);
+                    threadZEnd.value = roundParameterValue(preset.ZEnd, conversionFactor);
+                    threadXPullout.value = roundParameterValue(preset.XPullout, conversionFactor);
+                    threadZPullout.value = roundParameterValue(preset.ZPullout, conversionFactor);
+                    threadFirstCut.value = roundParameterValue(preset.FirstCut, conversionFactor);
+                    threadCutMult.value = roundParameterValue(preset.CutMult);
+                    threadMinCut.value = roundParameterValue(preset.MinCut, conversionFactor);
+                    threadSpringCuts.value = roundParameterValue(preset.SpringCuts);
                     threadPresetName.value = preset.name;
                     threadDiameter.value = preset.Diameter || null;
                     updatePitchCallback();
@@ -239,14 +288,14 @@ export function useCannedCycles() {
     const convertThreadingParameters = (toMetric: boolean) => {
         const conversionFactor = toMetric ? 25.4 : 1/25.4;
         
-        if (threadPitch.value !== null) threadPitch.value = roundThreadValue(threadPitch.value, conversionFactor);
-        if (threadXDepth.value !== null) threadXDepth.value = roundThreadValue(threadXDepth.value, conversionFactor);
-        if (threadZDepth.value !== null) threadZDepth.value = roundThreadValue(threadZDepth.value, conversionFactor);
-        if (threadZEnd.value !== null) threadZEnd.value = roundThreadValue(threadZEnd.value, conversionFactor);
-        if (threadXPullout.value !== null) threadXPullout.value = roundThreadValue(threadXPullout.value, conversionFactor);
-        if (threadZPullout.value !== null) threadZPullout.value = roundThreadValue(threadZPullout.value, conversionFactor);
-        if (threadFirstCut.value !== null) threadFirstCut.value = roundThreadValue(threadFirstCut.value, conversionFactor);
-        if (threadMinCut.value !== null) threadMinCut.value = roundThreadValue(threadMinCut.value, conversionFactor);
+        if (threadPitch.value !== null) threadPitch.value = roundParameterValue(threadPitch.value, conversionFactor);
+        if (threadXDepth.value !== null) threadXDepth.value = roundParameterValue(threadXDepth.value, conversionFactor);
+        if (threadZDepth.value !== null) threadZDepth.value = roundParameterValue(threadZDepth.value, conversionFactor);
+        if (threadZEnd.value !== null) threadZEnd.value = roundParameterValue(threadZEnd.value, conversionFactor);
+        if (threadXPullout.value !== null) threadXPullout.value = roundParameterValue(threadXPullout.value, conversionFactor);
+        if (threadZPullout.value !== null) threadZPullout.value = roundParameterValue(threadZPullout.value, conversionFactor);
+        if (threadFirstCut.value !== null) threadFirstCut.value = roundParameterValue(threadFirstCut.value, conversionFactor);
+        if (threadMinCut.value !== null) threadMinCut.value = roundParameterValue(threadMinCut.value, conversionFactor);
         
         threadPresetName.value = null;
         threadDiameter.value = null;
@@ -254,7 +303,7 @@ export function useCannedCycles() {
 
     // Input handling for threading parameters
     const setThreadingParameter = (entryType: ThreadingEntryType, value: number) => {
-        const roundedValue = roundThreadValue(value);
+        const roundedValue = roundParameterValue(value);
         
         switch (entryType) {
             case ThreadingEntryType.threadPitch:
@@ -350,32 +399,247 @@ export function useCannedCycles() {
         threadPresetName,
         threadDiameter,
         
+        // Turning state
+        turningXStart,
+        turningXEnd,
+        turningZStart,
+        turningZEnd,
+        turningFeedRate,
+        turningStepDown,
+        turningRoughingPasses,
+        turningFinishingAllowance,
+        turningTaperAngle,
+        turningPresetName,
+        
         // Future cycle state
         drillDepth,
         drillPeckDepth,
         drillRetractHeight,
-        turningStartX,
-        turningEndX,
-        turningStartZ,
-        turningEndZ,
-        turningCutDepth,
-        turningFeedRate,
         
         // UI state
         threadingPopovers,
+        turningPopovers,
         currentPopoverLabel,
         threadingDescriptions,
+        turningDescriptions,
         
         // Functions
-        roundThreadValue,
+        roundParameterValue,
         formatForLinuxCNC,
         showLabelPopover,
+        showTurningLabelPopover,
         validateThreadingParameters,
         generateThreadingParams,
         openThreadPresetDialog,
         resetThreadingParameters,
         convertThreadingParameters,
         setThreadingParameter,
-        clearThreadingParameter
+        clearThreadingParameter,
+        
+        // Turning functions
+        validateTurningParameters,
+        generateTurningParams,
+        openTurningPresetDialog,
+        resetTurningParameters,
+        convertTurningParameters,
+        setTurningParameter,
+        clearTurningParameter
     };
+
+    // Turning validation
+    function validateTurningParameters(): string[] {
+        const errors = [];
+
+        if (turningXStart.value === null || turningXEnd.value === null || turningZEnd.value === null) {
+            errors.push("Missing required parameters. Please set X Start, X End, and Z End values.");
+            return errors;
+        }
+
+        if (turningXStart.value === turningXEnd.value) {
+            errors.push("X Start and X End cannot be the same");
+        }
+
+        if (turningFeedRate.value !== null && turningFeedRate.value <= 0) {
+            errors.push("Feed Rate must be positive");
+        }
+
+        if (turningStepDown.value !== null && turningStepDown.value <= 0) {
+            errors.push("Step Down must be positive");
+        }
+
+        if (turningRoughingPasses.value !== null && (turningRoughingPasses.value < 1 || turningRoughingPasses.value > 20)) {
+            errors.push("Roughing Passes should be between 1 and 20");
+        }
+
+        if (turningFinishingAllowance.value !== null && turningFinishingAllowance.value < 0) {
+            errors.push("Finishing Allowance cannot be negative");
+        }
+
+        if (turningTaperAngle.value !== null && Math.abs(turningTaperAngle.value) > 45) {
+            errors.push("Taper Angle seems too large (>45°), please verify");
+        }
+
+        return errors;
+    }
+
+    // Turning G-code generation
+    function generateTurningParams(currentXPos: number, currentZPos: number, currentAPos: number) {
+        const xStart = turningXStart.value || 0;
+        const xEnd = turningXEnd.value || 0;
+        const zStart = turningZStart.value || 0;
+        const zEnd = turningZEnd.value || 0;
+        const feedRate = turningFeedRate.value || 0.1;
+        const stepDown = turningStepDown.value || 0.5;
+        const roughingPasses = turningRoughingPasses.value || 3;
+        const finishingAllowance = turningFinishingAllowance.value || 0.1;
+        const taperAngle = turningTaperAngle.value || 0;
+
+        return {
+            XPos: formatForLinuxCNC(currentXPos),
+            ZPos: formatForLinuxCNC(currentZPos),
+            APos: formatForLinuxCNC(currentAPos),
+            XStart: formatForLinuxCNC(xStart),
+            XEnd: formatForLinuxCNC(xEnd),
+            ZStart: formatForLinuxCNC(zStart),
+            ZEnd: formatForLinuxCNC(zEnd),
+            FeedRate: formatForLinuxCNC(feedRate),
+            StepDown: formatForLinuxCNC(stepDown),
+            RoughingPasses: Math.round(roughingPasses),
+            FinishingAllowance: formatForLinuxCNC(finishingAllowance),
+            TaperAngle: formatForLinuxCNC(taperAngle),
+            XReturn: formatForLinuxCNC(currentXPos),
+            ZReturn: formatForLinuxCNC(currentZPos)
+        };
+    }
+
+    // Turning preset handling
+    function openTurningPresetDialog(metric: boolean, updatePitchCallback: () => void) {
+        const TurningPresetSelector = defineAsyncComponent(() => import('../components/TurningPresetSelector.vue'));
+        const dialogRef = dialog.open(TurningPresetSelector, {
+            props: {
+                header: "Select Turning Preset",
+                style: { width: "70vw" },
+                breakpoints: { "960px": "75vw", "640px": "90vw" },
+                position: "top",
+                modal: true,
+            },
+            emits: {
+                onSelected: (preset: any) => {
+                    const conversionFactor = metric ? 1 : 1/25.4;
+                    
+                    turningXStart.value = roundParameterValue(preset.xStart, conversionFactor);
+                    turningXEnd.value = roundParameterValue(preset.xEnd, conversionFactor);
+                    turningZStart.value = roundParameterValue(preset.zStart, conversionFactor);
+                    turningZEnd.value = roundParameterValue(preset.zEnd, conversionFactor);
+                    turningFeedRate.value = roundParameterValue(preset.feedRate, conversionFactor);
+                    turningStepDown.value = roundParameterValue(preset.stepDown, conversionFactor);
+                    turningRoughingPasses.value = roundParameterValue(preset.roughingPasses);
+                    turningFinishingAllowance.value = roundParameterValue(preset.finishingAllowance, conversionFactor);
+                    turningTaperAngle.value = roundParameterValue(preset.taperAngle);
+                    turningPresetName.value = preset.name;
+                    updatePitchCallback();
+                },
+            },
+            templates: {},
+            onClose: (options) => {},
+        });
+    }
+
+    // Turning reset
+    function resetTurningParameters() {
+        turningXStart.value = null;
+        turningXEnd.value = null;
+        turningZStart.value = null;
+        turningZEnd.value = null;
+        turningFeedRate.value = null;
+        turningStepDown.value = null;
+        turningRoughingPasses.value = null;
+        turningFinishingAllowance.value = null;
+        turningTaperAngle.value = null;
+        turningPresetName.value = null;
+    }
+
+    // Turning unit conversion
+    function convertTurningParameters(toMetric: boolean) {
+        const conversionFactor = toMetric ? 25.4 : 1/25.4;
+        
+        if (turningXStart.value !== null) turningXStart.value = roundParameterValue(turningXStart.value, conversionFactor);
+        if (turningXEnd.value !== null) turningXEnd.value = roundParameterValue(turningXEnd.value, conversionFactor);
+        if (turningZStart.value !== null) turningZStart.value = roundParameterValue(turningZStart.value, conversionFactor);
+        if (turningZEnd.value !== null) turningZEnd.value = roundParameterValue(turningZEnd.value, conversionFactor);
+        if (turningFeedRate.value !== null) turningFeedRate.value = roundParameterValue(turningFeedRate.value, conversionFactor);
+        if (turningStepDown.value !== null) turningStepDown.value = roundParameterValue(turningStepDown.value, conversionFactor);
+        if (turningFinishingAllowance.value !== null) turningFinishingAllowance.value = roundParameterValue(turningFinishingAllowance.value, conversionFactor);
+        
+        turningPresetName.value = null;
+    }
+
+    // Input handling for turning parameters
+    function setTurningParameter(entryType: TurningEntryType, value: number) {
+        const roundedValue = roundParameterValue(value);
+        
+        switch (entryType) {
+            case TurningEntryType.turningXStart:
+                turningXStart.value = roundedValue;
+                break;
+            case TurningEntryType.turningXEnd:
+                turningXEnd.value = roundedValue;
+                break;
+            case TurningEntryType.turningZStart:
+                turningZStart.value = roundedValue;
+                break;
+            case TurningEntryType.turningZEnd:
+                turningZEnd.value = roundedValue;
+                break;
+            case TurningEntryType.turningFeedRate:
+                turningFeedRate.value = roundedValue;
+                break;
+            case TurningEntryType.turningStepDown:
+                turningStepDown.value = roundedValue;
+                break;
+            case TurningEntryType.turningRoughingPasses:
+                turningRoughingPasses.value = roundedValue;
+                break;
+            case TurningEntryType.turningFinishingAllowance:
+                turningFinishingAllowance.value = roundedValue;
+                break;
+            case TurningEntryType.turningTaperAngle:
+                turningTaperAngle.value = roundedValue;
+                break;
+        }
+        
+        turningPresetName.value = null;
+    }
+
+    function clearTurningParameter(entryType: TurningEntryType) {
+        switch (entryType) {
+            case TurningEntryType.turningXStart:
+                turningXStart.value = null;
+                break;
+            case TurningEntryType.turningXEnd:
+                turningXEnd.value = null;
+                break;
+            case TurningEntryType.turningZStart:
+                turningZStart.value = null;
+                break;
+            case TurningEntryType.turningZEnd:
+                turningZEnd.value = null;
+                break;
+            case TurningEntryType.turningFeedRate:
+                turningFeedRate.value = null;
+                break;
+            case TurningEntryType.turningStepDown:
+                turningStepDown.value = null;
+                break;
+            case TurningEntryType.turningRoughingPasses:
+                turningRoughingPasses.value = null;
+                break;
+            case TurningEntryType.turningFinishingAllowance:
+                turningFinishingAllowance.value = null;
+                break;
+            case TurningEntryType.turningTaperAngle:
+                turningTaperAngle.value = null;
+                break;
+        }
+    }
 }

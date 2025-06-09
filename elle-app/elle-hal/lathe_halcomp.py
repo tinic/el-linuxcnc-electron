@@ -224,6 +224,321 @@ def generate_threading_gcode_core(params, for_backplot=False):
     
     return gcode_lines
 
+
+def generate_turning_gcode_core(params, for_backplot=False):
+    import math
+    
+    # Check if this is NPT threading (has taper angle ~1.79 degrees)
+    taper_angle = float(params.get('TaperAngle', 0))
+    is_npt_thread = abs(taper_angle - 1.79) < 0.1  # NPT threads have 1.79° taper
+    
+    if is_npt_thread:
+        return generate_npt_turning_gcode(params, for_backplot)
+    
+    # Original turning logic for non-NPT operations
+    x_start = float(params['XStart'])
+    x_end = float(params['XEnd'])
+    z_start = float(params['ZStart'])
+    z_end = float(params['ZEnd'])
+    feed_rate = float(params['FeedRate'])
+    step_down = float(params['StepDown'])
+    roughing_passes = int(params['RoughingPasses'])
+    finishing_allowance = float(params['FinishingAllowance'])
+    x_return = float(params['XReturn'])
+    z_return = float(params['ZReturn'])
+    
+    gcode_lines = []
+    
+    # Common setup
+    gcode_lines.append("G8")   # Radius mode
+    gcode_lines.append("G21")  # Metric units
+    gcode_lines.append("G90")  # Absolute positioning
+    gcode_lines.append(f"F{feed_rate}")  # Set feed rate
+    gcode_lines.append("M3S500") # Start spindle
+    
+    # Additional setup for execution (not backplot)
+    if not for_backplot:
+        gcode_lines.append(f"G10 L20 P1 X{float(params['XPos']):.6f} Z{float(params['ZPos']):.6f}")
+        gcode_lines.append("G54")  # Use work coordinates
+    
+    # Move to start point
+    gcode_lines.append(f"G0 X{x_start:.6f} Z{z_start:.6f}")
+    
+    # Calculate total material to remove
+    total_x_removal = abs(x_end - x_start)
+    z_length = abs(z_end - z_start)
+    
+    # Calculate taper ratio (X change per Z unit)
+    taper_ratio = 0.0
+    if z_length > 0:
+        taper_ratio = (x_end - x_start) / (z_end - z_start)
+    
+    # Roughing passes
+    for pass_num in range(1, roughing_passes + 1):
+        gcode_lines.append(f"(Roughing pass {pass_num})")
+        
+        # Calculate current depth (leave finishing allowance on final pass)
+        if pass_num == roughing_passes:
+            current_x = x_end + (finishing_allowance if x_end < x_start else -finishing_allowance)
+        else:
+            depth_fraction = pass_num / roughing_passes
+            current_x = x_start + (total_x_removal - finishing_allowance) * depth_fraction * (1 if x_end > x_start else -1)
+        
+        # Calculate start and end positions for this pass
+        if abs(taper_ratio) > 0.0001:  # Has taper
+            # For tapered cuts, offset the entire taper line by the current depth
+            depth_offset = current_x - x_start
+            current_x_start = x_start + depth_offset
+            current_x_end = x_end + depth_offset
+            current_z_start = z_start
+            current_z_end = z_end
+        else:  # Straight cut
+            current_x_start = current_x
+            current_x_end = current_x
+            current_z_start = z_start
+            current_z_end = z_end
+        
+        # Cut along the taper line (or straight if no taper)
+        gcode_lines.append(f"G1 X{current_x_start:.6f} Z{current_z_start:.6f}")
+        gcode_lines.append(f"G1 X{current_x_end:.6f} Z{current_z_end:.6f}")
+        
+        # Retract - determine pullout direction
+        if abs(taper_ratio) > 0.0001:  # Has taper
+            # Pull out perpendicular to the taper or along Z if very shallow
+            if abs(taper_ratio) < 0.1:  # Very shallow taper - pull out in Z
+                gcode_lines.append(f"G0 Z{z_start:.6f}")
+                gcode_lines.append(f"G0 X{x_start:.6f}")
+            else:  # Steeper taper - pull out perpendicular
+                retract_x = x_start
+                gcode_lines.append(f"G0 X{retract_x:.6f}")
+                gcode_lines.append(f"G0 Z{z_start:.6f}")
+        else:  # Straight cut
+            gcode_lines.append(f"G0 X{x_start:.6f}")
+            gcode_lines.append(f"G0 Z{z_start:.6f}")
+    
+    # Finishing pass
+    if finishing_allowance > 0:
+        gcode_lines.append("(Finishing pass)")
+        
+        # Cut to final position following taper line
+        gcode_lines.append(f"G1 X{x_end:.6f} Z{z_end:.6f}")
+    
+    # Return to safe position
+    gcode_lines.append(f"G0 X{x_return:.6f} Z{z_return:.6f}")
+    
+    return gcode_lines
+
+
+def generate_npt_turning_gcode(params, for_backplot=False):
+    """Generate proper NPT turning G-code using the complete preset specifications"""
+    import math
+    
+    # Extract basic parameters
+    z_start = float(params['ZStart'])
+    z_end = float(params['ZEnd'])
+    feed_rate = float(params['FeedRate'])
+    roughing_passes = int(params['RoughingPasses'])
+    finishing_allowance = float(params['FinishingAllowance'])
+    x_return = float(params['XReturn'])
+    z_return = float(params['ZReturn'])
+    
+    # Determine if external or internal based on preset name
+    preset_name = params.get('PresetName', '')
+    is_external = '-2A' in preset_name
+    is_internal = '-2B' in preset_name
+    
+    gcode_lines = []
+    
+    # Common setup
+    gcode_lines.append("G8")   # Radius mode
+    gcode_lines.append("G21")  # Metric units
+    gcode_lines.append("G90")  # Absolute positioning
+    gcode_lines.append(f"F{feed_rate}")  # Set feed rate
+    gcode_lines.append("M3S500") # Start spindle
+    
+    # Additional setup for execution (not backplot)
+    if not for_backplot:
+        gcode_lines.append(f"G10 L20 P1 X{float(params['XPos']):.6f} Z{float(params['ZPos']):.6f}")
+        gcode_lines.append("G54")  # Use work coordinates
+    
+    # Get the actual taper start and end positions
+    x_start = float(params['XStart'])
+    x_end = float(params['XEnd'])
+    
+    if is_external:
+        # External NPT: Cut from round stock to create external taper
+        stock_diameter = float(params.get('StockDiameter', 20.0))
+        cutting_depth = float(params.get('CuttingDepth', 2.72))
+        
+        gcode_lines.append(f"(External NPT - Stock: {stock_diameter:.1f}mm, Taper: {x_start:.3f} to {x_end:.3f})")
+        
+        # Calculate taper geometry from actual coordinates
+        thread_length = abs(z_end - z_start)
+        taper_per_length = (x_end - x_start) / thread_length
+        
+        # Start from safe position outside stock
+        safe_x = stock_diameter / 2 + 2.0
+        gcode_lines.append(f"G0 X{safe_x:.6f} Z{z_start:.6f}")
+        
+        # Calculate cutting passes
+        total_depth = (stock_diameter / 2) - x_start
+        
+        for pass_num in range(1, roughing_passes + 1):
+            gcode_lines.append(f"(External pass {pass_num})")
+            
+            # Calculate depth for this pass
+            if pass_num == roughing_passes:
+                current_depth = total_depth - finishing_allowance
+            else:
+                current_depth = (pass_num / roughing_passes) * (total_depth - finishing_allowance)
+            
+            # Calculate X positions along taper
+            x_start_pass = stock_diameter / 2 - current_depth
+            x_end_pass = x_start_pass + (thread_length * taper_per_length)
+            
+            # Cut the taper
+            gcode_lines.append(f"G1 X{x_start_pass:.6f} Z{z_start:.6f}")
+            gcode_lines.append(f"G1 X{x_end_pass:.6f} Z{z_end:.6f}")
+            
+            # Retract
+            gcode_lines.append(f"G0 X{safe_x:.6f}")
+            gcode_lines.append(f"G0 Z{z_start:.6f}")
+        
+        # Finishing pass
+        if finishing_allowance > 0:
+            gcode_lines.append("(External finishing pass)")
+            gcode_lines.append(f"G1 X{x_start:.6f} Z{z_start:.6f}")
+            gcode_lines.append(f"G1 X{x_end:.6f} Z{z_end:.6f}")
+    
+    elif is_internal:
+        # Internal NPT: Bore from drilled hole to create internal taper
+        drill_diameter = float(params.get('DrillDiameter', 11.11))
+        boring_depth = float(params.get('BoringDepth', 2.605))
+        
+        gcode_lines.append(f"(Internal NPT - Drill: {drill_diameter:.2f}mm, Taper: {x_start:.3f} to {x_end:.3f})")
+        
+        # Calculate taper geometry from actual coordinates
+        thread_length = abs(z_end - z_start)
+        taper_per_length = (x_end - x_start) / thread_length
+        
+        # Start from drilled hole size
+        start_x = drill_diameter / 2
+        gcode_lines.append(f"G0 X{start_x:.6f} Z{z_start:.6f}")
+        
+        for pass_num in range(1, roughing_passes + 1):
+            gcode_lines.append(f"(Internal pass {pass_num})")
+            
+            # Calculate depth for this pass
+            if pass_num == roughing_passes:
+                current_depth = boring_depth - finishing_allowance
+            else:
+                current_depth = (pass_num / roughing_passes) * (boring_depth - finishing_allowance)
+            
+            # Calculate X positions along taper
+            x_start_pass = drill_diameter / 2 + current_depth
+            x_end_pass = x_start_pass + (thread_length * taper_per_length)
+            
+            # Cut the internal taper
+            gcode_lines.append(f"G1 X{x_start_pass:.6f} Z{z_start:.6f}")
+            gcode_lines.append(f"G1 X{x_end_pass:.6f} Z{z_end:.6f}")
+            
+            # Retract
+            gcode_lines.append(f"G0 X{start_x:.6f}")
+            gcode_lines.append(f"G0 Z{z_start:.6f}")
+        
+        # Finishing pass
+        if finishing_allowance > 0:
+            gcode_lines.append("(Internal finishing pass)")
+            gcode_lines.append(f"G1 X{x_start:.6f} Z{z_start:.6f}")
+            gcode_lines.append(f"G1 X{x_end:.6f} Z{z_end:.6f}")
+    
+    else:
+        # Fallback to basic taper if not clearly external or internal
+        gcode_lines.append("(Basic taper - unknown NPT type)")
+        x_start = float(params['XStart'])
+        x_end = float(params['XEnd'])
+        gcode_lines.append(f"G0 X{x_start:.6f} Z{z_start:.6f}")
+        gcode_lines.append(f"G1 X{x_end:.6f} Z{z_end:.6f}")
+    
+    # Return to safe position
+    gcode_lines.append(f"G0 X{x_return:.6f} Z{z_return:.6f}")
+    
+    return gcode_lines
+
+@app.put("/hal/turning/generate")
+def generate_turning():
+    json_data = request.json
+    
+    if not json_data:
+        return {"status": "Error", "message": "Missing turning parameters"}, 400
+
+    try:
+        gcode_lines = generate_turning_gcode_core(json_data, for_backplot=True)
+        return {
+            "status": "OK", 
+            "message": "Turning G-code generated",
+            "gcode": gcode_lines
+        }
+        
+    except Exception as e:
+        error_msg = f"Error generating turning G-code: {str(e)}"
+        return {"status": "Error", "message": error_msg}, 500
+
+
+@app.put("/hal/turning")
+def execute_turning():
+    json_data = request.json
+    
+    if not json_data:
+        return {"status": "Error", "message": "Missing turning parameters"}, 400
+
+    c.state(linuxcnc.STATE_ON)
+    c.wait_complete()
+
+    try:
+        s = linuxcnc.stat()
+        while True:
+            s.poll()
+            if s.estop:
+                return {"status": "Error", "message": "Machine is in ESTOP state"}, 400
+            if not s.enabled:
+                return {"status": "Error", "message": "Machine is not enabled"}, 400
+            if not s.homed:
+                return {"status": "Error", "message": "Machine is not homed"}, 400
+            if s.interp_state != linuxcnc.INTERP_IDLE:
+                return {"status": "Error", "message": "Interpreter is not idle"}, 400
+            if s.task_mode != linuxcnc.MODE_MDI:
+                c.mode(linuxcnc.MODE_MDI)
+                time.sleep(0.1)
+                continue
+            break
+        c.wait_complete()
+
+        gcode_lines = generate_turning_gcode_core(json_data, for_backplot=False)
+        
+        ngc_filename = "canned-cycle.ngc"
+        ngc_path = os.path.join(os.getcwd(), ngc_filename)
+        
+        with open(ngc_path, 'w') as f:
+            f.write("o<canned-cycle> sub\n")
+            for line in gcode_lines:
+                f.write(f"{line}\n")
+            f.write("o<canned-cycle> endsub\n")
+        
+        c.mdi("o<canned-cycle> call")
+        
+        return {
+            "status": "OK", 
+            "message": "Turning cycle started",
+            "gcode": gcode_lines,
+            "subroutine_file": ngc_filename
+        }
+        
+    except Exception as e:
+        error_msg = f"Error executing turning subroutine: {str(e)}"
+        return {"status": "Error", "message": error_msg}, 500
+
+
 @app.put("/hal/threading/generate")
 def generate_threading():
     json_data = request.json

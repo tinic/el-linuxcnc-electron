@@ -4,16 +4,13 @@ import { useDialog } from "primevue/usedialog";
 import Popover from "primevue/popover";
 import Dialog from "primevue/dialog";
 import { Camera, Renderer, RendererPublicInterface, Scene } from "troisjs";
-import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
 import Numpad from "./components/Numpad.vue";
 import DRODisplay from "./components/DRODisplay.vue";
-import ThreadPresetSelector from "./components/ThreadPresetSelector.vue";
 import OperationPreview from "./components/OperationPreview.vue";
 import Backplot from "./Backplot";
 import { useHAL } from "./composables/useHAL";
-import { useCannedCycles, ThreadingEntryType } from "./composables/useCannedCycles";
+import { useCannedCycles, ThreadingEntryType, TurningEntryType } from "./composables/useCannedCycles";
 
 enum EntryType {
   xPosition = 1,
@@ -46,6 +43,8 @@ const {
   putEmergencyStop,
   putThreading,
   generateThreadingGcode,
+  putTurning,
+  generateTurningGcode,
   cleanupCannedCycles,
   startPoll,
   endPoll,
@@ -80,18 +79,35 @@ const {
   threadPresetName,
   threadDiameter,
   threadingPopovers,
-  currentPopoverLabel,
   threadingDescriptions,
-  roundThreadValue,
-  formatForLinuxCNC,
   showLabelPopover,
+  showTurningLabelPopover,
   validateThreadingParameters,
   generateThreadingParams,
   openThreadPresetDialog,
   resetThreadingParameters,
   convertThreadingParameters,
   setThreadingParameter,
-  clearThreadingParameter
+  clearThreadingParameter,
+  turningXStart,
+  turningXEnd,
+  turningZStart,
+  turningZEnd,
+  turningFeedRate,
+  turningStepDown,
+  turningRoughingPasses,
+  turningFinishingAllowance,
+  turningTaperAngle,
+  turningPresetName,
+  turningPopovers,
+  turningDescriptions,
+  validateTurningParameters,
+  generateTurningParams,
+  openTurningPresetDialog,
+  resetTurningParameters,
+  convertTurningParameters,
+  setTurningParameter,
+  clearTurningParameter
 } = useCannedCycles();
 
 
@@ -211,24 +227,17 @@ const selectedDirectionMode = ref(DirectionMode.forward);
 enum CannedCycle {
   none = 0,
   threading = 1,
-  placeholder2 = 2,
+  turning = 2,
   placeholder3 = 3,
   placeholder4 = 4,
 }
 const selectedCannedCycle = ref(CannedCycle.none);
-
-
 
 // Operation Preview state
 const showOperationPreview = ref(false);
 const showBackplot = ref(false);
 const currentOperation = ref<any>(null);
 const pendingOperationExecution = ref<(() => void) | null>(null);
-
-
-
-
-
 
 const menuItems = ref([
   { separator: true },
@@ -306,11 +315,20 @@ const numberClicked = (entry: number, value: number) => {
     case ThreadingEntryType.threadZPullout:
     case ThreadingEntryType.threadFirstCut:
     case ThreadingEntryType.threadMinCut:
+    case TurningEntryType.turningXStart:
+    case TurningEntryType.turningXEnd:
+    case TurningEntryType.turningZStart:
+    case TurningEntryType.turningZEnd:
+    case TurningEntryType.turningFeedRate:
+    case TurningEntryType.turningStepDown:
+    case TurningEntryType.turningFinishingAllowance:
+    case TurningEntryType.turningTaperAngle:
     numberentry.value = numbersPrevious = metric.value ? value : value / 25.4;
     break;
     case EntryType.aPosition:
     case ThreadingEntryType.threadCutMult:
     case ThreadingEntryType.threadSpringCuts:
+    case TurningEntryType.turningRoughingPasses:
     numberentry.value = numbersPrevious = value;
     break;
   }
@@ -363,6 +381,14 @@ function setFinalNumber(value: number) {
     case ThreadingEntryType.threadZPullout:
     case ThreadingEntryType.threadFirstCut:
     case ThreadingEntryType.threadMinCut:
+    case TurningEntryType.turningXStart:
+    case TurningEntryType.turningXEnd:
+    case TurningEntryType.turningZStart:
+    case TurningEntryType.turningZEnd:
+    case TurningEntryType.turningFeedRate:
+    case TurningEntryType.turningStepDown:
+    case TurningEntryType.turningFinishingAllowance:
+    case TurningEntryType.turningTaperAngle:
     if (!metric.value) {
       value = value * 25.4;
     }
@@ -370,6 +396,7 @@ function setFinalNumber(value: number) {
     case EntryType.aPosition:
     case ThreadingEntryType.threadCutMult:
     case ThreadingEntryType.threadSpringCuts:
+    case TurningEntryType.turningRoughingPasses:
     break;
   }
   switch (entryActive.value) {
@@ -425,6 +452,35 @@ function setFinalNumber(value: number) {
       break;
     case ThreadingEntryType.threadSpringCuts:
       setThreadingParameter(ThreadingEntryType.threadSpringCuts, value);
+      break;
+    case TurningEntryType.turningXStart:
+      setTurningParameter(TurningEntryType.turningXStart, value);
+      updatePitchFromTurning();
+      break;
+    case TurningEntryType.turningXEnd:
+      setTurningParameter(TurningEntryType.turningXEnd, value);
+      break;
+    case TurningEntryType.turningZStart:
+      setTurningParameter(TurningEntryType.turningZStart, value);
+      break;
+    case TurningEntryType.turningZEnd:
+      setTurningParameter(TurningEntryType.turningZEnd, value);
+      break;
+    case TurningEntryType.turningFeedRate:
+      setTurningParameter(TurningEntryType.turningFeedRate, value);
+      updatePitchFromTurning();
+      break;
+    case TurningEntryType.turningStepDown:
+      setTurningParameter(TurningEntryType.turningStepDown, value);
+      break;
+    case TurningEntryType.turningRoughingPasses:
+      setTurningParameter(TurningEntryType.turningRoughingPasses, value);
+      break;
+    case TurningEntryType.turningFinishingAllowance:
+      setTurningParameter(TurningEntryType.turningFinishingAllowance, value);
+      break;
+    case TurningEntryType.turningTaperAngle:
+      setTurningParameter(TurningEntryType.turningTaperAngle, value);
       break;
   }
   numpadInputStage = NumpadInputStage.none;
@@ -498,6 +554,33 @@ const numPadClicked = (key: string) => {
             break;
           case ThreadingEntryType.threadSpringCuts:
             clearThreadingParameter(ThreadingEntryType.threadSpringCuts);
+            break;
+          case TurningEntryType.turningXStart:
+            clearTurningParameter(TurningEntryType.turningXStart);
+            break;
+          case TurningEntryType.turningXEnd:
+            clearTurningParameter(TurningEntryType.turningXEnd);
+            break;
+          case TurningEntryType.turningZStart:
+            clearTurningParameter(TurningEntryType.turningZStart);
+            break;
+          case TurningEntryType.turningZEnd:
+            clearTurningParameter(TurningEntryType.turningZEnd);
+            break;
+          case TurningEntryType.turningFeedRate:
+            clearTurningParameter(TurningEntryType.turningFeedRate);
+            break;
+          case TurningEntryType.turningStepDown:
+            clearTurningParameter(TurningEntryType.turningStepDown);
+            break;
+          case TurningEntryType.turningRoughingPasses:
+            clearTurningParameter(TurningEntryType.turningRoughingPasses);
+            break;
+          case TurningEntryType.turningFinishingAllowance:
+            clearTurningParameter(TurningEntryType.turningFinishingAllowance);
+            break;
+          case TurningEntryType.turningTaperAngle:
+            clearTurningParameter(TurningEntryType.turningTaperAngle);
             break;
         }
         numpadInputStage = NumpadInputStage.none;
@@ -760,8 +843,6 @@ const touchStop = () => {
   stopJogNow();
 };
 
-
-
 watch([selectedFeedMode, selectedDirectionMode], () => {
   updateHALOut(selectedFeedMode, selectedDirectionMode, FeedMode, DirectionMode);
 });
@@ -963,9 +1044,118 @@ const threadMetricClicked = () => {
   treatOffClickAsEnter();
   metric.value = !metric.value;
   
-  // Convert threading values using composable function
+  // Always convert both threading and turning parameters
   convertThreadingParameters(metric.value);
-  updatePitchFromThread();
+  convertTurningParameters(metric.value);
+  
+  // Update displays based on active cycle
+  if (selectedCannedCycle.value === CannedCycle.threading) {
+    updatePitchFromThread();
+  } else if (selectedCannedCycle.value === CannedCycle.turning) {
+    updatePitchFromTurning();
+  }
+};
+
+// Turning cycle handlers
+const turningStartClicked = async () => {
+  treatOffClickAsEnter();
+  entryActive.value = 0;
+  
+  // Validate and execute turning using composable
+  const errors = validateTurningParameters();
+  if (errors.length > 0) {
+    console.log("Turning validation errors:", errors);
+    return;
+  }
+  
+  // Get HAL positions and generate turning operation
+  try {
+    const halIn = await getHalIn();
+    const currentXPos = (halIn as any).position_x - getAxisOffset('x');
+    const currentZPos = (halIn as any).position_z - getAxisOffset('z');
+    const currentAPos = (halIn as any).position_a - getAxisOffset('a');
+    const params = generateTurningParams(currentXPos, currentZPos, currentAPos);
+    
+    // Generate G-code for preview
+    const result = await generateTurningGcode(params);
+    if (result && result.gcode) {
+      // Create G-code string for backplot
+      const gcodeString = result.gcode.join('\n');
+      const gcodeBase64 = btoa(gcodeString);
+      
+      // Send to backplot generator
+      const backplotData = await putLinuxCNC("backplot", { gcode: gcodeBase64 });
+      if (backplotData) {
+        // Create operation data for preview
+        const operationData = {
+          name: "Turning Operation",
+          type: "turning",
+          parameters: {
+            XStart: turningXStart.value,
+            XEnd: turningXEnd.value,
+            ZStart: turningZStart.value,
+            ZEnd: turningZEnd.value,
+            FeedRate: turningFeedRate.value,
+            StepDown: turningStepDown.value,
+            RoughingPasses: turningRoughingPasses.value,
+            FinishingAllowance: turningFinishingAllowance.value,
+            TaperAngle: turningTaperAngle.value
+          },
+          gcode: result.gcode,
+          backplotData: backplotData
+        };
+        
+        // Show preview dialog with callback to execute turning
+        const putTurningCallback = () => {
+          putTurning(params);
+        };
+        
+        showOperationPreviewDialog(operationData, putTurningCallback);
+      }
+    }
+  } catch (error) {
+    console.error("Error starting turning cycle:", error);
+  }
+};
+
+const turningStopClicked = () => {
+  treatOffClickAsEnter();
+  entryActive.value = 0;
+  
+  // Abort current operation (gentler than emergency stop)
+  putAbort();
+  cleanupCannedCycles();
+};
+
+const turningResetClicked = () => {
+  treatOffClickAsEnter();
+  entryActive.value = 0;
+  
+  // Hide backplot
+  showBackplot.value = false;
+  
+  // Reset all turning parameters using composable function
+  resetTurningParameters();
+  updatePitchFromTurning();
+};
+
+const updatePitchFromTurning = () => {
+  // Update feed rate display for turning
+  if (turningFeedRate.value !== null) {
+    zpitch.value = Math.abs(turningFeedRate.value);
+    if (metric.value) {
+      zpitchlabel.value = `${turningFeedRate.value}mm/min`;
+    } else {
+      zpitchlabel.value = `${turningFeedRate.value}in/min`;
+    }
+  } else {
+    zpitchlabel.value = "…";
+  }
+  
+  // Minimal cross feed for turning
+  xpitch.value = 0.001;
+  xpitchlabel.value = "Turn";
+  xpitchangle.value = 0;
 };
 
 onMounted(async () => {
@@ -1343,18 +1533,18 @@ onUnmounted(() => {
             </span>
           </button>
           <button
-            @click="cannedCycleClicked(CannedCycle.placeholder2)"
+            @click="cannedCycleClicked(CannedCycle.turning)"
             size="large"
             class="col-12 dro-font-mode button-mode p-3 m-1"
           >
             <span class="flex flex-row align-items-center">
               <i
-                v-if="selectedCannedCycle == CannedCycle.placeholder2"
+                v-if="selectedCannedCycle == CannedCycle.turning"
                 class="pi pi-circle-fill mr-3"
                 style="color: #ff0000"
               />
               <i v-else class="pi pi-circle mr-3" />
-              Placeholder 2
+              Turning
             </span>
           </button>
           <button
@@ -1621,6 +1811,194 @@ onUnmounted(() => {
           </Popover>
           <Popover :ref="(el) => threadingPopovers['SC'] = el" class="threading-popover">
             <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ threadingDescriptions['SC'] }}</div>
+          </Popover>
+        </div>
+        
+        <!-- Turning Cycle Panel -->
+        <div v-if="selectedCannedCycle == CannedCycle.turning" class="divider-vertical"></div>
+        <div v-if="selectedCannedCycle == CannedCycle.turning" class="flex flex-column dro-font-mode p-1" style="width: 43em;">
+          <div class="grid grid-nogutter flex-none">
+            <div class="col-12 align-content-center mb-2">
+              Turning{{ turningPresetName ? ` - ${turningPresetName}` : '' }}
+            </div>
+            
+            <!-- Row 1: X Start, X End -->
+            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'XS')">XS</div>
+            <div class="col-4 p-1">
+              <button
+                @click="numberClicked(TurningEntryType.turningXStart, turningXStart || 0)"
+                :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningXStart && turningXStart === null }]"
+                :style="{ backgroundColor: entryActive == TurningEntryType.turningXStart ? '#666' : '#333' }"
+                :title="entryActive == TurningEntryType.turningXStart ? String(numberentry) : String(turningXStart ?? 'X Start')"
+              >
+                {{ entryActive == TurningEntryType.turningXStart ? numberentry : (turningXStart ?? 'X Start') }}
+              </button>
+            </div>
+            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'XE')">XE</div>
+            <div class="col-4 p-1">
+              <button
+                @click="numberClicked(TurningEntryType.turningXEnd, turningXEnd || 0)"
+                :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningXEnd && turningXEnd === null }]"
+                :style="{ backgroundColor: entryActive == TurningEntryType.turningXEnd ? '#666' : '#333' }"
+                :title="entryActive == TurningEntryType.turningXEnd ? String(numberentry) : String(turningXEnd ?? 'X End')"
+              >
+                {{ entryActive == TurningEntryType.turningXEnd ? numberentry : (turningXEnd ?? 'X End') }}
+              </button>
+            </div>
+            <div class="col-2 p-0"></div>
+            
+            <!-- Row 2: Z Start, Z End -->
+            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'ZS')">ZS</div>
+            <div class="col-4 p-1">
+              <button
+                @click="numberClicked(TurningEntryType.turningZStart, turningZStart || 0)"
+                :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningZStart && turningZStart === null }]"
+                :style="{ backgroundColor: entryActive == TurningEntryType.turningZStart ? '#666' : '#333' }"
+                :title="entryActive == TurningEntryType.turningZStart ? String(numberentry) : String(turningZStart ?? 'Z Start')"
+              >
+                {{ entryActive == TurningEntryType.turningZStart ? numberentry : (turningZStart ?? 'Z Start') }}
+              </button>
+            </div>
+            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'ZE')">ZE</div>
+            <div class="col-4 p-1">
+              <button
+                @click="numberClicked(TurningEntryType.turningZEnd, turningZEnd || 0)"
+                :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningZEnd && turningZEnd === null }]"
+                :style="{ backgroundColor: entryActive == TurningEntryType.turningZEnd ? '#666' : '#333' }"
+                :title="entryActive == TurningEntryType.turningZEnd ? String(numberentry) : String(turningZEnd ?? 'Z End')"
+              >
+                {{ entryActive == TurningEntryType.turningZEnd ? numberentry : (turningZEnd ?? 'Z End') }}
+              </button>
+            </div>
+            <div class="col-2 p-0"></div>
+            
+            <!-- Row 3: Feed Rate, Step Down -->
+            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'F')">F</div>
+            <div class="col-4 p-1">
+              <button
+                @click="numberClicked(TurningEntryType.turningFeedRate, turningFeedRate || 0)"
+                :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningFeedRate && turningFeedRate === null }]"
+                :style="{ backgroundColor: entryActive == TurningEntryType.turningFeedRate ? '#666' : '#333' }"
+                :title="entryActive == TurningEntryType.turningFeedRate ? String(numberentry) : String(turningFeedRate ?? 'Feed Rate')"
+              >
+                {{ entryActive == TurningEntryType.turningFeedRate ? numberentry : (turningFeedRate ?? 'Feed Rate') }}
+              </button>
+            </div>
+            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'SD')">SD</div>
+            <div class="col-4 p-1">
+              <button
+                @click="numberClicked(TurningEntryType.turningStepDown, turningStepDown || 0)"
+                :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningStepDown && turningStepDown === null }]"
+                :style="{ backgroundColor: entryActive == TurningEntryType.turningStepDown ? '#666' : '#333' }"
+                :title="entryActive == TurningEntryType.turningStepDown ? String(numberentry) : String(turningStepDown ?? 'Step Down')"
+              >
+                {{ entryActive == TurningEntryType.turningStepDown ? numberentry : (turningStepDown ?? 'Step Down') }}
+              </button>
+            </div>
+            <div class="col-2 p-0"></div>
+            
+            <!-- Row 4: Roughing Passes, Finishing Allowance -->
+            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'RP')">RP</div>
+            <div class="col-4 p-1">
+              <button
+                @click="numberClicked(TurningEntryType.turningRoughingPasses, turningRoughingPasses || 0)"
+                :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningRoughingPasses && turningRoughingPasses === null }]"
+                :style="{ backgroundColor: entryActive == TurningEntryType.turningRoughingPasses ? '#666' : '#333' }"
+                :title="entryActive == TurningEntryType.turningRoughingPasses ? String(numberentry) : String(turningRoughingPasses ?? 'Roughing Passes')"
+              >
+                {{ entryActive == TurningEntryType.turningRoughingPasses ? numberentry : (turningRoughingPasses ?? 'Roughing Passes') }}
+              </button>
+            </div>
+            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'FA')">FA</div>
+            <div class="col-4 p-1">
+              <button
+                @click="numberClicked(TurningEntryType.turningFinishingAllowance, turningFinishingAllowance || 0)"
+                :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningFinishingAllowance && turningFinishingAllowance === null }]"
+                :style="{ backgroundColor: entryActive == TurningEntryType.turningFinishingAllowance ? '#666' : '#333' }"
+                :title="entryActive == TurningEntryType.turningFinishingAllowance ? String(numberentry) : String(turningFinishingAllowance ?? 'Finishing Allowance')"
+              >
+                {{ entryActive == TurningEntryType.turningFinishingAllowance ? numberentry : (turningFinishingAllowance ?? 'Finishing Allowance') }}
+              </button>
+            </div>
+            <div class="col-2 p-0"></div>
+            
+            <!-- Row 5: Taper Angle -->
+            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'TA')">TA</div>
+            <div class="col-4 p-1">
+              <button
+                @click="numberClicked(TurningEntryType.turningTaperAngle, turningTaperAngle || 0)"
+                :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningTaperAngle && turningTaperAngle === null }]"
+                :style="{ backgroundColor: entryActive == TurningEntryType.turningTaperAngle ? '#666' : '#333' }"
+                :title="entryActive == TurningEntryType.turningTaperAngle ? String(numberentry) : String(turningTaperAngle ?? 'Taper Angle')"
+              >
+                {{ entryActive == TurningEntryType.turningTaperAngle ? numberentry : (turningTaperAngle ?? 'Taper Angle') }}
+              </button>
+            </div>
+            <div class="col-7 p-0"></div>
+          </div>
+          
+          <!-- Spacer to push buttons to bottom -->
+          <div class="flex-grow-1"></div>
+          
+          <!-- Buttons -->
+          <div class="flex justify-content-center gap-2 p-1">
+            <button
+              @click="openTurningPresetDialog(metric, updatePitchFromTurning)"
+              class="dro-font-mode button-mode p-2"
+              style="background: #555; color: #ffffff; width: 3em;"
+            >
+              ...
+            </button>
+            <button
+              @click="turningResetClicked"
+              class="dro-font-mode button-mode p-2"
+              style="background: #555; color: #ffffff; width: 6em;"
+            >
+              Reset
+            </button>
+            <button
+              @click="turningStartClicked"
+              class="dro-font-mode button-mode p-2"
+              style="background: #22c55e; color: #ffffff; width: 6em;"
+            >
+              ⏵ Start
+            </button>
+            <button
+              @click="turningStopClicked"
+              class="dro-font-mode button-mode p-2"
+              style="background: #ef4444; color: #ffffff; width: 6em;"
+            >
+              ⏹ Stop
+            </button>
+          </div>
+          
+          <!-- Turning Label Popovers -->
+          <Popover :ref="(el) => turningPopovers['XS'] = el" class="turning-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ turningDescriptions['XS'] }}</div>
+          </Popover>
+          <Popover :ref="(el) => turningPopovers['XE'] = el" class="turning-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ turningDescriptions['XE'] }}</div>
+          </Popover>
+          <Popover :ref="(el) => turningPopovers['ZS'] = el" class="turning-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ turningDescriptions['ZS'] }}</div>
+          </Popover>
+          <Popover :ref="(el) => turningPopovers['ZE'] = el" class="turning-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ turningDescriptions['ZE'] }}</div>
+          </Popover>
+          <Popover :ref="(el) => turningPopovers['F'] = el" class="turning-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ turningDescriptions['F'] }}</div>
+          </Popover>
+          <Popover :ref="(el) => turningPopovers['SD'] = el" class="turning-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ turningDescriptions['SD'] }}</div>
+          </Popover>
+          <Popover :ref="(el) => turningPopovers['RP'] = el" class="turning-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ turningDescriptions['RP'] }}</div>
+          </Popover>
+          <Popover :ref="(el) => turningPopovers['FA'] = el" class="turning-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ turningDescriptions['FA'] }}</div>
+          </Popover>
+          <Popover :ref="(el) => turningPopovers['TA'] = el" class="turning-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ turningDescriptions['TA'] }}</div>
           </Popover>
         </div>
       </div>
