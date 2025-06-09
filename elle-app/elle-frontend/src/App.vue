@@ -10,6 +10,7 @@ import DRODisplay from "./components/DRODisplay.vue";
 import OperationPreview from "./components/OperationPreview.vue";
 import { useHAL } from "./composables/useHAL";
 import { useCannedCycles, ThreadingEntryType, TurningEntryType } from "./composables/useCannedCycles";
+import { useSettings } from "./composables/useSettings";
 
 enum EntryType {
   xPosition = 1,
@@ -163,45 +164,16 @@ const numberentry = ref(0);
 const xpitchlabel = ref("…");
 const zpitchlabel = ref("…");
 const xpitchangle = ref(0);
-const metric = ref(true);
-const diameterMode = ref(false);
-const defaultMetricOnStartup = ref(true);
-const isQuitting = ref(false);
+// Get settings from composable
+const {
+  metric,
+  diameterMode,
+  defaultMetricOnStartup,
+  isQuitting,
+  loadSettings,
+  saveSettings,
+} = useSettings();
 
-// Settings functions
-const loadSettings = async () => {
-  var userAgent = navigator.userAgent.toLowerCase();
-  if (userAgent.indexOf(" electron/") > -1) {
-    try {
-      if (window.settings && window.settings.get) {
-        const settings = await window.settings.get();
-        diameterMode.value = settings.diameterMode;
-        defaultMetricOnStartup.value = settings.defaultMetricOnStartup;
-        metric.value = settings.defaultMetricOnStartup;
-      } else {
-        console.error("window.settings is not available");
-      }
-    } catch (error) {
-      console.error("Failed to load settings:", error);
-    }
-  }
-};
-
-const saveSettings = async () => {
-  if (isQuitting.value) return; // Don't save settings when quitting
-  
-  var userAgent = navigator.userAgent.toLowerCase();
-  if (userAgent.indexOf(" electron/") > -1) {
-    try {
-      await window.settings.save({
-        diameterMode: diameterMode.value,
-        defaultMetricOnStartup: defaultMetricOnStartup.value,
-      });
-    } catch (error) {
-      console.error("Failed to save settings:", error);
-    }
-  }
-};
 const cursorpos = ref(0);
 
 
@@ -827,10 +799,6 @@ watch(selectedMenu, () => {
   scheduleHALOut();
 });
 
-// Watch settings and save them when they change
-watch([diameterMode, defaultMetricOnStartup], () => {
-  saveSettings();
-});
 
 const PitchPresetSelector = defineAsyncComponent(
   () => import("./components/PitchPresetSelector.vue")
