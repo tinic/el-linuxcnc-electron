@@ -119,7 +119,7 @@
       }
     ],
     "directories": {
-      "buildResources": "assets",
+      "buildResources": "elle-electron/assets",
       "output": "build"
     }
   }

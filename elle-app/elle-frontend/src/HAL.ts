@@ -26,7 +26,6 @@ export interface HalIn {
   speed_rps: number;
 }
 
-
 export async function putThreading(threadingParams: Object) {
   try {
     const response = await fetch(threadingURL, {
