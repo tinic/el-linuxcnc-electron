@@ -7,7 +7,7 @@ The UI is primarily designed for touch screens, keyboard is not required. Where 
 
 The application operates in two modes: Manual and Canned Cycle which can be switched at will. Both share a single coordinate system which can be set up in manual mode and is picked up by the canned cycles. 
 
-More features:
+## More features:
 
 - Diameter and Radius mode are suported. 
 - mm and inch can be switched on the fly. All numbers in the interface are updated dynamically.
@@ -49,3 +49,38 @@ More features:
 - `yarn start`: Start the development server and the electron app. Will also start linuxcnc + hal backend once the app is up and running.
 - `yarn build`: Build the application.
 - `yarn app:build`: Build the application for production.
+
+## Hardware Requirements
+- LinuxCNC real-time kernel (PREEMPT_RT or RTAI)
+- Encoder feedback on spindle (quadrature A/B signals)
+- Stepper drivers for X/Z axes with step/direction interface
+- Touch screen (minimum 1024x768, 10" recommended)
+
+## Development Setup
+- LinuxCNC 2.8+ required for HAL component compatibility
+- Python 3.8+ with Flask, waitress, linuxcnc modules
+- Node.js 16+ for Vue/Electron development
+- Real-time kernel for accurate timing
+- Non-realtime and Real-time thread pinned to specific cores. See rt_setup.sh.
+
+## System Architecture
+- Frontend: Vue3 SPA running in Electron renderer process
+- Backend: Python Flask REST API (port 8000) interfacing with LinuxCNC HAL
+- HAL Integration: Custom HAL component (`lathe_halcomp.py`) bridges REST API to real-time HAL pins
+- Communication: HTTP REST at 30Hz for position updates, immediate for commands
+- Coordinate System: Single work coordinate system shared between manual and canned cycle modes
+
+## HAL REST API Endpoints
+- `GET /hal/hal_in`: Position and status data (30Hz polling)
+- `PUT /hal/hal_out`: Control commands (pitch, enable, direction)
+- `PUT /hal/threading`: Execute threading cycle
+- `PUT /hal/threading/generate`: Generate G-code preview for backplot
+- `PUT /hal/abort`: Abort current operation
+...
+
+## Important Behaviors
+- Position updates are relative to user-set work coordinates
+- Threading cycles use G33 synchronized moves requiring spindle encoder
+- Manual mode allows electronic leadscrew with configurable pitch ratios
+- Emergency stop preserves work coordinate system
+- All measurements displayed in current unit system (mm/inch toggle)
