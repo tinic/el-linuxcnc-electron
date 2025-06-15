@@ -116,29 +116,8 @@ const setupBackplot = () => {
     renderer.renderer.setSize(containerElement.clientWidth, containerElement.clientHeight);
   }
   
-  // Clear existing scene and dispose of resources
+  // Clear existing scene
   if (renderer.scene) {
-    renderer.scene.traverse((object) => {
-      if (object instanceof THREE.Sprite) {
-        // Dispose of sprite material and texture
-        const material = object.material as THREE.SpriteMaterial;
-        if (material.map) {
-          material.map.dispose();
-        }
-        material.dispose();
-      }
-      if (object instanceof THREE.LineSegments || object instanceof THREE.Line) {
-        // Dispose of line geometry and material
-        if (object.geometry) object.geometry.dispose();
-        if (object.material) {
-          if (Array.isArray(object.material)) {
-            object.material.forEach(mat => mat.dispose());
-          } else {
-            object.material.dispose();
-          }
-        }
-      }
-    });
     renderer.scene.clear();
   }
   
@@ -148,7 +127,8 @@ const setupBackplot = () => {
   
   if (extents && extents.length >= 6) {
     const [xmin, ymin, zmin, xmax, ymax, zmax] = extents;
-    
+
+/*
     // Create bounding box
     const boxGeometry = new THREE.BoxGeometry(
       Math.abs(xmax - xmin),
@@ -164,107 +144,63 @@ const setupBackplot = () => {
       (zmin + zmax) / 2
     );
     renderer.scene?.add(box);
-    
-    // Add coordinate labels at bounding box corners
-    const addCornerLabels = () => {
-      // Function to convert normalized coordinates back to original coordinates
-      const toOriginalCoords = (normX: number, normY: number, normZ: number) => {
-        if (!backplotData.transform) {
-          return { x: normX, y: normY, z: normZ };
-        }
-        
+  */  
+    // Create cross marker at starting position (without lead-in)
+    const createStartingPositionCross = () => {
+      const params = props.operation.parameters;
+      
+      // Get the actual starting position from operation parameters
+      let startX = 0;
+      let startZ = 0;
+      
+      if (params.Stock && params.Target) {
+        // For turning operations, start at stock diameter
+        startX = parseFloat(params.Stock);
+        startZ = 0; // Turning always starts at Z=0
+      } else if (params.XStart && params.ZStart) {
+        // For threading operations
+        startX = parseFloat(params.XStart);
+        startZ = parseFloat(params.ZStart);
+      }
+      
+      // Transform to normalized coordinates (same transform as backend)
+      if (backplotData.transform) {
         const transform = backplotData.transform;
         const [centerX, centerY, centerZ] = transform.center;
         const scaleFactor = transform.scale_factor;
         
-        // The backend swapped coordinates: normX is originalZ, normZ is originalX
-        // So to get back to original coordinates:
-        const originalX = (normZ / scaleFactor + centerX);
-        const originalY = (normY / scaleFactor + centerY); 
-        const originalZ = (normX / scaleFactor + centerZ);
+        // Apply same coordinate transformation as backend: X,Y,Z -> Z,Y,X
+        const normX = (startZ - centerZ) * scaleFactor; // startZ becomes normX
+        const normY = (0 - centerY) * scaleFactor;      // Y is always 0 for lathe
+        const normZ = (startX - centerX) * scaleFactor; // startX becomes normZ
         
-        return { x: originalX, y: originalY, z: originalZ };
-      };
-      
-      // Corner coordinates (normalized)
-      const normalizedCorners = [
-        { x: xmin, y: ymin, z: zmin },
-        { x: xmax, y: ymin, z: zmin },
-        { x: xmin, y: ymax, z: zmin },
-        { x: xmax, y: ymax, z: zmin },
-        { x: xmin, y: ymin, z: zmax },
-        { x: xmax, y: ymin, z: zmax },
-        { x: xmin, y: ymax, z: zmax },
-        { x: xmax, y: ymax, z: zmax }
-      ];
-      
-      // Convert to original coordinates and create labels
-      const corners = normalizedCorners.map(corner => {
-        const original = toOriginalCoords(corner.x, corner.y, corner.z);
-        return {
-          x: corner.x,
-          y: corner.y,
-          z: corner.z,
-          label: `X${original.x.toFixed(2)} Z${original.z.toFixed(2)}`  // Only show X and Z for lathe
-        };
-      });
-      
-      
-      corners.forEach((corner) => {
-        // Create a separate canvas for each label to avoid texture sharing issues
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        canvas.width = 256;
-        canvas.height = 64;
+        // Create cross geometry
+        const crossSize = 0.1;
+        const crossGeometry = new THREE.BufferGeometry();
+        const crossVertices = new Float32Array([
+          // Horizontal line
+          normX - crossSize, normY, normZ,
+          normX + crossSize, normY, normZ,
+          // Vertical line
+          normX, normY, normZ - crossSize,
+          normX, normY, normZ + crossSize
+        ]);
+        crossGeometry.setAttribute('position', new THREE.BufferAttribute(crossVertices, 3));
         
-        if (context) {
-          // Set font and style
-          context.font = '16px iosevka, monospace';
-          context.fillStyle = '#ffffff';
-          context.textAlign = 'center';
-          context.textBaseline = 'middle';
-          
-          // Flip the canvas vertically to correct text orientation
-          context.save();
-          context.scale(1, -1);
-          context.translate(0, -canvas.height);
-          
-          // Draw text
-          context.fillText(corner.label, canvas.width / 2, canvas.height / 2);
-          
-          context.restore();
-          
-          // Create texture from canvas
-          const texture = new THREE.CanvasTexture(canvas);
-          texture.generateMipmaps = false;
-          texture.minFilter = THREE.LinearFilter;
-          texture.magFilter = THREE.LinearFilter;
-          texture.flipY = false;
-          
-          // Create sprite material
-          const spriteMaterial = new THREE.SpriteMaterial({
-            map: texture,
-            transparent: true,
-            alphaTest: 0.1,
-            depthTest: false,
-            depthWrite: false
-          });
-          
-          // Create sprite
-          const sprite = new THREE.Sprite(spriteMaterial);
-          sprite.position.set(corner.x, corner.y, corner.z);
-          
-          // Scale sprite 5 times larger
-          const scale = 0.5;
-          sprite.scale.set(scale, scale * 0.25, 1);
-          
-          // Add sprite to scene
-          renderer.scene?.add(sprite);
-        }
-      });
+        const crossMaterial = new THREE.LineBasicMaterial({ 
+          color: 0xff0000, // Bright red
+          linewidth: 3,
+          depthTest: false,
+          depthWrite: false
+        });
+        
+        const cross = new THREE.LineSegments(crossGeometry, crossMaterial);
+        cross.renderOrder = 3000; // Render on top of everything
+        renderer.scene?.add(cross);
+      }
     };
     
-    addCornerLabels();
+    createStartingPositionCross();
     
     // Create unique materials for each line to avoid sharing issues
     const lines: { line: THREE.Line, entryType: string, materials: { future: THREE.LineBasicMaterial, active: THREE.LineBasicMaterial, completed: THREE.LineBasicMaterial } }[] = [];

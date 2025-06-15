@@ -36,6 +36,7 @@ interface Props {
   metric: boolean;
   cursorpos: number;
   diameterMode: boolean;
+  showXPitch: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -56,6 +57,7 @@ const props = withDefaults(defineProps<Props>(), {
   metric: true,
   cursorpos: 0,
   diameterMode: false,
+  showXPitch: true,
 });
 
 enum ZeroEntry {
@@ -354,7 +356,7 @@ const zpitchLabel = computed(() => {
       A₀
     </button>
     <br />
-    <div @click="xpitchClicked" class="inline">
+    <div @click="xpitchClicked" class="inline" :style="{ visibility: showXPitch ? 'visible' : 'hidden' }">
       <span v-html="xpitchLabel" />{{ xpitchFormatted
       }}<font size="-1">&nbsp;</font
       ><font color="#aaaaaa">{{ xpitchUnitFormatted }}</font>
@@ -363,6 +365,7 @@ const zpitchLabel = computed(() => {
       @click="xpitchSelectClicked"
       class="dro-font-display-button align-content-center ml-5"
       style="width: 6em; padding: 0.75rem"
+      :style="{ visibility: showXPitch ? 'visible' : 'hidden' }"
     >
       {{ props.xpitchlabel }}
     </button>

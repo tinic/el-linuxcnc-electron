@@ -95,9 +95,9 @@ const {
   turningZEnd,
   turningFeedRate,
   turningStepDown,
-  turningRoughingPasses,
-  turningFinishingAllowance,
+  turningFinalStepDown,
   turningTaperAngle,
+  turningSpringPasses,
   turningPresetName,
   turningPopovers,
   turningDescriptions,
@@ -303,14 +303,14 @@ const numberClicked = (entry: number, value: number) => {
     case TurningEntryType.turningZEnd:
     case TurningEntryType.turningFeedRate:
     case TurningEntryType.turningStepDown:
-    case TurningEntryType.turningFinishingAllowance:
+    case TurningEntryType.turningFinalStepDown:
     case TurningEntryType.turningTaperAngle:
     numberentry.value = numbersPrevious = metric.value ? value : value / 25.4;
     break;
     case EntryType.aPosition:
     case ThreadingEntryType.threadCutMult:
     case ThreadingEntryType.threadSpringCuts:
-    case TurningEntryType.turningRoughingPasses:
+    case TurningEntryType.turningSpringPasses:
     numberentry.value = numbersPrevious = value;
     break;
   }
@@ -369,7 +369,7 @@ function setFinalNumber(value: number) {
     case TurningEntryType.turningZEnd:
     case TurningEntryType.turningFeedRate:
     case TurningEntryType.turningStepDown:
-    case TurningEntryType.turningFinishingAllowance:
+    case TurningEntryType.turningFinalStepDown:
     case TurningEntryType.turningTaperAngle:
     if (!metric.value) {
       value = value * 25.4;
@@ -378,7 +378,7 @@ function setFinalNumber(value: number) {
     case EntryType.aPosition:
     case ThreadingEntryType.threadCutMult:
     case ThreadingEntryType.threadSpringCuts:
-    case TurningEntryType.turningRoughingPasses:
+    case TurningEntryType.turningSpringPasses:
     break;
   }
   switch (entryActive.value) {
@@ -457,11 +457,11 @@ function setFinalNumber(value: number) {
     case TurningEntryType.turningStepDown:
       setTurningParameter(TurningEntryType.turningStepDown, value);
       break;
-    case TurningEntryType.turningRoughingPasses:
-      setTurningParameter(TurningEntryType.turningRoughingPasses, value);
+    case TurningEntryType.turningSpringPasses:
+      setTurningParameter(TurningEntryType.turningSpringPasses, value);
       break;
-    case TurningEntryType.turningFinishingAllowance:
-      setTurningParameter(TurningEntryType.turningFinishingAllowance, value);
+    case TurningEntryType.turningFinalStepDown:
+      setTurningParameter(TurningEntryType.turningFinalStepDown, value);
       break;
     case TurningEntryType.turningTaperAngle:
       setTurningParameter(TurningEntryType.turningTaperAngle, value);
@@ -557,11 +557,11 @@ const numPadClicked = (key: string) => {
           case TurningEntryType.turningStepDown:
             clearTurningParameter(TurningEntryType.turningStepDown);
             break;
-          case TurningEntryType.turningRoughingPasses:
-            clearTurningParameter(TurningEntryType.turningRoughingPasses);
+          case TurningEntryType.turningSpringPasses:
+            clearTurningParameter(TurningEntryType.turningSpringPasses);
             break;
-          case TurningEntryType.turningFinishingAllowance:
-            clearTurningParameter(TurningEntryType.turningFinishingAllowance);
+          case TurningEntryType.turningFinalStepDown:
+            clearTurningParameter(TurningEntryType.turningFinalStepDown);
             break;
           case TurningEntryType.turningTaperAngle:
             clearTurningParameter(TurningEntryType.turningTaperAngle);
@@ -852,6 +852,10 @@ const pitchClicked = (axis: string) => {
               if (xpitchangle.value > 0) {
                 xpitch.value = pitchForAngle(zpitch.value, xpitchangle.value);
               }
+              // If we're in turning mode, also update the turning feed rate parameter
+              if (selectedMenu.value === MenuType.cannedCycles && selectedCannedCycle.value === CannedCycle.turning) {
+                turningFeedRate.value = value;
+              }
             }
             break;
           case "x":
@@ -988,7 +992,6 @@ const updatePitchFromThread = () => {
   } else {
     // Straight threading - minimal cross feed
     xpitch.value = 0.001; // Very small value for threading
-    xpitchlabel.value = "Thread";
     xpitchangle.value = 0;
   }
 };
@@ -1050,8 +1053,8 @@ const turningStartClicked = async () => {
             ZEnd: turningZEnd.value,
             FeedRate: turningFeedRate.value,
             StepDown: turningStepDown.value,
-            RoughingPasses: turningRoughingPasses.value,
-            FinishingAllowance: turningFinishingAllowance.value,
+            SpringPasses: turningSpringPasses.value,
+            FinalStepDown: turningFinalStepDown.value,
             TaperAngle: turningTaperAngle.value
           },
           gcode: result.gcode,
@@ -1093,21 +1096,13 @@ const turningResetClicked = () => {
 };
 
 const updatePitchFromTurning = () => {
-  // Update feed rate display for turning
+  // Update feed rate display for turning (feed rate is in mm/rev)
   if (turningFeedRate.value !== null) {
     zpitch.value = Math.abs(turningFeedRate.value);
-    if (metric.value) {
-      zpitchlabel.value = `${turningFeedRate.value}mm/min`;
-    } else {
-      zpitchlabel.value = `${turningFeedRate.value}in/min`;
-    }
-  } else {
-    zpitchlabel.value = "…";
   }
   
   // Minimal cross feed for turning
   xpitch.value = 0.001;
-  xpitchlabel.value = "Turn";
   xpitchangle.value = 0;
 };
 
@@ -1221,6 +1216,7 @@ onUnmounted(() => {
           :metric="metric"
           :cursorpos="cursorpos"
           :diameterMode="diameterMode"
+          :showXPitch="true"
           @numberClicked="numberClicked"
           @zeroClicked="zeroClicked"
           @pitchClicked="pitchClicked"
@@ -1454,6 +1450,7 @@ onUnmounted(() => {
           :metric="metric"
           :cursorpos="cursorpos"
           :diameterMode="diameterMode"
+          :showXPitch="false"
           @numberClicked="numberClicked"
           @zeroClicked="zeroClicked"
           @pitchClicked="pitchClicked"
@@ -1839,27 +1836,27 @@ onUnmounted(() => {
             </div>
             <div class="col-2 p-0"></div>
             
-            <!-- Row 4: Roughing Passes, Finishing Allowance -->
-            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'RP')">Passes</div>
+            <!-- Row 4: Spring Passes, Finishing Allowance -->
+            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'SP')">Spring</div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(TurningEntryType.turningRoughingPasses, turningRoughingPasses || 0)"
-                :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningRoughingPasses && turningRoughingPasses === null }]"
-                :style="{ backgroundColor: entryActive == TurningEntryType.turningRoughingPasses ? '#666' : '#333' }"
-                :title="entryActive == TurningEntryType.turningRoughingPasses ? String(numberentry) : String(turningRoughingPasses ?? 'Roughing Passes')"
+                @click="numberClicked(TurningEntryType.turningSpringPasses, turningSpringPasses || 0)"
+                :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningSpringPasses && turningSpringPasses === null }]"
+                :style="{ backgroundColor: entryActive == TurningEntryType.turningSpringPasses ? '#666' : '#333' }"
+                :title="entryActive == TurningEntryType.turningSpringPasses ? String(numberentry) : String(turningSpringPasses ?? 'Spring Passes')"
               >
-                {{ entryActive == TurningEntryType.turningRoughingPasses ? numberentry : (turningRoughingPasses ?? 'Roughing Passes') }}
+                {{ entryActive == TurningEntryType.turningSpringPasses ? numberentry : (turningSpringPasses ?? 'Spring Passes') }}
               </button>
             </div>
-            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'FA')">Finish</div>
+            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'FS')">Final</div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(TurningEntryType.turningFinishingAllowance, turningFinishingAllowance || 0)"
-                :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningFinishingAllowance && turningFinishingAllowance === null }]"
-                :style="{ backgroundColor: entryActive == TurningEntryType.turningFinishingAllowance ? '#666' : '#333' }"
-                :title="entryActive == TurningEntryType.turningFinishingAllowance ? String(numberentry) : String(turningFinishingAllowance ?? 'Finishing Allowance')"
+                @click="numberClicked(TurningEntryType.turningFinalStepDown, turningFinalStepDown || 0)"
+                :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningFinalStepDown && turningFinalStepDown === null }]"
+                :style="{ backgroundColor: entryActive == TurningEntryType.turningFinalStepDown ? '#666' : '#333' }"
+                :title="entryActive == TurningEntryType.turningFinalStepDown ? String(numberentry) : String(turningFinalStepDown ?? 'Final Step Down')"
               >
-                {{ entryActive == TurningEntryType.turningFinishingAllowance ? numberentry : (turningFinishingAllowance ?? 'Finishing Allowance') }}
+                {{ entryActive == TurningEntryType.turningFinalStepDown ? numberentry : (turningFinalStepDown ?? 'Final Step Down') }}
               </button>
             </div>
             <div class="col-2 p-0"></div>
@@ -1933,11 +1930,11 @@ onUnmounted(() => {
           <Popover :ref="(el) => turningPopovers['SD'] = el" class="turning-popover">
             <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ turningDescriptions['SD'] }}</div>
           </Popover>
-          <Popover :ref="(el) => turningPopovers['RP'] = el" class="turning-popover">
-            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ turningDescriptions['RP'] }}</div>
+          <Popover :ref="(el) => turningPopovers['SP'] = el" class="turning-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ turningDescriptions['SP'] }}</div>
           </Popover>
-          <Popover :ref="(el) => turningPopovers['FA'] = el" class="turning-popover">
-            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ turningDescriptions['FA'] }}</div>
+          <Popover :ref="(el) => turningPopovers['FS'] = el" class="turning-popover">
+            <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ turningDescriptions['FS'] }}</div>
           </Popover>
           <Popover :ref="(el) => turningPopovers['TA'] = el" class="turning-popover">
             <div class="p-2 dro-font-mode text-sm" style="white-space: pre-line;">{{ turningDescriptions['TA'] }}</div>

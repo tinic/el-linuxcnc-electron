@@ -43,8 +43,7 @@ interface TurningPreset {
   zStart: number;
   zEnd: number;
   feedRate: number;
-  roughingPasses: number;
-  finishingAllowance: number;
+  finalStepDown: number;
   taperAngle: number;
   stepDown: number;
 }
