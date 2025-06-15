@@ -89,8 +89,8 @@ const {
   convertThreadingParameters,
   setThreadingParameter,
   clearThreadingParameter,
-  turningXStart,
-  turningXEnd,
+  turningTarget,
+  turningStock,
   turningZStart,
   turningZEnd,
   turningFeedRate,
@@ -121,14 +121,14 @@ const displayZPos = computed(() => {
 });
 
 // Computed display values for turning parameters in diameter mode
-const displayTurningXStart = computed(() => {
-  if (turningXStart.value === null) return null;
-  return diameterMode.value ? turningXStart.value * 2 : turningXStart.value;
+const displayTurningTarget = computed(() => {
+  if (turningTarget.value === null) return null;
+  return diameterMode.value ? turningTarget.value * 2 : turningTarget.value;
 });
 
-const displayTurningXEnd = computed(() => {
-  if (turningXEnd.value === null) return null;
-  return diameterMode.value ? turningXEnd.value * 2 : turningXEnd.value;
+const displayTurningStock = computed(() => {
+  if (turningStock.value === null) return null;
+  return diameterMode.value ? turningStock.value * 2 : turningStock.value;
 });
 
 // Machine status computed from various states
@@ -297,8 +297,8 @@ const numberClicked = (entry: number, value: number) => {
     case ThreadingEntryType.threadZPullout:
     case ThreadingEntryType.threadFirstCut:
     case ThreadingEntryType.threadMinCut:
-    case TurningEntryType.turningXStart:
-    case TurningEntryType.turningXEnd:
+    case TurningEntryType.turningTarget:
+    case TurningEntryType.turningStock:
     case TurningEntryType.turningZStart:
     case TurningEntryType.turningZEnd:
     case TurningEntryType.turningFeedRate:
@@ -363,8 +363,8 @@ function setFinalNumber(value: number) {
     case ThreadingEntryType.threadZPullout:
     case ThreadingEntryType.threadFirstCut:
     case ThreadingEntryType.threadMinCut:
-    case TurningEntryType.turningXStart:
-    case TurningEntryType.turningXEnd:
+    case TurningEntryType.turningTarget:
+    case TurningEntryType.turningStock:
     case TurningEntryType.turningZStart:
     case TurningEntryType.turningZEnd:
     case TurningEntryType.turningFeedRate:
@@ -435,14 +435,14 @@ function setFinalNumber(value: number) {
     case ThreadingEntryType.threadSpringCuts:
       setThreadingParameter(ThreadingEntryType.threadSpringCuts, value);
       break;
-    case TurningEntryType.turningXStart:
-      const actualTurningXStart = diameterMode.value ? value / 2 : value;
-      setTurningParameter(TurningEntryType.turningXStart, actualTurningXStart);
+    case TurningEntryType.turningTarget:
+      const actualTurningTarget = diameterMode.value ? value / 2 : value;
+      setTurningParameter(TurningEntryType.turningTarget, actualTurningTarget);
       updatePitchFromTurning();
       break;
-    case TurningEntryType.turningXEnd:
-      const actualTurningXEnd = diameterMode.value ? value / 2 : value;
-      setTurningParameter(TurningEntryType.turningXEnd, actualTurningXEnd);
+    case TurningEntryType.turningStock:
+      const actualTurningStock = diameterMode.value ? value / 2 : value;
+      setTurningParameter(TurningEntryType.turningStock, actualTurningStock);
       break;
     case TurningEntryType.turningZStart:
       setTurningParameter(TurningEntryType.turningZStart, value);
@@ -539,11 +539,11 @@ const numPadClicked = (key: string) => {
           case ThreadingEntryType.threadSpringCuts:
             clearThreadingParameter(ThreadingEntryType.threadSpringCuts);
             break;
-          case TurningEntryType.turningXStart:
-            clearTurningParameter(TurningEntryType.turningXStart);
+          case TurningEntryType.turningTarget:
+            clearTurningParameter(TurningEntryType.turningTarget);
             break;
-          case TurningEntryType.turningXEnd:
-            clearTurningParameter(TurningEntryType.turningXEnd);
+          case TurningEntryType.turningStock:
+            clearTurningParameter(TurningEntryType.turningStock);
             break;
           case TurningEntryType.turningZStart:
             clearTurningParameter(TurningEntryType.turningZStart);
@@ -1044,8 +1044,8 @@ const turningStartClicked = async () => {
           name: "Turning Operation",
           type: "turning",
           parameters: {
-            XStart: turningXStart.value,
-            XEnd: turningXEnd.value,
+            Target: turningTarget.value,
+            Stock: turningStock.value,
             ZStart: turningZStart.value,
             ZEnd: turningZEnd.value,
             FeedRate: turningFeedRate.value,
@@ -1540,7 +1540,7 @@ onUnmounted(() => {
           <!-- Note: X Start uses current position, Z Start is always 0 -->
           
           <!-- Row 1 -->
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'P')">P</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'P')">Pitch</div>
           <div class="col-4 p-1">
             <button
               @click="numberClicked(ThreadingEntryType.threadPitch, threadPitch || 0)"
@@ -1551,7 +1551,7 @@ onUnmounted(() => {
               {{ entryActive == ThreadingEntryType.threadPitch ? numberentry : (threadPitch ?? 'Pitch') }}
             </button>
           </div>
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'D')">D</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'D')">Ø</div>
           <div class="col-4 p-1">
             <div
               :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': threadDiameter === null }]"
@@ -1564,7 +1564,7 @@ onUnmounted(() => {
           <div class="col-2 p-0"></div>
           
           <!-- Row 2 -->
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'ZD')">ZD</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'ZD')">ZDepth</div>
           <div class="col-4 p-1">
             <button
               @click="numberClicked(ThreadingEntryType.threadZDepth, threadZDepth || 0)"
@@ -1575,7 +1575,7 @@ onUnmounted(() => {
               {{ entryActive == ThreadingEntryType.threadZDepth ? numberentry : (threadZDepth ?? 'Z Depth') }}
             </button>
           </div>
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'XD')">XD</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'XD')">XDepth</div>
           <div class="col-4 p-1">
             <button
               @click="numberClicked(ThreadingEntryType.threadXDepth, threadXDepth || 0)"
@@ -1589,7 +1589,7 @@ onUnmounted(() => {
           <div class="col-2 p-0"></div>
           
           <!-- Row 3 -->
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'ZE')">ZE</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'ZE')">ZEnd</div>
           <div class="col-4 p-1">
             <button
               @click="numberClicked(ThreadingEntryType.threadZEnd, threadZEnd || 0)"
@@ -1600,7 +1600,7 @@ onUnmounted(() => {
               {{ entryActive == ThreadingEntryType.threadZEnd ? numberentry : (threadZEnd ?? 'Z End') }}
             </button>
           </div>
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'A')">A</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'A')">Angle</div>
           <div class="col-4 p-1">
             <button
               @click="numberClicked(ThreadingEntryType.threadAngle, threadAngle || 0)"
@@ -1614,7 +1614,7 @@ onUnmounted(() => {
           <div class="col-2 p-0"></div>
           
           <!-- Row 4 -->
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'ZP')">ZP</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'ZP')">ZPull</div>
           <div class="col-4 p-1">
             <button
               @click="numberClicked(ThreadingEntryType.threadZPullout, threadZPullout || 0)"
@@ -1625,7 +1625,7 @@ onUnmounted(() => {
               {{ entryActive == ThreadingEntryType.threadZPullout ? numberentry : (threadZPullout ?? 'Z Pullout') }}
             </button>
           </div>
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'XP')">XP</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'XP')">XPull</div>
           <div class="col-4 p-1">
             <button
               @click="numberClicked(ThreadingEntryType.threadXPullout, threadXPullout || 0)"
@@ -1639,7 +1639,7 @@ onUnmounted(() => {
           <div class="col-2 p-0"></div>
           
           <!-- Row 5 -->
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'CM')">CM</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'CM')">Mult</div>
           <div class="col-4 p-1">
             <button
               @click="numberClicked(ThreadingEntryType.threadCutMult, threadCutMult || 0)"
@@ -1650,7 +1650,7 @@ onUnmounted(() => {
               {{ entryActive == ThreadingEntryType.threadCutMult ? numberentry : (threadCutMult ?? 'Cut Multiplier') }}
             </button>
           </div>
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'FC')">FC</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'FC')">1stCut</div>
           <div class="col-4 p-1">
             <button
               @click="numberClicked(ThreadingEntryType.threadFirstCut, threadFirstCut || 0)"
@@ -1664,7 +1664,7 @@ onUnmounted(() => {
           <div class="col-2 p-0"></div>
           
           <!-- Row 6 -->
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'SC')">SC</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'SC')">Spring</div>
           <div class="col-4 p-1">
             <button
               @click="numberClicked(ThreadingEntryType.threadSpringCuts, threadSpringCuts || 0)"
@@ -1675,7 +1675,7 @@ onUnmounted(() => {
               {{ entryActive == ThreadingEntryType.threadSpringCuts ? numberentry : (threadSpringCuts ?? 'Spring Cuts') }}
             </button>
           </div>
-          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'MC')">MC</div>
+          <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showLabelPopover($event, 'MC')">MinCut</div>
           <div class="col-4 p-1">
             <button
               @click="numberClicked(ThreadingEntryType.threadMinCut, threadMinCut || 0)"
@@ -1776,43 +1776,32 @@ onUnmounted(() => {
             </div>
             
             <!-- Row 1: X Start, X End -->
-            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'XS')">XS</div>
+            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'XS')">Target</div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(TurningEntryType.turningXStart, displayTurningXStart || 0)"
-                :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningXStart && turningXStart === null }]"
-                :style="{ backgroundColor: entryActive == TurningEntryType.turningXStart ? '#666' : '#333' }"
-                :title="entryActive == TurningEntryType.turningXStart ? String(numberentry) : String(displayTurningXStart ?? 'X Start')"
+                @click="numberClicked(TurningEntryType.turningTarget, displayTurningTarget || 0)"
+                :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningTarget && turningTarget === null }]"
+                :style="{ backgroundColor: entryActive == TurningEntryType.turningTarget ? '#666' : '#333' }"
+                :title="entryActive == TurningEntryType.turningTarget ? String(numberentry) : String(displayTurningTarget ?? 'Target')"
               >
-                {{ entryActive == TurningEntryType.turningXStart ? numberentry : (displayTurningXStart ?? 'X Start') }}
+                {{ entryActive == TurningEntryType.turningTarget ? numberentry : (displayTurningTarget ?? 'Target') }}
               </button>
             </div>
-            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'XE')">XE</div>
+            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'XE')">Stock</div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(TurningEntryType.turningXEnd, displayTurningXEnd || 0)"
-                :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningXEnd && turningXEnd === null }]"
-                :style="{ backgroundColor: entryActive == TurningEntryType.turningXEnd ? '#666' : '#333' }"
-                :title="entryActive == TurningEntryType.turningXEnd ? String(numberentry) : String(displayTurningXEnd ?? 'X End')"
+                @click="numberClicked(TurningEntryType.turningStock, displayTurningStock || 0)"
+                :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningStock && turningStock === null }]"
+                :style="{ backgroundColor: entryActive == TurningEntryType.turningStock ? '#666' : '#333' }"
+                :title="entryActive == TurningEntryType.turningStock ? String(numberentry) : String(displayTurningStock ?? 'Stock')"
               >
-                {{ entryActive == TurningEntryType.turningXEnd ? numberentry : (displayTurningXEnd ?? 'X End') }}
+                {{ entryActive == TurningEntryType.turningStock ? numberentry : (displayTurningStock ?? 'Stock') }}
               </button>
             </div>
             <div class="col-2 p-0"></div>
             
-            <!-- Row 2: Z Start, Z End -->
-            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'ZS')">ZS</div>
-            <div class="col-4 p-1">
-              <button
-                @click="numberClicked(TurningEntryType.turningZStart, turningZStart || 0)"
-                :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningZStart && turningZStart === null }]"
-                :style="{ backgroundColor: entryActive == TurningEntryType.turningZStart ? '#666' : '#333' }"
-                :title="entryActive == TurningEntryType.turningZStart ? String(numberentry) : String(turningZStart ?? 'Z Start')"
-              >
-                {{ entryActive == TurningEntryType.turningZStart ? numberentry : (turningZStart ?? 'Z Start') }}
-              </button>
-            </div>
-            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'ZE')">ZE</div>
+            <!-- Row 2: Z End -->
+            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'ZE')">Length</div>
             <div class="col-4 p-1">
               <button
                 @click="numberClicked(TurningEntryType.turningZEnd, turningZEnd || 0)"
@@ -1823,10 +1812,10 @@ onUnmounted(() => {
                 {{ entryActive == TurningEntryType.turningZEnd ? numberentry : (turningZEnd ?? 'Z End') }}
               </button>
             </div>
-            <div class="col-2 p-0"></div>
+            <div class="col-7 p-0"></div>
             
             <!-- Row 3: Feed Rate, Step Down -->
-            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'F')">F</div>
+            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'F')">Feed</div>
             <div class="col-4 p-1">
               <button
                 @click="numberClicked(TurningEntryType.turningFeedRate, turningFeedRate || 0)"
@@ -1837,7 +1826,7 @@ onUnmounted(() => {
                 {{ entryActive == TurningEntryType.turningFeedRate ? numberentry : (turningFeedRate ?? 'Feed Rate') }}
               </button>
             </div>
-            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'SD')">SD</div>
+            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'SD')">Step</div>
             <div class="col-4 p-1">
               <button
                 @click="numberClicked(TurningEntryType.turningStepDown, turningStepDown || 0)"
@@ -1851,7 +1840,7 @@ onUnmounted(() => {
             <div class="col-2 p-0"></div>
             
             <!-- Row 4: Roughing Passes, Finishing Allowance -->
-            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'RP')">RP</div>
+            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'RP')">Passes</div>
             <div class="col-4 p-1">
               <button
                 @click="numberClicked(TurningEntryType.turningRoughingPasses, turningRoughingPasses || 0)"
@@ -1862,7 +1851,7 @@ onUnmounted(() => {
                 {{ entryActive == TurningEntryType.turningRoughingPasses ? numberentry : (turningRoughingPasses ?? 'Roughing Passes') }}
               </button>
             </div>
-            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'FA')">FA</div>
+            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'FA')">Finish</div>
             <div class="col-4 p-1">
               <button
                 @click="numberClicked(TurningEntryType.turningFinishingAllowance, turningFinishingAllowance || 0)"
@@ -1876,7 +1865,7 @@ onUnmounted(() => {
             <div class="col-2 p-0"></div>
             
             <!-- Row 5: Taper Angle -->
-            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'TA')">TA</div>
+            <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'TA')">Taper</div>
             <div class="col-4 p-1">
               <button
                 @click="numberClicked(TurningEntryType.turningTaperAngle, turningTaperAngle || 0)"

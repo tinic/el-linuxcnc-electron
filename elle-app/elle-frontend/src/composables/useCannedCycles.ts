@@ -22,8 +22,8 @@ export enum ThreadingEntryType {
 }
 
 export enum TurningEntryType {
-    turningXStart = 17,
-    turningXEnd = 18,
+    turningTarget = 17,
+    turningStock = 18,
     turningZStart = 19,
     turningZEnd = 20,
     turningFeedRate = 21,
@@ -53,8 +53,8 @@ export function useCannedCycles() {
     const threadDiameter = ref<string | null>(null);
 
     // Turning parameters
-    const turningXStart = ref<number | null>(null);
-    const turningXEnd = ref<number | null>(null);
+    const turningTarget = ref<number | null>(null);
+    const turningStock = ref<number | null>(null);
     const turningZStart = ref<number | null>(null);
     const turningZEnd = ref<number | null>(null);
     const turningFeedRate = ref<number | null>(null);
@@ -93,10 +93,10 @@ export function useCannedCycles() {
 
     // Turning parameter descriptions
     const turningDescriptions: { [key: string]: string } = {
-        'XS': 'X Start - starting diameter position\n(current tool position)',
-        'XE': 'X End - final diameter after turning\n(target diameter)',
+        'XS': 'Target - final target diameter\n(desired finished diameter)',
+        'XE': 'Stock - starting stock diameter\n(current material diameter)',
         'ZS': 'Z Start - starting Z position\n(current tool position)',
-        'ZE': 'Z End - final Z position\n(length of cut)',
+        'ZE': 'Length - cut length into material\n(negative for cutting into stock)',
         'F': 'Feed Rate - cutting speed\n(mm/min or in/min)',
         'SD': 'Step Down - depth per roughing pass\n(material removed per pass)',
         'RP': 'Roughing Passes - number of rough cuts\n(before finishing pass)',
@@ -403,8 +403,8 @@ export function useCannedCycles() {
         threadDiameter,
         
         // Turning state
-        turningXStart,
-        turningXEnd,
+        turningTarget,
+        turningStock,
         turningZStart,
         turningZEnd,
         turningFeedRate,
@@ -454,13 +454,13 @@ export function useCannedCycles() {
     function validateTurningParameters(): string[] {
         const errors = [];
 
-        if (turningXStart.value === null || turningXEnd.value === null || turningZEnd.value === null) {
-            errors.push("Missing required parameters. Please set X Start, X End, and Z End values.");
+        if (turningTarget.value === null || turningStock.value === null || turningZEnd.value === null) {
+            errors.push("Missing required parameters. Please set Target, Stock, and Length values.");
             return errors;
         }
 
-        if (turningXStart.value === turningXEnd.value) {
-            errors.push("X Start and X End cannot be the same");
+        if (turningTarget.value === turningStock.value) {
+            errors.push("Target and Stock cannot be the same");
         }
 
         if (turningFeedRate.value !== null && turningFeedRate.value <= 0) {
@@ -492,8 +492,8 @@ export function useCannedCycles() {
 
     // Turning G-code generation
     function generateTurningParams(currentXPos: number, currentZPos: number, currentAPos: number) {
-        const xStart = turningXStart.value || currentXPos;
-        const xEnd = turningXEnd.value || 0;
+        const stockRadius = turningStock.value || currentXPos;
+        const targetRadius = turningTarget.value || 0;
         const zEnd = turningZEnd.value || 0;
         const feedRate = turningFeedRate.value || 0.1;
         const stepDown = turningStepDown.value || 0.5;
@@ -512,8 +512,8 @@ export function useCannedCycles() {
             ZPos: formatForLinuxCNC(currentZPos),
             APos: formatForLinuxCNC(currentAPos),
             Pitch: formatForLinuxCNC(pitch),
-            XStart: formatForLinuxCNC(xStart),
-            XEnd: formatForLinuxCNC(xEnd),
+            Stock: formatForLinuxCNC(stockRadius),
+            Target: formatForLinuxCNC(targetRadius),
             ZLead: formatForLinuxCNC(zLead),
             ZEnd: formatForLinuxCNC(zEnd),
             Angle: formatForLinuxCNC(taperAngle),
@@ -540,8 +540,8 @@ export function useCannedCycles() {
                 onSelected: (preset: any) => {
                     const conversionFactor = metric ? 1 : 1/25.4;
                     
-                    turningXStart.value = roundParameterValue(preset.xStart, conversionFactor);
-                    turningXEnd.value = roundParameterValue(preset.xEnd, conversionFactor);
+                    turningTarget.value = roundParameterValue(preset.target, conversionFactor);
+                    turningStock.value = roundParameterValue(preset.stock, conversionFactor);
                     turningZStart.value = roundParameterValue(preset.zStart, conversionFactor);
                     turningZEnd.value = roundParameterValue(preset.zEnd, conversionFactor);
                     turningFeedRate.value = roundParameterValue(preset.feedRate, conversionFactor);
@@ -561,8 +561,8 @@ export function useCannedCycles() {
 
     // Turning reset
     function resetTurningParameters() {
-        turningXStart.value = null;
-        turningXEnd.value = null;
+        turningTarget.value = null;
+        turningStock.value = null;
         turningZStart.value = null;
         turningZEnd.value = null;
         turningFeedRate.value = null;
@@ -578,8 +578,8 @@ export function useCannedCycles() {
     function convertTurningParameters(toMetric: boolean) {
         const conversionFactor = toMetric ? 25.4 : 1/25.4;
         
-        if (turningXStart.value !== null) turningXStart.value = roundParameterValue(turningXStart.value, conversionFactor);
-        if (turningXEnd.value !== null) turningXEnd.value = roundParameterValue(turningXEnd.value, conversionFactor);
+        if (turningTarget.value !== null) turningTarget.value = roundParameterValue(turningTarget.value, conversionFactor);
+        if (turningStock.value !== null) turningStock.value = roundParameterValue(turningStock.value, conversionFactor);
         if (turningZStart.value !== null) turningZStart.value = roundParameterValue(turningZStart.value, conversionFactor);
         if (turningZEnd.value !== null) turningZEnd.value = roundParameterValue(turningZEnd.value, conversionFactor);
         if (turningFeedRate.value !== null) turningFeedRate.value = roundParameterValue(turningFeedRate.value, conversionFactor);
@@ -594,11 +594,11 @@ export function useCannedCycles() {
         const roundedValue = roundParameterValue(value);
         
         switch (entryType) {
-            case TurningEntryType.turningXStart:
-                turningXStart.value = roundedValue;
+            case TurningEntryType.turningTarget:
+                turningTarget.value = roundedValue;
                 break;
-            case TurningEntryType.turningXEnd:
-                turningXEnd.value = roundedValue;
+            case TurningEntryType.turningStock:
+                turningStock.value = roundedValue;
                 break;
             case TurningEntryType.turningZStart:
                 turningZStart.value = roundedValue;
@@ -631,11 +631,11 @@ export function useCannedCycles() {
 
     function clearTurningParameter(entryType: TurningEntryType) {
         switch (entryType) {
-            case TurningEntryType.turningXStart:
-                turningXStart.value = null;
+            case TurningEntryType.turningTarget:
+                turningTarget.value = null;
                 break;
-            case TurningEntryType.turningXEnd:
-                turningXEnd.value = null;
+            case TurningEntryType.turningStock:
+                turningStock.value = null;
                 break;
             case TurningEntryType.turningZStart:
                 turningZStart.value = null;

@@ -227,9 +227,18 @@ def generate_threading_gcode_core(params, for_backplot=False):
 def generate_turning_gcode_core(params, for_backplot=False):
     import math
     
+    # Debug: Print received parameters
+    print("=== TURNING PARAMETERS RECEIVED ===")
+    for key, value in params.items():
+        print(f"  {key}: {value}")
+    print("=== END PARAMETERS ===")
+    
     pitch = abs(float(params['Pitch'])) # Cutting pitch for G33
-    x_start = float(params['XStart']) # Starting radius, also starting X.
-    x_end = float(params['XEnd']) # End radius.
+    x_stock = float(params['Stock']) # Stock radius (larger, starting diameter)
+    x_target = float(params['Target']) # Target radius (smaller, finished diameter)
+    
+    print(f"DEBUG: x_stock = {x_stock}, x_target = {x_target}")
+    print(f"DEBUG: total_cut_depth will be = {abs(x_stock - x_target)}")
     z_start = 0 # Starting Z, we always start at zero. Note that z_lead need to be added when cutting and X adjusted based on the taper angle.
     z_lead = float(params['ZLead']) # Leading cut depth, used to compensate for backlash. usually positive.
     z_end = float(params['ZEnd']) # Full cut depth, usually negative
@@ -255,14 +264,14 @@ def generate_turning_gcode_core(params, for_backplot=False):
         gcode_lines.append("G54")  # Use work coordinates
     
     # Move to start point
-    gcode_lines.append(f"G0 X{x_start:.6f} Z{z_start:.6f}")
+    gcode_lines.append(f"G0 X{x_stock:.6f} Z{z_start:.6f}")
 
     # Calculate taper angle in radians for calculations
     import math
     angle_rad = math.radians(angle)
     
     # Calculate total cut depth needed
-    total_cut_depth = abs(x_start - x_end)
+    total_cut_depth = abs(x_stock - x_target)
     
     # Calculate passes needed
     remaining_after_final = total_cut_depth - final_step_down
@@ -289,8 +298,8 @@ def generate_turning_gcode_core(params, for_backplot=False):
     z_travel = z_end - z_start
     
     # The cutting starts from the largest required diameter
-    # For a taper, this is the larger of x_start or x_end
-    max_radius = max(x_start, x_end)
+    # For external turning, this is the stock diameter
+    max_radius = x_stock
     
     # Determine retract position - always clear of the work
     retract_x = max_radius + 2.0
@@ -308,19 +317,18 @@ def generate_turning_gcode_core(params, for_backplot=False):
             gcode_lines.append(f"({pass_type} pass)")
         
         # For external turning, we cut from outside in
-        # The depth represents how deep we've cut into the material
-        # We need to offset from the maximum diameter, not x_start
+        # We start at stock diameter and cut progressively deeper toward target
         current_cut_depth = depth
         
-        # Calculate the baseline X positions for this pass
-        # These are offset inward from the final taper surface by the remaining depth
-        remaining_depth = total_cut_depth - current_cut_depth
-        base_x_start = x_start + remaining_depth
-        base_x_end = x_end + remaining_depth
+        # Calculate the actual cutting diameter for this pass
+        # Start from stock and work inward by the current cut depth
+        cut_diameter = x_stock - current_cut_depth
         
         # Apply taper compensation for the actual cutting positions
-        adjusted_x_start = base_x_start + (z_lead * math.tan(angle_rad))
-        adjusted_x_end = base_x_end + (z_travel * math.tan(angle_rad))
+        # For positive angles, diameter increases as Z becomes more negative (toward chuck)
+        # z_lead is positive (away from chuck), z_travel is negative (toward chuck)
+        adjusted_x_start = cut_diameter - (z_lead * math.tan(angle_rad))
+        adjusted_x_end = cut_diameter - (z_travel * math.tan(angle_rad))
         
         # Execute the pass
         gcode_lines.append(f"G0 X{adjusted_x_start:.6f} Z{z_lead:.6f}")

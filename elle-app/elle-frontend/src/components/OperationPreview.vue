@@ -116,8 +116,31 @@ const setupBackplot = () => {
     renderer.renderer.setSize(containerElement.clientWidth, containerElement.clientHeight);
   }
   
-  // Clear existing scene
-  renderer.scene?.clear();
+  // Clear existing scene and dispose of resources
+  if (renderer.scene) {
+    renderer.scene.traverse((object) => {
+      if (object instanceof THREE.Sprite) {
+        // Dispose of sprite material and texture
+        const material = object.material as THREE.SpriteMaterial;
+        if (material.map) {
+          material.map.dispose();
+        }
+        material.dispose();
+      }
+      if (object instanceof THREE.LineSegments || object instanceof THREE.Line) {
+        // Dispose of line geometry and material
+        if (object.geometry) object.geometry.dispose();
+        if (object.material) {
+          if (Array.isArray(object.material)) {
+            object.material.forEach(mat => mat.dispose());
+          } else {
+            object.material.dispose();
+          }
+        }
+      }
+    });
+    renderer.scene.clear();
+  }
   
   // Create simple backplot using basic Three.js lines
   const backplotData = props.operation.backplotData;
@@ -154,10 +177,11 @@ const setupBackplot = () => {
         const [centerX, centerY, centerZ] = transform.center;
         const scaleFactor = transform.scale_factor;
         
-        // Reverse the coordinate swapping: (normX, normY, normZ) was (Z, Y, X) originally
-        const originalZ = (normX / scaleFactor + centerZ);
-        const originalY = (normY / scaleFactor + centerY);
+        // The backend swapped coordinates: normX is originalZ, normZ is originalX
+        // So to get back to original coordinates:
         const originalX = (normZ / scaleFactor + centerX);
+        const originalY = (normY / scaleFactor + centerY); 
+        const originalZ = (normX / scaleFactor + centerZ);
         
         return { x: originalX, y: originalY, z: originalZ };
       };
@@ -200,12 +224,22 @@ const setupBackplot = () => {
           context.textAlign = 'center';
           context.textBaseline = 'middle';
           
+          // Flip the canvas vertically to correct text orientation
+          context.save();
+          context.scale(1, -1);
+          context.translate(0, -canvas.height);
+          
           // Draw text
           context.fillText(corner.label, canvas.width / 2, canvas.height / 2);
           
+          context.restore();
+          
           // Create texture from canvas
           const texture = new THREE.CanvasTexture(canvas);
-          texture.needsUpdate = true;
+          texture.generateMipmaps = false;
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+          texture.flipY = false;
           
           // Create sprite material
           const spriteMaterial = new THREE.SpriteMaterial({

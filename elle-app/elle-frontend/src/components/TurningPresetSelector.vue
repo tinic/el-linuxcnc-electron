@@ -38,8 +38,8 @@ interface TurningPreset {
   drillDiameter?: number;
   boringDepth?: number;
   // Common properties
-  xStart: number;
-  xEnd: number;
+  target: number;
+  stock: number;
   zStart: number;
   zEnd: number;
   feedRate: number;
