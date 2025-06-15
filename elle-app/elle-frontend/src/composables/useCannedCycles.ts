@@ -30,7 +30,8 @@ export enum TurningEntryType {
     turningStepDown = 22,
     turningRoughingPasses = 23,
     turningFinishingAllowance = 24,
-    turningTaperAngle = 25
+    turningTaperAngle = 25,
+    turningSpringPasses = 26
 }
 
 export function useCannedCycles() {
@@ -61,6 +62,7 @@ export function useCannedCycles() {
     const turningRoughingPasses = ref<number | null>(null);
     const turningFinishingAllowance = ref<number | null>(null);
     const turningTaperAngle = ref<number | null>(null);
+    const turningSpringPasses = ref<number | null>(null);
     const turningPresetName = ref<string | null>(null);
     
     // Future cycle parameters
@@ -99,7 +101,8 @@ export function useCannedCycles() {
         'SD': 'Step Down - depth per roughing pass\n(material removed per pass)',
         'RP': 'Roughing Passes - number of rough cuts\n(before finishing pass)',
         'FA': 'Finishing Allowance - material left for finish\n(removed in final pass)',
-        'TA': 'Taper Angle - angle of taper cut\n(0° for straight turning)'
+        'TA': 'Taper Angle - angle of taper cut\n(0° for straight turning)',
+        'SP': 'Spring Passes - number of spring cuts\n(finishing passes at full depth)'
     };
 
     // Helper functions
@@ -409,6 +412,7 @@ export function useCannedCycles() {
         turningRoughingPasses,
         turningFinishingAllowance,
         turningTaperAngle,
+        turningSpringPasses,
         turningPresetName,
         
         // Future cycle state
@@ -475,6 +479,10 @@ export function useCannedCycles() {
             errors.push("Finishing Allowance cannot be negative");
         }
 
+        if (turningSpringPasses.value !== null && (turningSpringPasses.value < 0 || turningSpringPasses.value > 10)) {
+            errors.push("Spring Passes should be between 0 and 10");
+        }
+
         if (turningTaperAngle.value !== null && Math.abs(turningTaperAngle.value) > 45) {
             errors.push("Taper Angle seems too large (>45°), please verify");
         }
@@ -484,29 +492,34 @@ export function useCannedCycles() {
 
     // Turning G-code generation
     function generateTurningParams(currentXPos: number, currentZPos: number, currentAPos: number) {
-        const xStart = turningXStart.value || 0;
+        const xStart = turningXStart.value || currentXPos;
         const xEnd = turningXEnd.value || 0;
-        const zStart = turningZStart.value || 0;
         const zEnd = turningZEnd.value || 0;
         const feedRate = turningFeedRate.value || 0.1;
         const stepDown = turningStepDown.value || 0.5;
-        const roughingPasses = turningRoughingPasses.value || 3;
         const finishingAllowance = turningFinishingAllowance.value || 0.1;
         const taperAngle = turningTaperAngle.value || 0;
+        const springPasses = turningSpringPasses.value || 0;
+        
+        // Calculate pitch from feed rate (mm/min to mm/rev at assumed 500 RPM)
+        const pitch = feedRate / 500;
+        
+        // Calculate ZLead as a small lead-in distance (typically 2mm)
+        const zLead = 2.0;
 
         return {
             XPos: formatForLinuxCNC(currentXPos),
             ZPos: formatForLinuxCNC(currentZPos),
             APos: formatForLinuxCNC(currentAPos),
+            Pitch: formatForLinuxCNC(pitch),
             XStart: formatForLinuxCNC(xStart),
             XEnd: formatForLinuxCNC(xEnd),
-            ZStart: formatForLinuxCNC(zStart),
+            ZLead: formatForLinuxCNC(zLead),
             ZEnd: formatForLinuxCNC(zEnd),
-            FeedRate: formatForLinuxCNC(feedRate),
+            Angle: formatForLinuxCNC(taperAngle),
             StepDown: formatForLinuxCNC(stepDown),
-            RoughingPasses: Math.round(roughingPasses),
-            FinishingAllowance: formatForLinuxCNC(finishingAllowance),
-            TaperAngle: formatForLinuxCNC(taperAngle),
+            FinalStepDown: formatForLinuxCNC(finishingAllowance),
+            SpringPasses: Math.round(springPasses),
             XReturn: formatForLinuxCNC(currentXPos),
             ZReturn: formatForLinuxCNC(currentZPos)
         };
@@ -536,6 +549,7 @@ export function useCannedCycles() {
                     turningRoughingPasses.value = roundParameterValue(preset.roughingPasses);
                     turningFinishingAllowance.value = roundParameterValue(preset.finishingAllowance, conversionFactor);
                     turningTaperAngle.value = roundParameterValue(preset.taperAngle);
+                    turningSpringPasses.value = roundParameterValue(preset.springPasses || 0);
                     turningPresetName.value = preset.name;
                     updatePitchCallback();
                 },
@@ -556,6 +570,7 @@ export function useCannedCycles() {
         turningRoughingPasses.value = null;
         turningFinishingAllowance.value = null;
         turningTaperAngle.value = null;
+        turningSpringPasses.value = null;
         turningPresetName.value = null;
     }
 
@@ -606,6 +621,9 @@ export function useCannedCycles() {
             case TurningEntryType.turningTaperAngle:
                 turningTaperAngle.value = roundedValue;
                 break;
+            case TurningEntryType.turningSpringPasses:
+                turningSpringPasses.value = roundedValue;
+                break;
         }
         
         turningPresetName.value = null;
@@ -639,6 +657,9 @@ export function useCannedCycles() {
                 break;
             case TurningEntryType.turningTaperAngle:
                 turningTaperAngle.value = null;
+                break;
+            case TurningEntryType.turningSpringPasses:
+                turningSpringPasses.value = null;
                 break;
         }
     }

@@ -142,6 +142,96 @@ const setupBackplot = () => {
     );
     renderer.scene?.add(box);
     
+    // Add coordinate labels at bounding box corners
+    const addCornerLabels = () => {
+      // Function to convert normalized coordinates back to original coordinates
+      const toOriginalCoords = (normX: number, normY: number, normZ: number) => {
+        if (!backplotData.transform) {
+          return { x: normX, y: normY, z: normZ };
+        }
+        
+        const transform = backplotData.transform;
+        const [centerX, centerY, centerZ] = transform.center;
+        const scaleFactor = transform.scale_factor;
+        
+        // Reverse the coordinate swapping: (normX, normY, normZ) was (Z, Y, X) originally
+        const originalZ = (normX / scaleFactor + centerZ);
+        const originalY = (normY / scaleFactor + centerY);
+        const originalX = (normZ / scaleFactor + centerX);
+        
+        return { x: originalX, y: originalY, z: originalZ };
+      };
+      
+      // Corner coordinates (normalized)
+      const normalizedCorners = [
+        { x: xmin, y: ymin, z: zmin },
+        { x: xmax, y: ymin, z: zmin },
+        { x: xmin, y: ymax, z: zmin },
+        { x: xmax, y: ymax, z: zmin },
+        { x: xmin, y: ymin, z: zmax },
+        { x: xmax, y: ymin, z: zmax },
+        { x: xmin, y: ymax, z: zmax },
+        { x: xmax, y: ymax, z: zmax }
+      ];
+      
+      // Convert to original coordinates and create labels
+      const corners = normalizedCorners.map(corner => {
+        const original = toOriginalCoords(corner.x, corner.y, corner.z);
+        return {
+          x: corner.x,
+          y: corner.y,
+          z: corner.z,
+          label: `X${original.x.toFixed(2)} Z${original.z.toFixed(2)}`  // Only show X and Z for lathe
+        };
+      });
+      
+      
+      corners.forEach((corner) => {
+        // Create a separate canvas for each label to avoid texture sharing issues
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = 256;
+        canvas.height = 64;
+        
+        if (context) {
+          // Set font and style
+          context.font = '16px iosevka, monospace';
+          context.fillStyle = '#ffffff';
+          context.textAlign = 'center';
+          context.textBaseline = 'middle';
+          
+          // Draw text
+          context.fillText(corner.label, canvas.width / 2, canvas.height / 2);
+          
+          // Create texture from canvas
+          const texture = new THREE.CanvasTexture(canvas);
+          texture.needsUpdate = true;
+          
+          // Create sprite material
+          const spriteMaterial = new THREE.SpriteMaterial({
+            map: texture,
+            transparent: true,
+            alphaTest: 0.1,
+            depthTest: false,
+            depthWrite: false
+          });
+          
+          // Create sprite
+          const sprite = new THREE.Sprite(spriteMaterial);
+          sprite.position.set(corner.x, corner.y, corner.z);
+          
+          // Scale sprite 5 times larger
+          const scale = 0.5;
+          sprite.scale.set(scale, scale * 0.25, 1);
+          
+          // Add sprite to scene
+          renderer.scene?.add(sprite);
+        }
+      });
+    };
+    
+    addCornerLabels();
+    
     // Create unique materials for each line to avoid sharing issues
     const lines: { line: THREE.Line, entryType: string, materials: { future: THREE.LineBasicMaterial, active: THREE.LineBasicMaterial, completed: THREE.LineBasicMaterial } }[] = [];
     let lineCount = 0;

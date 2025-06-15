@@ -95,7 +95,7 @@ class BackplotGenerator(rs274.glcanon.GlCanonDraw):
                     shutil.copy(parameter_file, tmp_parameter_file)
                 self.canon.parameter_file = tmp_parameter_file
                 initcode = self.inifile.find("RS274NGC", "RS274NGC_STARTUP_CODE") or ""
-                result, seq = self.load_preview(filepath, self.canon, "G21", initcode)
+                result, seq = self.load_preview(filepath, self.canon, "G18 G8 G21 G90", initcode)
                 if result > gcode.MIN_ERROR:
                     pass
         finally:
@@ -219,6 +219,41 @@ class BackplotGenerator(rs274.glcanon.GlCanonDraw):
             min_x = min_y = min_z = -1.0
             max_x = max_y = max_z = 1.0
         
+        # Store original extents before transformation
+        original_min_x, original_min_y, original_min_z = min_x, min_y, min_z
+        original_max_x, original_max_y, original_max_z = max_x, max_y, max_z
+        
+        # Check if LinuxCNC interpreted coordinates as inches instead of mm
+        # If the coordinate range is much smaller than expected, apply conversion
+        coordinate_range = max(abs(max_x - min_x), abs(max_y - min_y), abs(max_z - min_z))
+        if coordinate_range > 0 and coordinate_range < 10:  # Suspiciously small for typical machining
+            # Apply inch to mm conversion (25.4x) to all coordinates
+            units_scale = 25.4
+            min_x *= units_scale
+            min_y *= units_scale 
+            min_z *= units_scale
+            max_x *= units_scale
+            max_y *= units_scale
+            max_z *= units_scale
+            
+            original_min_x *= units_scale
+            original_min_y *= units_scale
+            original_min_z *= units_scale
+            original_max_x *= units_scale
+            original_max_y *= units_scale
+            original_max_z *= units_scale
+            
+            # Scale all coordinate data
+            for entry in data:
+                entry_type = entry["type"]
+                if entry_type in ["feed", "arcfeed", "trav"]:
+                    moves = entry.get(entry_type, [])
+                    for move in moves:
+                        coords = move.get("coords", [])
+                        if len(coords) >= 6:
+                            for i in range(6):
+                                coords[i] *= units_scale
+        
         center_x = (min_x + max_x) / 2
         center_y = (min_y + max_y) / 2
         center_z = (min_z + max_z) / 2
@@ -267,9 +302,16 @@ class BackplotGenerator(rs274.glcanon.GlCanonDraw):
         max_y = norm_max_y
         max_z = norm_max_x
         
+        
         rootData = {
             "backplot": data,
             "extents": [min_x, min_y, min_z, max_x, max_y, max_z],
+            "transform": {
+                "center": [center_x, center_y, center_z],
+                "scale_factor": scale_factor,
+                "original_min": [original_min_x, original_min_y, original_min_z],
+                "original_max": [original_max_x, original_max_y, original_max_z]
+            }
         }
         return json.dumps(rootData, separators=(",", ":"))
 

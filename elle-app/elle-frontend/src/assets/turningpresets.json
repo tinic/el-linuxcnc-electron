@@ -13,7 +13,8 @@
       "roughingPasses": 3,
       "finishingAllowance": 0.1,
       "taperAngle": 1.79,
-      "stepDown": 0.5
+      "stepDown": 0.25,
+      "springPasses": 1
     },
     {
       "name": "¼-18 NPT-2A",
@@ -28,7 +29,8 @@
       "roughingPasses": 4,
       "finishingAllowance": 0.1,
       "taperAngle": 1.79,
-      "stepDown": 0.5
+      "stepDown": 0.25,
+      "springPasses": 1
     },
     {
       "name": "⅜-18 NPT-2A",
@@ -43,7 +45,8 @@
       "roughingPasses": 4,
       "finishingAllowance": 0.1,
       "taperAngle": 1.79,
-      "stepDown": 0.6
+      "stepDown": 0.3,
+      "springPasses": 1
     },
     {
       "name": "½-14 NPT-2A",
@@ -58,7 +61,8 @@
       "roughingPasses": 5,
       "finishingAllowance": 0.15,
       "taperAngle": 1.79,
-      "stepDown": 0.6
+      "stepDown": 0.3,
+      "springPasses": 1
     },
     {
       "name": "¾-14 NPT-2A",
@@ -73,7 +77,8 @@
       "roughingPasses": 5,
       "finishingAllowance": 0.15,
       "taperAngle": 1.79,
-      "stepDown": 0.7
+      "stepDown": 0.35,
+      "springPasses": 1
     },
     {
       "name": "1-11.5 NPT-2A",
@@ -88,7 +93,8 @@
       "roughingPasses": 6,
       "finishingAllowance": 0.2,
       "taperAngle": 1.79,
-      "stepDown": 0.7
+      "stepDown": 0.35,
+      "springPasses": 1
     },
     {
       "name": "1¼-11.5 NPT-2A",
@@ -103,7 +109,8 @@
       "roughingPasses": 6,
       "finishingAllowance": 0.2,
       "taperAngle": 1.79,
-      "stepDown": 0.8
+      "stepDown": 0.4,
+      "springPasses": 1
     },
     {
       "name": "1½-11.5 NPT-2A",
@@ -118,7 +125,8 @@
       "roughingPasses": 7,
       "finishingAllowance": 0.2,
       "taperAngle": 1.79,
-      "stepDown": 0.8
+      "stepDown": 0.4,
+      "springPasses": 1
     },
     {
       "name": "2-11.5 NPT-2A",
@@ -133,7 +141,8 @@
       "roughingPasses": 8,
       "finishingAllowance": 0.25,
       "taperAngle": 1.79,
-      "stepDown": 0.9
+      "stepDown": 0.45,
+      "springPasses": 1
     },
     {
       "name": "⅛-27 NPT-2B",
@@ -148,7 +157,8 @@
       "roughingPasses": 3,
       "finishingAllowance": 0.1,
       "taperAngle": 1.79,
-      "stepDown": 0.5
+      "stepDown": 0.25,
+      "springPasses": 1
     },
     {
       "name": "¼-18 NPT-2B",
@@ -163,7 +173,8 @@
       "roughingPasses": 4,
       "finishingAllowance": 0.1,
       "taperAngle": 1.79,
-      "stepDown": 0.5
+      "stepDown": 0.25,
+      "springPasses": 1
     },
     {
       "name": "⅜-18 NPT-2B",
@@ -178,7 +189,8 @@
       "roughingPasses": 4,
       "finishingAllowance": 0.1,
       "taperAngle": 1.79,
-      "stepDown": 0.6
+      "stepDown": 0.3,
+      "springPasses": 1
     },
     {
       "name": "½-14 NPT-2B",
@@ -193,7 +205,8 @@
       "roughingPasses": 5,
       "finishingAllowance": 0.15,
       "taperAngle": 1.79,
-      "stepDown": 0.6
+      "stepDown": 0.3,
+      "springPasses": 1
     },
     {
       "name": "¾-14 NPT-2B",
@@ -208,7 +221,8 @@
       "roughingPasses": 5,
       "finishingAllowance": 0.15,
       "taperAngle": 1.79,
-      "stepDown": 0.7
+      "stepDown": 0.35,
+      "springPasses": 1
     },
     {
       "name": "1-11.5 NPT-2B",
@@ -223,7 +237,8 @@
       "roughingPasses": 6,
       "finishingAllowance": 0.2,
       "taperAngle": 1.79,
-      "stepDown": 0.7
+      "stepDown": 0.35,
+      "springPasses": 1
     },
     {
       "name": "1¼-11.5 NPT-2B",
@@ -238,7 +253,8 @@
       "roughingPasses": 6,
       "finishingAllowance": 0.2,
       "taperAngle": 1.79,
-      "stepDown": 0.8
+      "stepDown": 0.4,
+      "springPasses": 1
     },
     {
       "name": "1½-11.5 NPT-2B",
@@ -253,7 +269,8 @@
       "roughingPasses": 7,
       "finishingAllowance": 0.2,
       "taperAngle": 1.79,
-      "stepDown": 0.8
+      "stepDown": 0.4,
+      "springPasses": 1
     },
     {
       "name": "2-11.5 NPT-2B",
@@ -268,7 +285,8 @@
       "roughingPasses": 8,
       "finishingAllowance": 0.25,
       "taperAngle": 1.79,
-      "stepDown": 0.9
+      "stepDown": 0.45,
+      "springPasses": 1
     }
   ]
 }

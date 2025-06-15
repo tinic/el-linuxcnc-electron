@@ -236,7 +236,7 @@ def generate_turning_gcode_core(params, for_backplot=False):
     angle = float(params['Angle']) # Taper angle
     step_down = float(params['StepDown']) # Cut depth of a single pass
     final_step_down = float(params['FinalStepDown']) # Cut depth of the final pass
-    spring_passes = int(params['SpingPasses']) # Number of spring passes to run after final cut
+    spring_passes = int(params['SpringPasses']) # Number of spring passes to run after final cut
     x_return = float(params['XReturn']) # final position
     z_return = float(params['ZReturn']) # final position position 
 
@@ -287,8 +287,17 @@ def generate_turning_gcode_core(params, for_backplot=False):
     
     # Calculate common values
     z_travel = z_end - z_start
-    retract_x = x_start + 2.0 if x_start > x_end else x_start - 2.0
-    direction = -1 if x_start > x_end else 1  # External vs internal
+    
+    # The cutting starts from the largest required diameter
+    # For a taper, this is the larger of x_start or x_end
+    max_radius = max(x_start, x_end)
+    
+    # Determine retract position - always clear of the work
+    retract_x = max_radius + 2.0
+    
+    # For external turning, we always cut inward (reduce radius)
+    # The depth represents how much material to remove from the starting stock
+    direction = -1
     
     # Execute all passes
     for pass_type, pass_num, total_of_type, depth in passes:
@@ -298,12 +307,20 @@ def generate_turning_gcode_core(params, for_backplot=False):
         else:
             gcode_lines.append(f"({pass_type} pass)")
         
-        # Calculate X position for this depth
-        current_x = x_start + (depth * direction)
+        # For external turning, we cut from outside in
+        # The depth represents how deep we've cut into the material
+        # We need to offset from the maximum diameter, not x_start
+        current_cut_depth = depth
         
-        # Calculate X positions with taper compensation
-        adjusted_x_start = current_x + (z_lead * math.tan(angle_rad))
-        adjusted_x_end = current_x + (z_travel * math.tan(angle_rad))
+        # Calculate the baseline X positions for this pass
+        # These are offset inward from the final taper surface by the remaining depth
+        remaining_depth = total_cut_depth - current_cut_depth
+        base_x_start = x_start + remaining_depth
+        base_x_end = x_end + remaining_depth
+        
+        # Apply taper compensation for the actual cutting positions
+        adjusted_x_start = base_x_start + (z_lead * math.tan(angle_rad))
+        adjusted_x_end = base_x_end + (z_travel * math.tan(angle_rad))
         
         # Execute the pass
         gcode_lines.append(f"G0 X{adjusted_x_start:.6f} Z{z_lead:.6f}")
@@ -313,6 +330,12 @@ def generate_turning_gcode_core(params, for_backplot=False):
     
     # Return to safe position
     gcode_lines.append(f"G0 X{x_return:.6f} Z{z_return:.6f}")
+    
+    # Debug: Print the generated G-code
+    print("=== GENERATED TURNING G-CODE ===")
+    for i, line in enumerate(gcode_lines):
+        print(f"{i+1:3d}: {line}")
+    print("=== END G-CODE ===")
     
     return gcode_lines
 

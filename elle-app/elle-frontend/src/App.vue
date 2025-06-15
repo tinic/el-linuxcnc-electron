@@ -120,6 +120,17 @@ const displayZPos = computed(() => {
   return zpos.value; // Z position is always radius, not affected by diameter mode
 });
 
+// Computed display values for turning parameters in diameter mode
+const displayTurningXStart = computed(() => {
+  if (turningXStart.value === null) return null;
+  return diameterMode.value ? turningXStart.value * 2 : turningXStart.value;
+});
+
+const displayTurningXEnd = computed(() => {
+  if (turningXEnd.value === null) return null;
+  return diameterMode.value ? turningXEnd.value * 2 : turningXEnd.value;
+});
+
 // Machine status computed from various states
 const machineStatus = computed(() => {
   // Error states take highest priority
@@ -425,11 +436,13 @@ function setFinalNumber(value: number) {
       setThreadingParameter(ThreadingEntryType.threadSpringCuts, value);
       break;
     case TurningEntryType.turningXStart:
-      setTurningParameter(TurningEntryType.turningXStart, value);
+      const actualTurningXStart = diameterMode.value ? value / 2 : value;
+      setTurningParameter(TurningEntryType.turningXStart, actualTurningXStart);
       updatePitchFromTurning();
       break;
     case TurningEntryType.turningXEnd:
-      setTurningParameter(TurningEntryType.turningXEnd, value);
+      const actualTurningXEnd = diameterMode.value ? value / 2 : value;
+      setTurningParameter(TurningEntryType.turningXEnd, actualTurningXEnd);
       break;
     case TurningEntryType.turningZStart:
       setTurningParameter(TurningEntryType.turningZStart, value);
@@ -1766,23 +1779,23 @@ onUnmounted(() => {
             <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'XS')">XS</div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(TurningEntryType.turningXStart, turningXStart || 0)"
+                @click="numberClicked(TurningEntryType.turningXStart, displayTurningXStart || 0)"
                 :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningXStart && turningXStart === null }]"
                 :style="{ backgroundColor: entryActive == TurningEntryType.turningXStart ? '#666' : '#333' }"
-                :title="entryActive == TurningEntryType.turningXStart ? String(numberentry) : String(turningXStart ?? 'X Start')"
+                :title="entryActive == TurningEntryType.turningXStart ? String(numberentry) : String(displayTurningXStart ?? 'X Start')"
               >
-                {{ entryActive == TurningEntryType.turningXStart ? numberentry : (turningXStart ?? 'X Start') }}
+                {{ entryActive == TurningEntryType.turningXStart ? numberentry : (displayTurningXStart ?? 'X Start') }}
               </button>
             </div>
             <div class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer" @click="showTurningLabelPopover($event, 'XE')">XE</div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(TurningEntryType.turningXEnd, turningXEnd || 0)"
+                @click="numberClicked(TurningEntryType.turningXEnd, displayTurningXEnd || 0)"
                 :class="['w-full text-left dro-font-mode button-mode p-1 truncate', { 'placeholder-text': entryActive != TurningEntryType.turningXEnd && turningXEnd === null }]"
                 :style="{ backgroundColor: entryActive == TurningEntryType.turningXEnd ? '#666' : '#333' }"
-                :title="entryActive == TurningEntryType.turningXEnd ? String(numberentry) : String(turningXEnd ?? 'X End')"
+                :title="entryActive == TurningEntryType.turningXEnd ? String(numberentry) : String(displayTurningXEnd ?? 'X End')"
               >
-                {{ entryActive == TurningEntryType.turningXEnd ? numberentry : (turningXEnd ?? 'X End') }}
+                {{ entryActive == TurningEntryType.turningXEnd ? numberentry : (displayTurningXEnd ?? 'X End') }}
               </button>
             </div>
             <div class="col-2 p-0"></div>
