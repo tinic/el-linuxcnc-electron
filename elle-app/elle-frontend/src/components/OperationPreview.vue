@@ -202,6 +202,53 @@ const setupBackplot = () => {
     
     createStartingPositionCross();
     
+    // Create 2D stock visualization
+    const createStockVisualization = () => {
+      const params = props.operation.parameters;
+      
+      if (params.Stock && params.ZEnd) {
+        // For turning operations, show 2D stock profile
+        const stockRadius = parseFloat(params.Stock);
+        const zEnd = parseFloat(params.ZEnd);
+        const zStart = 0;
+        
+        // Transform to normalized coordinates
+        if (backplotData.transform) {
+          const transform = backplotData.transform;
+          const [centerX, centerY, centerZ] = transform.center;
+          const scaleFactor = transform.scale_factor;
+          
+          // Create solid 2D rectangular profile representing the stock
+          const stockGeometry = new THREE.BufferGeometry();
+          const vertices = new Float32Array([
+            // Triangle 1
+            (zStart - centerZ) * scaleFactor, 0, (0 - centerX) * scaleFactor,
+            (zEnd - centerZ) * scaleFactor, 0, (0 - centerX) * scaleFactor,
+            (zStart - centerZ) * scaleFactor, 0, (stockRadius - centerX) * scaleFactor,
+            // Triangle 2
+            (zEnd - centerZ) * scaleFactor, 0, (0 - centerX) * scaleFactor,
+            (zEnd - centerZ) * scaleFactor, 0, (stockRadius - centerX) * scaleFactor,
+            (zStart - centerZ) * scaleFactor, 0, (stockRadius - centerX) * scaleFactor
+          ]);
+          
+          stockGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+          
+          const stockMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0x0088ff, // Blue
+            transparent: true,
+            opacity: 0.3,
+            side: THREE.DoubleSide
+          });
+          
+          const stockOutline = new THREE.Mesh(stockGeometry, stockMaterial);
+          stockOutline.renderOrder = 1; // Render behind toolpath
+          renderer.scene?.add(stockOutline);
+        }
+      }
+    };
+    
+    createStockVisualization();
+    
     // Create unique materials for each line to avoid sharing issues
     const lines: { line: THREE.Line, entryType: string, materials: { future: THREE.LineBasicMaterial, active: THREE.LineBasicMaterial, completed: THREE.LineBasicMaterial } }[] = [];
     let lineCount = 0;
