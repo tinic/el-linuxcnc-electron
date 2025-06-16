@@ -37,6 +37,7 @@ const {
   zpos,
   apos,
   rpms,
+  rpmsSmoothed,
   cannedCycleRunning,
   errorState,
   putLinuxCNC,
@@ -1227,7 +1228,7 @@ onUnmounted(() => {
           :xpos="displayXPos"
           :zpos="displayZPos"
           :apos="apos"
-          :rpms="rpms"
+          :rpms="rpmsSmoothed"
           :xpitch="xpitch"
           :zpitch="zpitch"
           :xlock="xpitchactive"
@@ -1450,7 +1451,7 @@ onUnmounted(() => {
           :xpos="displayXPos"
           :zpos="displayZPos"
           :apos="apos"
-          :rpms="rpms"
+          :rpms="rpmsSmoothed"
           :xpitch="xpitch"
           :zpitch="zpitch"
           :xlock="xpitchactive"

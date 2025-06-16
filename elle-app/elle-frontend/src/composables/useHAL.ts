@@ -17,6 +17,7 @@ export function useHAL() {
   const zpos = ref(0)
   const apos = ref(0)
   const rpms = ref(0)
+  const rpmsSmoothed = ref(0)
   const cannedCycleRunning = ref(false)
   const errorState = ref(false)
   const xpitch = ref(0.1)
@@ -85,7 +86,10 @@ export function useHAL() {
           zpos.value = (halIn as any).position_z - zaxisoffset
           xpos.value = (halIn as any).position_x - xaxisoffset
           apos.value = Math.abs((((halIn as any).position_a - aaxisoffset) % 1) * 360)
-          rpms.value = Math.abs((halIn as any).speed_rps * 60)
+          const newRpm = Math.abs((halIn as any).speed_rps * 60)
+          rpms.value = newRpm
+          // Apply exponential smoothing filter (alpha = 0.2 for dampening)
+          rpmsSmoothed.value = rpmsSmoothed.value * 0.8 + newRpm * 0.2
           cannedCycleRunning.value = (halIn as any).program_running || false
           errorState.value = (halIn as any).error_state || false
         })
@@ -372,6 +376,7 @@ export function useHAL() {
     zpos,
     apos,
     rpms,
+    rpmsSmoothed,
     cannedCycleRunning,
     errorState,
     xpitch,
