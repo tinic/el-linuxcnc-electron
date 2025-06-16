@@ -20,14 +20,14 @@ enum EntryType {
   zPosition = 2,
   aPosition = 3,
   xPitch = 4,
-  zPitch = 5,
+  zPitch = 5
 }
 
 enum MenuType {
   manual = 0,
   cannedCycles = 1,
   halStatus = 2,
-  settings = 3,
+  settings = 3
 }
 
 const selectedMenu = ref(MenuType.manual)
@@ -112,20 +112,24 @@ const {
 } = useCannedCycles()
 
 // Computed display positions for diameter mode
-const displayXPos = computed(() => diameterMode.value ? xpos.value * 2 : xpos.value)
+const displayXPos = computed(() => (diameterMode.value ? xpos.value * 2 : xpos.value))
 
-const displayZPos = computed(() =>
-  zpos.value // Z position is always radius, not affected by diameter mode
+const displayZPos = computed(
+  () => zpos.value // Z position is always radius, not affected by diameter mode
 )
 
 // Computed display values for turning parameters in diameter mode
 const displayTurningTarget = computed(() => {
-  if (turningTarget.value === null) {return null}
+  if (turningTarget.value === null) {
+    return null
+  }
   return diameterMode.value ? turningTarget.value * 2 : turningTarget.value
 })
 
 const displayTurningStock = computed(() => {
-  if (turningStock.value === null) {return null}
+  if (turningStock.value === null) {
+    return null
+  }
   return diameterMode.value ? turningStock.value * 2 : turningStock.value
 })
 
@@ -178,8 +182,7 @@ const xpitchlabel = ref('…')
 const zpitchlabel = ref('…')
 const xpitchangle = ref(0)
 // Get settings from composable
-const { metric, diameterMode, defaultMetricOnStartup, isQuitting, loadSettings } =
-  useSettings()
+const { metric, diameterMode, defaultMetricOnStartup, isQuitting, loadSettings } = useSettings()
 
 const cursorpos = ref(0)
 
@@ -188,7 +191,7 @@ enum FeedMode {
   longitudinal = 1,
   cross = 2,
   frontCompound = 3,
-  backCompound = 4,
+  backCompound = 4
 }
 const selectedFeedMode = ref(FeedMode.longitudinal)
 
@@ -197,7 +200,7 @@ enum DirectionMode {
   forward = 1,
   reverse = 2,
   hold = 3,
-  idle = 4,
+  idle = 4
 }
 const selectedDirectionMode = ref(DirectionMode.forward)
 
@@ -206,7 +209,7 @@ enum CannedCycle {
   threading = 1,
   turning = 2,
   placeholder3 = 3,
-  placeholder4 = 4,
+  placeholder4 = 4
 }
 const selectedCannedCycle = ref(CannedCycle.none)
 
@@ -252,7 +255,7 @@ const menuItems = ref([
 enum NumpadInputStage {
   none = 0,
   start = 1,
-  entry = 2,
+  entry = 2
 }
 
 const entryActive = ref(0)
@@ -705,6 +708,8 @@ const forwardIcon = computed(() => {
       return '⬋'
     case FeedMode.backCompound:
       return '⬉'
+    default:
+      return ''
   }
 })
 
@@ -1178,7 +1183,7 @@ onUnmounted(() => {
                 :class="[
                   'stack-segment',
                   'segment-white',
-                  { active: machineStatus === 'cannedCycle' },
+                  { active: machineStatus === 'cannedCycle' }
                 ]"
               ></div>
               <div
@@ -1542,11 +1547,11 @@ onUnmounted(() => {
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
                     'placeholder-text':
-                      entryActive != ThreadingEntryType.threadPitch && threadPitch === null,
-                  },
+                      entryActive != ThreadingEntryType.threadPitch && threadPitch === null
+                  }
                 ]"
                 :style="{
-                  backgroundColor: entryActive == ThreadingEntryType.threadPitch ? '#666' : '#333',
+                  backgroundColor: entryActive == ThreadingEntryType.threadPitch ? '#666' : '#333'
                 }"
                 :title="
                   entryActive == ThreadingEntryType.threadPitch
@@ -1572,7 +1577,7 @@ onUnmounted(() => {
               <div
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
-                  { 'placeholder-text': threadDiameter === null },
+                  { 'placeholder-text': threadDiameter === null }
                 ]"
                 :style="{ backgroundColor: '#333', color: '#999', cursor: 'default' }"
                 :title="threadDiameter ?? 'Major Ø / Drill Size'"
@@ -1595,11 +1600,11 @@ onUnmounted(() => {
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
                     'placeholder-text':
-                      entryActive != ThreadingEntryType.threadZDepth && threadZDepth === null,
-                  },
+                      entryActive != ThreadingEntryType.threadZDepth && threadZDepth === null
+                  }
                 ]"
                 :style="{
-                  backgroundColor: entryActive == ThreadingEntryType.threadZDepth ? '#666' : '#333',
+                  backgroundColor: entryActive == ThreadingEntryType.threadZDepth ? '#666' : '#333'
                 }"
                 :title="
                   entryActive == ThreadingEntryType.threadZDepth
@@ -1627,11 +1632,11 @@ onUnmounted(() => {
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
                     'placeholder-text':
-                      entryActive != ThreadingEntryType.threadXDepth && threadXDepth === null,
-                  },
+                      entryActive != ThreadingEntryType.threadXDepth && threadXDepth === null
+                  }
                 ]"
                 :style="{
-                  backgroundColor: entryActive == ThreadingEntryType.threadXDepth ? '#666' : '#333',
+                  backgroundColor: entryActive == ThreadingEntryType.threadXDepth ? '#666' : '#333'
                 }"
                 :title="
                   entryActive == ThreadingEntryType.threadXDepth
@@ -1662,11 +1667,11 @@ onUnmounted(() => {
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
                     'placeholder-text':
-                      entryActive != ThreadingEntryType.threadZEnd && threadZEnd === null,
-                  },
+                      entryActive != ThreadingEntryType.threadZEnd && threadZEnd === null
+                  }
                 ]"
                 :style="{
-                  backgroundColor: entryActive == ThreadingEntryType.threadZEnd ? '#666' : '#333',
+                  backgroundColor: entryActive == ThreadingEntryType.threadZEnd ? '#666' : '#333'
                 }"
                 :title="
                   entryActive == ThreadingEntryType.threadZEnd
@@ -1692,11 +1697,11 @@ onUnmounted(() => {
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
                     'placeholder-text':
-                      entryActive != ThreadingEntryType.threadAngle && threadAngle === null,
-                  },
+                      entryActive != ThreadingEntryType.threadAngle && threadAngle === null
+                  }
                 ]"
                 :style="{
-                  backgroundColor: entryActive == ThreadingEntryType.threadAngle ? '#666' : '#333',
+                  backgroundColor: entryActive == ThreadingEntryType.threadAngle ? '#666' : '#333'
                 }"
                 :title="
                   entryActive == ThreadingEntryType.threadAngle
@@ -1727,12 +1732,12 @@ onUnmounted(() => {
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
                     'placeholder-text':
-                      entryActive != ThreadingEntryType.threadZPullout && threadZPullout === null,
-                  },
+                      entryActive != ThreadingEntryType.threadZPullout && threadZPullout === null
+                  }
                 ]"
                 :style="{
                   backgroundColor:
-                    entryActive == ThreadingEntryType.threadZPullout ? '#666' : '#333',
+                    entryActive == ThreadingEntryType.threadZPullout ? '#666' : '#333'
                 }"
                 :title="
                   entryActive == ThreadingEntryType.threadZPullout
@@ -1760,12 +1765,12 @@ onUnmounted(() => {
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
                     'placeholder-text':
-                      entryActive != ThreadingEntryType.threadXPullout && threadXPullout === null,
-                  },
+                      entryActive != ThreadingEntryType.threadXPullout && threadXPullout === null
+                  }
                 ]"
                 :style="{
                   backgroundColor:
-                    entryActive == ThreadingEntryType.threadXPullout ? '#666' : '#333',
+                    entryActive == ThreadingEntryType.threadXPullout ? '#666' : '#333'
                 }"
                 :title="
                   entryActive == ThreadingEntryType.threadXPullout
@@ -1796,12 +1801,11 @@ onUnmounted(() => {
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
                     'placeholder-text':
-                      entryActive != ThreadingEntryType.threadCutMult && threadCutMult === null,
-                  },
+                      entryActive != ThreadingEntryType.threadCutMult && threadCutMult === null
+                  }
                 ]"
                 :style="{
-                  backgroundColor:
-                    entryActive == ThreadingEntryType.threadCutMult ? '#666' : '#333',
+                  backgroundColor: entryActive == ThreadingEntryType.threadCutMult ? '#666' : '#333'
                 }"
                 :title="
                   entryActive == ThreadingEntryType.threadCutMult
@@ -1829,12 +1833,12 @@ onUnmounted(() => {
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
                     'placeholder-text':
-                      entryActive != ThreadingEntryType.threadFirstCut && threadFirstCut === null,
-                  },
+                      entryActive != ThreadingEntryType.threadFirstCut && threadFirstCut === null
+                  }
                 ]"
                 :style="{
                   backgroundColor:
-                    entryActive == ThreadingEntryType.threadFirstCut ? '#666' : '#333',
+                    entryActive == ThreadingEntryType.threadFirstCut ? '#666' : '#333'
                 }"
                 :title="
                   entryActive == ThreadingEntryType.threadFirstCut
@@ -1866,12 +1870,12 @@ onUnmounted(() => {
                   {
                     'placeholder-text':
                       entryActive != ThreadingEntryType.threadSpringCuts &&
-                      threadSpringCuts === null,
-                  },
+                      threadSpringCuts === null
+                  }
                 ]"
                 :style="{
                   backgroundColor:
-                    entryActive == ThreadingEntryType.threadSpringCuts ? '#666' : '#333',
+                    entryActive == ThreadingEntryType.threadSpringCuts ? '#666' : '#333'
                 }"
                 :title="
                   entryActive == ThreadingEntryType.threadSpringCuts
@@ -1899,11 +1903,11 @@ onUnmounted(() => {
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
                     'placeholder-text':
-                      entryActive != ThreadingEntryType.threadMinCut && threadMinCut === null,
-                  },
+                      entryActive != ThreadingEntryType.threadMinCut && threadMinCut === null
+                  }
                 ]"
                 :style="{
-                  backgroundColor: entryActive == ThreadingEntryType.threadMinCut ? '#666' : '#333',
+                  backgroundColor: entryActive == ThreadingEntryType.threadMinCut ? '#666' : '#333'
                 }"
                 :title="
                   entryActive == ThreadingEntryType.threadMinCut
@@ -2045,11 +2049,11 @@ onUnmounted(() => {
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
                     'placeholder-text':
-                      entryActive != TurningEntryType.turningTarget && turningTarget === null,
-                  },
+                      entryActive != TurningEntryType.turningTarget && turningTarget === null
+                  }
                 ]"
                 :style="{
-                  backgroundColor: entryActive == TurningEntryType.turningTarget ? '#666' : '#333',
+                  backgroundColor: entryActive == TurningEntryType.turningTarget ? '#666' : '#333'
                 }"
                 :title="
                   entryActive == TurningEntryType.turningTarget
@@ -2077,11 +2081,11 @@ onUnmounted(() => {
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
                     'placeholder-text':
-                      entryActive != TurningEntryType.turningStock && turningStock === null,
-                  },
+                      entryActive != TurningEntryType.turningStock && turningStock === null
+                  }
                 ]"
                 :style="{
-                  backgroundColor: entryActive == TurningEntryType.turningStock ? '#666' : '#333',
+                  backgroundColor: entryActive == TurningEntryType.turningStock ? '#666' : '#333'
                 }"
                 :title="
                   entryActive == TurningEntryType.turningStock
@@ -2112,11 +2116,11 @@ onUnmounted(() => {
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
                     'placeholder-text':
-                      entryActive != TurningEntryType.turningZEnd && turningZEnd === null,
-                  },
+                      entryActive != TurningEntryType.turningZEnd && turningZEnd === null
+                  }
                 ]"
                 :style="{
-                  backgroundColor: entryActive == TurningEntryType.turningZEnd ? '#666' : '#333',
+                  backgroundColor: entryActive == TurningEntryType.turningZEnd ? '#666' : '#333'
                 }"
                 :title="
                   entryActive == TurningEntryType.turningZEnd
@@ -2145,12 +2149,11 @@ onUnmounted(() => {
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
                     'placeholder-text':
-                      entryActive != TurningEntryType.turningFeedRate && turningFeedRate === null,
-                  },
+                      entryActive != TurningEntryType.turningFeedRate && turningFeedRate === null
+                  }
                 ]"
                 :style="{
-                  backgroundColor:
-                    entryActive == TurningEntryType.turningFeedRate ? '#666' : '#333',
+                  backgroundColor: entryActive == TurningEntryType.turningFeedRate ? '#666' : '#333'
                 }"
                 :title="
                   entryActive == TurningEntryType.turningFeedRate
@@ -2178,12 +2181,11 @@ onUnmounted(() => {
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
                     'placeholder-text':
-                      entryActive != TurningEntryType.turningStepDown && turningStepDown === null,
-                  },
+                      entryActive != TurningEntryType.turningStepDown && turningStepDown === null
+                  }
                 ]"
                 :style="{
-                  backgroundColor:
-                    entryActive == TurningEntryType.turningStepDown ? '#666' : '#333',
+                  backgroundColor: entryActive == TurningEntryType.turningStepDown ? '#666' : '#333'
                 }"
                 :title="
                   entryActive == TurningEntryType.turningStepDown
@@ -2215,12 +2217,12 @@ onUnmounted(() => {
                   {
                     'placeholder-text':
                       entryActive != TurningEntryType.turningSpringPasses &&
-                      turningSpringPasses === null,
-                  },
+                      turningSpringPasses === null
+                  }
                 ]"
                 :style="{
                   backgroundColor:
-                    entryActive == TurningEntryType.turningSpringPasses ? '#666' : '#333',
+                    entryActive == TurningEntryType.turningSpringPasses ? '#666' : '#333'
                 }"
                 :title="
                   entryActive == TurningEntryType.turningSpringPasses
@@ -2251,12 +2253,12 @@ onUnmounted(() => {
                   {
                     'placeholder-text':
                       entryActive != TurningEntryType.turningFinalStepDown &&
-                      turningFinalStepDown === null,
-                  },
+                      turningFinalStepDown === null
+                  }
                 ]"
                 :style="{
                   backgroundColor:
-                    entryActive == TurningEntryType.turningFinalStepDown ? '#666' : '#333',
+                    entryActive == TurningEntryType.turningFinalStepDown ? '#666' : '#333'
                 }"
                 :title="
                   entryActive == TurningEntryType.turningFinalStepDown
@@ -2290,12 +2292,12 @@ onUnmounted(() => {
                   {
                     'placeholder-text':
                       entryActive != TurningEntryType.turningTaperAngle &&
-                      turningTaperAngle === null,
-                  },
+                      turningTaperAngle === null
+                  }
                 ]"
                 :style="{
                   backgroundColor:
-                    entryActive == TurningEntryType.turningTaperAngle ? '#666' : '#333',
+                    entryActive == TurningEntryType.turningTaperAngle ? '#666' : '#333'
                 }"
                 :title="
                   entryActive == TurningEntryType.turningTaperAngle

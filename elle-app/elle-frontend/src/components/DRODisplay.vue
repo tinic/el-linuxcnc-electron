@@ -23,24 +23,24 @@ enum NumberEntry {
 }
 
 interface Props {
-  xpos: number
-  zpos: number
-  apos: number
-  rpms: number
-  xpitch: number
-  zpitch: number
-  xlock: boolean
-  zlock: boolean
-  xpitchactive: boolean
-  zpitchactive: boolean
-  xpitchlabel: string
-  zpitchlabel: string
-  numberentry: number
-  entryActive: number
-  metric: boolean
-  cursorpos: number
-  diameterMode: boolean
-  showXPitch: boolean
+  xpos?: number
+  zpos?: number
+  apos?: number
+  rpms?: number
+  xpitch?: number
+  zpitch?: number
+  xlock?: boolean
+  zlock?: boolean
+  xpitchactive?: boolean
+  zpitchactive?: boolean
+  xpitchlabel?: string
+  zpitchlabel?: string
+  numberentry?: number
+  entryActive?: number
+  metric?: boolean
+  cursorpos?: number
+  diameterMode?: boolean
+  showXPitch?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {

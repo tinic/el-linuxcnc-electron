@@ -12,14 +12,14 @@ const dialog = useDialog()
 const headers: string[] = []
 
 let axis: number = 0
-for (var i: number = 0; i < json.length; i++) {
+for (let i: number = 0; i < json.length; i++) {
   if (json[i].axis == dialogRef.value.data.axis) {
     axis = i
     break
   }
 }
-for (var i: number = 0; i < json[axis].sections.length; i++) {
-  headers.push(json[axis].sections[i].header)
+for (let j: number = 0; j < json[axis].sections.length; j++) {
+  headers.push(json[axis].sections[j].header)
 }
 
 const selectPitch = (name: string, pitch: number, type: string) => {
@@ -39,7 +39,7 @@ onMounted(() => {})
       :header="title"
     >
       <div class="grid dro-font-preset-button">
-        <div v-for="(pitch, pindex) in json[axis].sections[sindex].pitches" class="col-3 p-1">
+        <div v-for="(pitch, pindex) in json[axis].sections[sindex].pitches" :key="pindex" class="col-3 p-1">
           <button
             class="w-full h-full button-pitchselector"
             @click="selectPitch(pitch.name, pitch.value, pitch.type)"
