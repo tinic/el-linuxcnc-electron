@@ -40,7 +40,6 @@ interface TurningPreset {
   // Common properties
   target: number;
   stock: number;
-  zStart: number;
   zEnd: number;
   feedRate: number;
   finalStepDown: number;
