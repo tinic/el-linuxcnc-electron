@@ -19,7 +19,7 @@ const props = withDefaults(defineProps<Props>(), {
   colSpan: 4,
   readonly: false,
   showPopover: true,
-  variant: 'default',
+  variant: 'default'
 })
 
 const emit = defineEmits<{
@@ -71,13 +71,13 @@ const buttonClasses = computed(() => {
 })
 
 const buttonStyle = computed(() => ({
-  backgroundColor: isActive.value ? '#666' : '#333',
+  backgroundColor: isActive.value ? '#666' : '#333'
 }))
 
 const readonlyStyle = computed(() => ({
   backgroundColor: '#333',
   color: '#999',
-  cursor: 'default',
+  cursor: 'default'
 }))
 </script>
 
@@ -88,14 +88,19 @@ const readonlyStyle = computed(() => ({
   <div :class="`col-${colSpan} p-1`">
     <button
       v-if="!readonly"
-      @click="handleNumberClick"
       :class="buttonClasses"
       :style="buttonStyle"
       :title="isActive ? String(numberEntry) : String(value ?? placeholder)"
+      @click="handleNumberClick"
     >
       {{ displayValue }}
     </button>
-    <div v-else :class="buttonClasses" :style="readonlyStyle" :title="String(value ?? placeholder)">
+    <div
+      v-else
+      :class="buttonClasses"
+      :style="readonlyStyle"
+      :title="String(value ?? placeholder)"
+    >
       {{ displayValue }}
     </div>
   </div>

@@ -9,7 +9,7 @@ import {
   generateThreadingGcode,
   putTurning,
   generateTurningGcode,
-  cleanupCannedCycles,
+  cleanupCannedCycles
 } from '../HAL'
 
 export function useHAL() {
@@ -50,8 +50,8 @@ export function useHAL() {
     buttondowntime = 0
     buttonlefttime = 0
     buttonrighttime = 0
-    let halOut = {
-      control_stop_now: 1,
+    const halOut = {
+      control_stop_now: 1
     }
     putHalOut(halOut)
   }
@@ -89,14 +89,16 @@ export function useHAL() {
           cannedCycleRunning.value = (halIn as any).program_running || false
           errorState.value = (halIn as any).error_state || false
         })
-      } catch {}
+      } catch {
+        // Ignore polling errors
+      }
       if (buttonuptime > 0) {
         halOutScheduled = false
         let velocity = (Date.now() / 1000 - buttonuptime) * 3
         velocity = Math.min(velocity, 3.0)
-        let halOut = {
+        const halOut = {
           control_x_type: 1,
-          velocity_x_cmd: -velocity,
+          velocity_x_cmd: -velocity
         }
         putHalOut(halOut)
       }
@@ -104,9 +106,9 @@ export function useHAL() {
         halOutScheduled = false
         let velocity = (Date.now() / 1000 - buttondowntime) * 3
         velocity = Math.min(velocity, 3.0)
-        let halOut = {
+        const halOut = {
           control_x_type: 1,
-          velocity_x_cmd: +velocity,
+          velocity_x_cmd: +velocity
         }
         putHalOut(halOut)
       }
@@ -114,9 +116,9 @@ export function useHAL() {
         halOutScheduled = false
         let velocity = (Date.now() / 1000 - buttonlefttime) * 3
         velocity = Math.min(velocity, 6.0)
-        let halOut = {
+        const halOut = {
           control_z_type: 1,
-          velocity_z_cmd: -velocity,
+          velocity_z_cmd: -velocity
         }
         putHalOut(halOut)
       }
@@ -124,9 +126,9 @@ export function useHAL() {
         halOutScheduled = false
         let velocity = (Date.now() / 1000 - buttonrighttime) * 3
         velocity = Math.min(velocity, 6.0)
-        let halOut = {
+        const halOut = {
           control_z_type: 1,
-          velocity_z_cmd: +velocity,
+          velocity_z_cmd: +velocity
         }
         putHalOut(halOut)
       }
@@ -137,27 +139,27 @@ export function useHAL() {
       if (halOutScheduled) {
         halOutScheduled = false
         if (params.selectedMenu.value == params.MenuType.manual) {
-          let halOut = {
+          const halOut = {
             control_source: false,
             forward_z: zforward ? -zpitch.value : +zpitch.value,
             forward_x: xforward ? +xpitch.value : -xpitch.value,
             enable_z: zpitchactive.value,
             enable_x: xpitchactive.value,
             enable_stepper_z: zstepperactive.value,
-            enable_stepper_x: xstepperactive.value,
+            enable_stepper_x: xstepperactive.value
           }
           putHalOut(halOut)
         } else if (params.selectedMenu.value == params.MenuType.cannedCycles) {
           params.selectedDirectionMode.value = params.DirectionMode.hold
           params.selectedFeedMode.value = params.FeedMode.backCompound
-          let halOut = {
+          const halOut = {
             control_source: true,
             forward_z: zforward ? -zpitch.value : +zpitch.value,
             forward_x: xforward ? +xpitch.value : -xpitch.value,
             enable_z: true,
             enable_x: true,
             enable_stepper_z: true,
-            enable_stepper_x: true,
+            enable_stepper_x: true
           }
           putHalOut(halOut)
         }
@@ -170,9 +172,9 @@ export function useHAL() {
   }
 
   const setAxisOffset = (axis: 'x' | 'z' | 'a', value: number) => {
-    if (axis === 'x') xaxisoffset = value
-    else if (axis === 'z') zaxisoffset = value
-    else if (axis === 'a') aaxisoffset = value
+    if (axis === 'x') {xaxisoffset = value}
+    else if (axis === 'z') {zaxisoffset = value}
+    else if (axis === 'a') {aaxisoffset = value}
   }
 
   const scheduleHALOut = () => {
@@ -180,10 +182,10 @@ export function useHAL() {
   }
 
   const setButtonTime = (button: 'up' | 'down' | 'left' | 'right', time: number) => {
-    if (button === 'up') buttonuptime = time
-    else if (button === 'down') buttondowntime = time
-    else if (button === 'left') buttonlefttime = time
-    else if (button === 'right') buttonrighttime = time
+    if (button === 'up') {buttonuptime = time}
+    else if (button === 'down') {buttondowntime = time}
+    else if (button === 'left') {buttonlefttime = time}
+    else if (button === 'right') {buttonrighttime = time}
   }
 
   const scheduleButtonUp = () => {
@@ -191,9 +193,9 @@ export function useHAL() {
   }
 
   const getAxisOffset = (axis: 'x' | 'z' | 'a') => {
-    if (axis === 'x') return xaxisoffset
-    else if (axis === 'z') return zaxisoffset
-    else if (axis === 'a') return aaxisoffset
+    if (axis === 'x') {return xaxisoffset}
+    else if (axis === 'z') {return zaxisoffset}
+    else if (axis === 'a') {return aaxisoffset}
     return 0
   }
 
@@ -397,6 +399,6 @@ export function useHAL() {
     scheduleButtonUp,
     getAxisOffset,
     setAxisValue,
-    updateHALOut,
+    updateHALOut
   }
 }

@@ -13,12 +13,12 @@ export const appConfig = new Store<AppConfig>({
   defaults: {
     setting: {
       diameterMode: false,
-      defaultMetricOnStartup: true,
-    },
+      defaultMetricOnStartup: true
+    }
   },
   schema: {
     setting: {
-      type: 'object',
-    },
-  },
+      type: 'object'
+    }
+  }
 })

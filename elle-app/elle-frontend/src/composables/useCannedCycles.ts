@@ -86,7 +86,7 @@ export function useCannedCycles() {
     FC: 'First Cut - initial cutting depth',
     CM: 'Cut Multiplier - depth reduction factor\n(0.5-1.0)',
     MC: 'Min Cut - minimum cutting depth',
-    SC: 'Spring Cuts - number of finishing passes',
+    SC: 'Spring Cuts - number of finishing passes'
   }
 
   // Turning parameter descriptions
@@ -99,7 +99,7 @@ export function useCannedCycles() {
     SD: 'Step Down - depth per roughing pass\n(material removed per pass)',
     FS: 'Final Step Down - depth of final pass\n(finishing cut depth)',
     TA: 'Taper Angle - angle of taper cut\n(0° for straight turning)',
-    SP: 'Spring Passes - number of spring cuts\n(finishing passes at full depth)',
+    SP: 'Spring Passes - number of spring cuts\n(finishing passes at full depth)'
   }
 
   // Helper functions
@@ -108,13 +108,11 @@ export function useCannedCycles() {
     return parseFloat(result.toFixed(6))
   }
 
-  const formatForLinuxCNC = (value: number): number => {
-    return parseFloat(value.toFixed(6))
-  }
+  const formatForLinuxCNC = (value: number): number => parseFloat(value.toFixed(6))
 
   const showLabelPopover = (event: Event, labelKey: string) => {
     const popover = threadingPopovers.value[labelKey]
-    if (!popover) return
+    if (!popover) {return}
 
     if (currentPopoverLabel.value === labelKey && popover.visible) {
       popover.hide()
@@ -132,7 +130,7 @@ export function useCannedCycles() {
 
   const showTurningLabelPopover = (event: Event, labelKey: string) => {
     const popover = turningPopovers.value[labelKey]
-    if (!popover) return
+    if (!popover) {return}
 
     if (currentPopoverLabel.value === labelKey && popover.visible) {
       popover.hide()
@@ -234,7 +232,7 @@ export function useCannedCycles() {
       FirstCut: formatForLinuxCNC(firstCut),
       CutMult: formatForLinuxCNC(cutMult),
       MinCut: formatForLinuxCNC(minCut),
-      SpringCuts: Math.round(springCuts),
+      SpringCuts: Math.round(springCuts)
     }
   }
 
@@ -243,13 +241,13 @@ export function useCannedCycles() {
     const ThreadPresetSelector = defineAsyncComponent(
       () => import('../components/ThreadPresetSelector.vue')
     )
-    const dialogRef = dialog.open(ThreadPresetSelector, {
+    const _dialogRef = dialog.open(ThreadPresetSelector, {
       props: {
         header: 'Select Threading Preset',
         style: { width: '70vw' },
         breakpoints: { '960px': '75vw', '640px': '90vw' },
         position: 'top',
-        modal: true,
+        modal: true
       },
       emits: {
         onSelected: (preset: any) => {
@@ -269,10 +267,10 @@ export function useCannedCycles() {
           threadPresetName.value = preset.name
           threadDiameter.value = preset.Diameter || null
           updatePitchCallback()
-        },
+        }
       },
       templates: {},
-      onClose: (options) => {},
+      onClose: (_options) => {}
     })
   }
 
@@ -298,21 +296,21 @@ export function useCannedCycles() {
     const conversionFactor = toMetric ? 25.4 : 1 / 25.4
 
     if (threadPitch.value !== null)
-      threadPitch.value = roundParameterValue(threadPitch.value, conversionFactor)
+    {threadPitch.value = roundParameterValue(threadPitch.value, conversionFactor)}
     if (threadXDepth.value !== null)
-      threadXDepth.value = roundParameterValue(threadXDepth.value, conversionFactor)
+    {threadXDepth.value = roundParameterValue(threadXDepth.value, conversionFactor)}
     if (threadZDepth.value !== null)
-      threadZDepth.value = roundParameterValue(threadZDepth.value, conversionFactor)
+    {threadZDepth.value = roundParameterValue(threadZDepth.value, conversionFactor)}
     if (threadZEnd.value !== null)
-      threadZEnd.value = roundParameterValue(threadZEnd.value, conversionFactor)
+    {threadZEnd.value = roundParameterValue(threadZEnd.value, conversionFactor)}
     if (threadXPullout.value !== null)
-      threadXPullout.value = roundParameterValue(threadXPullout.value, conversionFactor)
+    {threadXPullout.value = roundParameterValue(threadXPullout.value, conversionFactor)}
     if (threadZPullout.value !== null)
-      threadZPullout.value = roundParameterValue(threadZPullout.value, conversionFactor)
+    {threadZPullout.value = roundParameterValue(threadZPullout.value, conversionFactor)}
     if (threadFirstCut.value !== null)
-      threadFirstCut.value = roundParameterValue(threadFirstCut.value, conversionFactor)
+    {threadFirstCut.value = roundParameterValue(threadFirstCut.value, conversionFactor)}
     if (threadMinCut.value !== null)
-      threadMinCut.value = roundParameterValue(threadMinCut.value, conversionFactor)
+    {threadMinCut.value = roundParameterValue(threadMinCut.value, conversionFactor)}
 
     threadPresetName.value = null
     threadDiameter.value = null
@@ -460,7 +458,7 @@ export function useCannedCycles() {
     resetTurningParameters,
     convertTurningParameters,
     setTurningParameter,
-    clearTurningParameter,
+    clearTurningParameter
   }
 
   // Turning validation
@@ -533,7 +531,7 @@ export function useCannedCycles() {
       FinalStepDown: formatForLinuxCNC(finalStepDown),
       SpringPasses: Math.round(springPasses),
       XReturn: formatForLinuxCNC(currentXPos),
-      ZReturn: formatForLinuxCNC(currentZPos),
+      ZReturn: formatForLinuxCNC(currentZPos)
     }
   }
 
@@ -542,13 +540,13 @@ export function useCannedCycles() {
     const TurningPresetSelector = defineAsyncComponent(
       () => import('../components/TurningPresetSelector.vue')
     )
-    const dialogRef = dialog.open(TurningPresetSelector, {
+    const _dialogRef = dialog.open(TurningPresetSelector, {
       props: {
         header: 'Select Turning Preset',
         style: { width: '70vw' },
         breakpoints: { '960px': '75vw', '640px': '90vw' },
         position: 'top',
-        modal: true,
+        modal: true
       },
       emits: {
         onSelected: (preset: any) => {
@@ -565,10 +563,10 @@ export function useCannedCycles() {
           turningSpringPasses.value = roundParameterValue(preset.springPasses || 0)
           turningPresetName.value = preset.name
           updatePitchCallback()
-        },
+        }
       },
       templates: {},
-      onClose: (options) => {},
+      onClose: (_options) => {}
     })
   }
 
@@ -591,19 +589,19 @@ export function useCannedCycles() {
     const conversionFactor = toMetric ? 25.4 : 1 / 25.4
 
     if (turningTarget.value !== null)
-      turningTarget.value = roundParameterValue(turningTarget.value, conversionFactor)
+    {turningTarget.value = roundParameterValue(turningTarget.value, conversionFactor)}
     if (turningStock.value !== null)
-      turningStock.value = roundParameterValue(turningStock.value, conversionFactor)
+    {turningStock.value = roundParameterValue(turningStock.value, conversionFactor)}
     if (turningZStart.value !== null)
-      turningZStart.value = roundParameterValue(turningZStart.value, conversionFactor)
+    {turningZStart.value = roundParameterValue(turningZStart.value, conversionFactor)}
     if (turningZEnd.value !== null)
-      turningZEnd.value = roundParameterValue(turningZEnd.value, conversionFactor)
+    {turningZEnd.value = roundParameterValue(turningZEnd.value, conversionFactor)}
     if (turningFeedRate.value !== null)
-      turningFeedRate.value = roundParameterValue(turningFeedRate.value, conversionFactor)
+    {turningFeedRate.value = roundParameterValue(turningFeedRate.value, conversionFactor)}
     if (turningStepDown.value !== null)
-      turningStepDown.value = roundParameterValue(turningStepDown.value, conversionFactor)
+    {turningStepDown.value = roundParameterValue(turningStepDown.value, conversionFactor)}
     if (turningFinalStepDown.value !== null)
-      turningFinalStepDown.value = roundParameterValue(turningFinalStepDown.value, conversionFactor)
+    {turningFinalStepDown.value = roundParameterValue(turningFinalStepDown.value, conversionFactor)}
 
     turningPresetName.value = null
   }

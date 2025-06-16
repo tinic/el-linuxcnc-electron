@@ -1,20 +1,24 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 
 const emit = defineEmits([
   'numberClicked',
   'zeroClicked',
   'pitchClicked',
   'otherClicked',
-  'metricClicked',
+  'metricClicked'
 ])
 
 enum NumberEntry {
-  none = 0,
+  // eslint-disable-next-line no-unused-vars
   xpos = 1,
+  // eslint-disable-next-line no-unused-vars
   zpos = 2,
+  // eslint-disable-next-line no-unused-vars
   apos = 3,
+  // eslint-disable-next-line no-unused-vars
   xpitch = 4,
+  // eslint-disable-next-line no-unused-vars
   zpitch = 5,
 }
 
@@ -57,13 +61,15 @@ const props = withDefaults(defineProps<Props>(), {
   metric: true,
   cursorpos: 0,
   diameterMode: false,
-  showXPitch: true,
+  showXPitch: true
 })
 
 enum ZeroEntry {
-  none = 0,
+  // eslint-disable-next-line no-unused-vars
   xpos0 = 1,
+  // eslint-disable-next-line no-unused-vars
   zpos0 = 2,
+  // eslint-disable-next-line no-unused-vars
   apos0 = 3,
 }
 
@@ -76,17 +82,15 @@ const xposFormatted = computed(() => {
   } else {
     xpos = props.metric ? xpos : xpos / 25.4
   }
-  let xposStr = xpos.toFixed(props.metric ? 3 : 4)
+  const xposStr = xpos.toFixed(props.metric ? 3 : 4)
   return ' '.repeat(numberTotalLength - xposStr.length) + xposStr
 })
 
-const xposUnitFormatted = computed(() => {
-  return (props.metric ? 'mm' : '″ ') + ' '.repeat(4)
-})
+const xposUnitFormatted = computed(() => (props.metric ? 'mm' : '″ ') + ' '.repeat(4))
 
 const xposCursorFormatted = computed(() => {
   if (props.entryActive == NumberEntry.xpos) {
-    return ' '.repeat(props.cursorpos + (props.metric ? 8 : 7)) + '_'
+    return `${' '.repeat(props.cursorpos + (props.metric ? 8 : 7))  }_`
   } else {
     return ''
   }
@@ -99,17 +103,15 @@ const zposFormatted = computed(() => {
   } else {
     zpos = props.metric ? zpos : zpos / 25.4
   }
-  let zposStr = zpos.toFixed(props.metric ? 3 : 4)
+  const zposStr = zpos.toFixed(props.metric ? 3 : 4)
   return ' '.repeat(numberTotalLength - zposStr.length) + zposStr
 })
 
-const zposUnitFormatted = computed(() => {
-  return (props.metric ? 'mm' : '″ ') + ' '.repeat(4)
-})
+const zposUnitFormatted = computed(() => (props.metric ? 'mm' : '″ ') + ' '.repeat(4))
 
 const zposCursorFormatted = computed(() => {
   if (props.entryActive == NumberEntry.zpos) {
-    return ' '.repeat(props.cursorpos + (props.metric ? 8 : 7)) + '_'
+    return `${' '.repeat(props.cursorpos + (props.metric ? 8 : 7))  }_`
   } else {
     return ''
   }
@@ -126,24 +128,22 @@ const aposFormatted = computed(() => {
       apos = 360 + (apos % 360)
     }
   }
-  let aposStr = apos.toFixed(3)
+  const aposStr = apos.toFixed(3)
   return ' '.repeat(numberTotalLength - aposStr.length) + aposStr
 })
 
-const aposUnitFormatted = computed(() => {
-  return '°' + ' '.repeat(5)
-})
+const aposUnitFormatted = computed(() => `°${  ' '.repeat(5)}`)
 
 const aposCursorFormatted = computed(() => {
   if (props.entryActive == NumberEntry.apos) {
-    return ' '.repeat(props.cursorpos + 8) + '_'
+    return `${' '.repeat(props.cursorpos + 8)  }_`
   } else {
     return ''
   }
 })
 
 const rpmsFormatted = computed(() => {
-  let rpmsStr = props.rpms?.toFixed(3)
+  const rpmsStr = props.rpms?.toFixed(3)
   return ' '.repeat(numberTotalLength - rpmsStr.length) + rpmsStr
 })
 
@@ -154,17 +154,15 @@ const xpitchFormatted = computed(() => {
   } else {
     xpitch = props.metric ? xpitch : xpitch / 25.4
   }
-  let xpitchStr = xpitch.toFixed(props.metric ? 3 : 4)
+  const xpitchStr = xpitch.toFixed(props.metric ? 3 : 4)
   return ' '.repeat(numberTotalLength - xpitchStr.length) + xpitchStr
 })
 
-const xpitchUnitFormatted = computed(() => {
-  return props.metric ? 'mm/rev' : '″/rev '
-})
+const xpitchUnitFormatted = computed(() => props.metric ? 'mm/rev' : '″/rev ')
 
 const xpitchCursorFormatted = computed(() => {
   if (props.entryActive == NumberEntry.xpitch) {
-    return ' '.repeat(props.cursorpos + (props.metric ? 8 : 7)) + '_'
+    return `${' '.repeat(props.cursorpos + (props.metric ? 8 : 7))  }_`
   } else {
     return ''
   }
@@ -177,25 +175,21 @@ const zpitchFormatted = computed(() => {
   } else {
     zpitch = props.metric ? zpitch : zpitch / 25.4
   }
-  let zpitchStr = zpitch.toFixed(props.metric ? 3 : 4)
+  const zpitchStr = zpitch.toFixed(props.metric ? 3 : 4)
   return ' '.repeat(numberTotalLength - zpitchStr.length) + zpitchStr
 })
 
-const zpitchUnitFormatted = computed(() => {
-  return props.metric ? 'mm/rev' : '″/rev '
-})
+const zpitchUnitFormatted = computed(() => props.metric ? 'mm/rev' : '″/rev ')
 
 const zpitchCursorFormatted = computed(() => {
   if (props.entryActive == NumberEntry.zpitch) {
-    return ' '.repeat(props.cursorpos + (props.metric ? 8 : 7)) + '_'
+    return `${' '.repeat(props.cursorpos + (props.metric ? 8 : 7))  }_`
   } else {
     return ''
   }
 })
 
-const rpmsUnitFormatted = computed(() => {
-  return 'rpm' + ' '.repeat(3)
-})
+const rpmsUnitFormatted = computed(() => `rpm${  ' '.repeat(3)}`)
 
 const xposClicked = () => {
   emit('numberClicked', NumberEntry.xpos, props.xpos)
@@ -252,114 +246,100 @@ const xposLabel = computed(() => {
     : `<span style="color:#aaaaaa">${prefix}X|</span>`
 })
 
-const zposLabel = computed(() => {
-  return props.entryActive == NumberEntry.zpos
-    ? '<span style="color:#ff0000"> Z|</span>'
-    : '<span style="color:#aaaaaa"> Z|</span>'
-})
+const zposLabel = computed(() => props.entryActive == NumberEntry.zpos
+  ? '<span style="color:#ff0000"> Z|</span>'
+  : '<span style="color:#aaaaaa"> Z|</span>')
 
-const aposLabel = computed(() => {
-  return props.entryActive == NumberEntry.apos
-    ? '<span style="color:#ff0000"> A|</span>'
-    : '<span style="color:#aaaaaa"> A|</span>'
-})
+const aposLabel = computed(() => props.entryActive == NumberEntry.apos
+  ? '<span style="color:#ff0000"> A|</span>'
+  : '<span style="color:#aaaaaa"> A|</span>')
 
-const xpitchLabel = computed(() => {
-  return props.entryActive == NumberEntry.xpitch
-    ? '<span style="color:#ff0000">PX|</span>'
-    : '<span style="color:#aaaaaa">PX|</span>'
-})
+const xpitchLabel = computed(() => props.entryActive == NumberEntry.xpitch
+  ? '<span style="color:#ff0000">PX|</span>'
+  : '<span style="color:#aaaaaa">PX|</span>')
 
-const zpitchLabel = computed(() => {
-  return props.entryActive == NumberEntry.zpitch
-    ? '<span style="color:#ff0000">PZ|</span>'
-    : '<span style="color:#aaaaaa">PZ|</span>'
-})
+const zpitchLabel = computed(() => props.entryActive == NumberEntry.zpitch
+  ? '<span style="color:#ff0000">PZ|</span>'
+  : '<span style="color:#aaaaaa">PZ|</span>')
 </script>
 
 <template>
   <div class="inline dro-font-display p-2 keep-spaces">
-    <div @click="xposClicked" class="inline">
-      <span v-html="xposLabel" />{{ xposFormatted }}<font size="-1">&nbsp;</font
-      ><font color="#aaaaaa">{{ xposUnitFormatted }}</font>
+    <div class="inline" @click="xposClicked">
+      <span v-html="xposLabel" />{{ xposFormatted }}<font size="-1">&nbsp;</font><font color="#aaaaaa">{{ xposUnitFormatted }}</font>
     </div>
     <button
-      @click="xpos0Clicked"
       class="dro-font-display-button align-content-center ml-5"
       style="width: 6em; padding: 0.75rem"
+      @click="xpos0Clicked"
     >
       X₀
     </button>
-    <i class="pi pi-lock ml-4" style="color: #ff0000; font-size: 1.5rem" v-if="props.xlock" />
-    <i class="pi pi-lock ml-4" style="color: #000000; font-size: 1.5rem" v-else />
-    <i class="pi pi-cog ml-4" style="color: #ff0000; font-size: 1.5rem" v-if="props.xpitchactive" />
-    <i class="pi pi-cog ml-4" style="color: #000000; font-size: 1.5rem" v-else />
+    <i v-if="props.xlock" class="pi pi-lock ml-4" style="color: #ff0000; font-size: 1.5rem" />
+    <i v-else class="pi pi-lock ml-4" style="color: #000000; font-size: 1.5rem" />
+    <i v-if="props.xpitchactive" class="pi pi-cog ml-4" style="color: #ff0000; font-size: 1.5rem" />
+    <i v-else class="pi pi-cog ml-4" style="color: #000000; font-size: 1.5rem" />
     <br />
-    <div @click="zposClicked" class="inline">
-      <span v-html="zposLabel" />{{ zposFormatted }}<font size="-1">&nbsp;</font
-      ><font color="#aaaaaa">{{ zposUnitFormatted }}</font>
+    <div class="inline" @click="zposClicked">
+      <span v-html="zposLabel" />{{ zposFormatted }}<font size="-1">&nbsp;</font><font color="#aaaaaa">{{ zposUnitFormatted }}</font>
     </div>
     <button
-      @click="zpos0Clicked"
       class="dro-font-display-button align-content-center ml-5"
       style="width: 6em; padding: 0.75rem"
+      @click="zpos0Clicked"
     >
       Z₀
     </button>
-    <i class="pi pi-lock ml-4" style="color: #ff0000; font-size: 1.5rem" v-if="props.zlock" />
-    <i class="pi pi-lock ml-4" style="color: #000000; font-size: 1.5rem" v-else />
-    <i class="pi pi-cog ml-4" style="color: #ff0000; font-size: 1.5rem" v-if="props.zpitchactive" />
-    <i class="pi pi-cog ml-4" style="color: #000000; font-size: 1.5rem" v-else />
+    <i v-if="props.zlock" class="pi pi-lock ml-4" style="color: #ff0000; font-size: 1.5rem" />
+    <i v-else class="pi pi-lock ml-4" style="color: #000000; font-size: 1.5rem" />
+    <i v-if="props.zpitchactive" class="pi pi-cog ml-4" style="color: #ff0000; font-size: 1.5rem" />
+    <i v-else class="pi pi-cog ml-4" style="color: #000000; font-size: 1.5rem" />
     <br />
-    <div @click="aposClicked" class="inline">
-      <span v-html="aposLabel" />{{ aposFormatted }}<font size="-1">&nbsp;</font
-      ><font color="#aaaaaa">{{ aposUnitFormatted }}</font>
+    <div class="inline" @click="aposClicked">
+      <span v-html="aposLabel" />{{ aposFormatted }}<font size="-1">&nbsp;</font><font color="#aaaaaa">{{ aposUnitFormatted }}</font>
     </div>
     <button
-      @click="apos0Clicked"
       class="dro-font-display-button align-content-center ml-5"
       style="width: 6em; padding: 0.75rem"
+      @click="apos0Clicked"
     >
       A₀
     </button>
     <br />
     <div
-      @click="xpitchClicked"
       class="inline"
       :style="{ visibility: showXPitch ? 'visible' : 'hidden' }"
+      @click="xpitchClicked"
     >
-      <span v-html="xpitchLabel" />{{ xpitchFormatted }}<font size="-1">&nbsp;</font
-      ><font color="#aaaaaa">{{ xpitchUnitFormatted }}</font>
+      <span v-html="xpitchLabel" />{{ xpitchFormatted }}<font size="-1">&nbsp;</font><font color="#aaaaaa">{{ xpitchUnitFormatted }}</font>
     </div>
     <button
-      @click="xpitchSelectClicked"
       class="dro-font-display-button align-content-center ml-5"
       style="width: 6em; padding: 0.75rem"
       :style="{ visibility: showXPitch ? 'visible' : 'hidden' }"
+      @click="xpitchSelectClicked"
     >
       {{ props.xpitchlabel }}
     </button>
     <br />
-    <div @click="zpitchClicked" class="inline">
-      <span v-html="zpitchLabel" />{{ zpitchFormatted }}<font size="-1">&nbsp;</font
-      ><font color="#aaaaaa">{{ zpitchUnitFormatted }}</font>
+    <div class="inline" @click="zpitchClicked">
+      <span v-html="zpitchLabel" />{{ zpitchFormatted }}<font size="-1">&nbsp;</font><font color="#aaaaaa">{{ zpitchUnitFormatted }}</font>
     </div>
     <button
-      @click="zpitchSelectClicked"
       class="dro-font-display-button align-content-center ml-5"
       style="width: 6em; padding: 0.75rem"
+      @click="zpitchSelectClicked"
     >
       {{ props.zpitchlabel }}
     </button>
     <br />
-    <div @click="rpmClicked" class="inline">
-      <font color="#aaaaaa">&nbsp;R|</font>{{ rpmsFormatted }}<font size="-1">&nbsp;</font
-      ><font color="#aaaaaa">{{ rpmsUnitFormatted }}</font>
+    <div class="inline" @click="rpmClicked">
+      <font color="#aaaaaa">&nbsp;R|</font>{{ rpmsFormatted }}<font size="-1">&nbsp;</font><font color="#aaaaaa">{{ rpmsUnitFormatted }}</font>
     </div>
     <button
-      @click="unitClicked"
       class="dro-font-display-button align-content-center ml-5"
       style="width: 6em; padding: 0.75rem"
+      @click="unitClicked"
     >
       mm↔in
     </button>

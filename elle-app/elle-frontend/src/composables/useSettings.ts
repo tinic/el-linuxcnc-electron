@@ -25,14 +25,14 @@ export function useSettings() {
   }
 
   const saveSettings = async () => {
-    if (isQuitting.value) return // Don't save settings when quitting
+    if (isQuitting.value) {return} // Don't save settings when quitting
 
     const userAgent = navigator.userAgent.toLowerCase()
     if (userAgent.indexOf(' electron/') > -1) {
       try {
         await window.settings.save({
           diameterMode: diameterMode.value,
-          defaultMetricOnStartup: defaultMetricOnStartup.value,
+          defaultMetricOnStartup: defaultMetricOnStartup.value
         })
       } catch (error) {
         console.error('Failed to save settings:', error)
@@ -51,6 +51,6 @@ export function useSettings() {
     defaultMetricOnStartup,
     isQuitting,
     loadSettings,
-    saveSettings,
+    saveSettings
   }
 }

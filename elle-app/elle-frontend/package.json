@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build --emptyOutDir",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint src/**/*.{js,ts,vue}",
+    "lint:fix": "eslint src/**/*.{js,ts,vue} --fix"
   },
   "dependencies": {
     "vue": "^3.5.12"

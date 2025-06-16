@@ -1,3 +1,5 @@
+/// <reference path="../../elle-electron/preload.d.ts" />
+
 export {}
 
 declare global {

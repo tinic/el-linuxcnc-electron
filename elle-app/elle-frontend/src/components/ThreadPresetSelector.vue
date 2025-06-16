@@ -27,7 +27,7 @@ const presets = presetsData
 const sections = [
   { header: 'Metric', presets: presets.metric },
   { header: 'Imperial', presets: presets.imperial },
-  { header: 'NPT', presets: presets.special },
+  { header: 'NPT', presets: presets.special }
 ]
 
 const presetClicked = (preset: ThreadPreset) => {
@@ -68,6 +68,7 @@ const shouldShowSeparator = (section: any, pindex: number): boolean => {
       :header="section.header"
     >
       <div class="grid dro-font-preset-button">
+        <!-- eslint-disable-next-line vue/no-unused-vars -->
         <template v-for="(preset, pindex) in section.presets" :key="pindex">
           <!-- Add visual separator before first internal thread -->
           <template v-if="shouldShowSeparator(section, pindex)">
@@ -76,7 +77,7 @@ const shouldShowSeparator = (section: any, pindex: number): boolean => {
             </div>
           </template>
           <div class="col-3 p-1">
-            <button @click="presetClicked(preset)" class="w-full h-full button-pitchselector">
+            <button class="w-full h-full button-pitchselector" @click="presetClicked(preset)">
               {{ preset.name }}
             </button>
             <br />

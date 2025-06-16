@@ -9,7 +9,7 @@ let cleanupURL = 'http://localhost:8000/hal/cleanup'
 let abortURL = 'http://localhost:8000/hal/abort'
 let estopURL = 'http://localhost:8000/hal/estop'
 
-var userAgent = navigator.userAgent.toLowerCase()
+const userAgent = navigator.userAgent.toLowerCase()
 if (userAgent.indexOf(' electron/') < 0) {
   halOutURL = 'http://lathev2:8000/hal/hal_out'
   halInURL = 'http://lathev2:8000/hal/hal_in'
@@ -30,14 +30,14 @@ export interface HalIn {
   speed_rps: number
 }
 
-export async function putThreading(threadingParams: Object) {
+export async function putThreading(threadingParams: object) {
   try {
     const response = await fetch(threadingURL, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify(threadingParams),
+      body: JSON.stringify(threadingParams)
     })
     const result = await response.json()
     return result
@@ -47,14 +47,14 @@ export async function putThreading(threadingParams: Object) {
   return {}
 }
 
-export async function generateThreadingGcode(threadingParams: Object) {
+export async function generateThreadingGcode(threadingParams: object) {
   try {
     const response = await fetch(threadingGenerateURL, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify(threadingParams),
+      body: JSON.stringify(threadingParams)
     })
     const result = await response.json()
     return result
@@ -64,14 +64,14 @@ export async function generateThreadingGcode(threadingParams: Object) {
   return {}
 }
 
-export async function putTurning(turningParams: Object) {
+export async function putTurning(turningParams: object) {
   try {
     const response = await fetch(turningURL, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify(turningParams),
+      body: JSON.stringify(turningParams)
     })
     const result = await response.json()
     return result
@@ -81,14 +81,14 @@ export async function putTurning(turningParams: Object) {
   return {}
 }
 
-export async function generateTurningGcode(turningParams: Object) {
+export async function generateTurningGcode(turningParams: object) {
   try {
     const response = await fetch(turningGenerateURL, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify(turningParams),
+      body: JSON.stringify(turningParams)
     })
     const result = await response.json()
     return result
@@ -103,13 +103,15 @@ export async function cleanupCannedCycles() {
     const response = await fetch(cleanupURL, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({}),
+      body: JSON.stringify({})
     })
     const result = await response.json()
     return result
-  } catch {}
+  } catch {
+    // Return empty object on error
+  }
   return {}
 }
 
@@ -118,9 +120,9 @@ export async function putAbort() {
     const response = await fetch(abortURL, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({}),
+      body: JSON.stringify({})
     })
     const result = await response.json()
     return result
@@ -135,9 +137,9 @@ export async function putEmergencyStop() {
     const response = await fetch(estopURL, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({}),
+      body: JSON.stringify({})
     })
     const result = await response.json()
     return result
@@ -147,14 +149,14 @@ export async function putEmergencyStop() {
   return {}
 }
 
-export async function putHalOut(halOut: Object) {
+export async function putHalOut(halOut: object) {
   try {
     const response = await fetch(halOutURL, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify(halOut),
+      body: JSON.stringify(halOut)
     })
     const result = await response.json()
     return result
@@ -164,14 +166,14 @@ export async function putHalOut(halOut: Object) {
   return {}
 }
 
-export async function putLinuxCNC(command: string, data: Object) {
+export async function putLinuxCNC(command: string, data: object) {
   try {
     const response = await fetch(linuxcncURL + command, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify(data)
     })
     const result = await response.json()
     return result
@@ -184,7 +186,5 @@ export async function putLinuxCNC(command: string, data: Object) {
 export function getHalIn(): Promise<HalIn[]> {
   return fetch(halInURL)
     .then((res) => res.json())
-    .then((res) => {
-      return res as HalIn[]
-    })
+    .then((res) => res as HalIn[])
 }

@@ -22,7 +22,7 @@ const stylePreset = definePreset(Aura, {
       700: '{green.700}',
       800: '{green.800}',
       900: '{green.900}',
-      950: '{green.950}',
+      950: '{green.950}'
     },
     colorScheme: {
       dark: {
@@ -38,11 +38,11 @@ const stylePreset = definePreset(Aura, {
           700: '{neutral.700}',
           800: '{neutral.800}',
           900: '{neutral.900}',
-          950: '{neutral.950}',
-        },
-      },
-    },
-  },
+          950: '{neutral.950}'
+        }
+      }
+    }
+  }
 })
 
 import Button from 'primevue/button'
@@ -62,13 +62,13 @@ const routes = [
   {
     path: '/',
     name: 'Home',
-    component: App,
-  },
+    component: App
+  }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
-  routes,
+  routes
 })
 
 const app = createApp(App)
@@ -76,21 +76,25 @@ app.use(PrimeVue, {
   theme: {
     preset: stylePreset,
     options: {
-      darkModeSelector: 'system',
-    },
-  },
+      darkModeSelector: 'system'
+    }
+  }
 })
 app.use(DialogService as any)
 app.use(router as any)
 
+// eslint-disable-next-line vue/multi-word-component-names, vue/no-reserved-component-names
 app.component('Button', Button)
+// eslint-disable-next-line vue/multi-word-component-names
 app.component('Toolbar', Toolbar)
+// eslint-disable-next-line vue/multi-word-component-names, vue/no-reserved-component-names
 app.component('Menu', Menu)
 app.component('ScrollPanel', ScrollPanel)
 app.component('DynamicDialog', DynamicDialog)
 app.component('TabView', TabView)
 app.component('TabPanel', TabPanel)
 app.component('SelectButton', SelectButton)
+// eslint-disable-next-line vue/multi-word-component-names, vue/no-reserved-component-names
 app.component('Textarea', Textarea)
 app.component('FileUpload', FileUpload)
 

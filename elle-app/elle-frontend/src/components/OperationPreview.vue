@@ -3,7 +3,7 @@
     <div class="preview-header">
       <h4 class="dro-font-mode">{{ operation.name }} Preview</h4>
     </div>
-    
+
     <div class="preview-content">
       <!-- Operation Details -->
       <div class="operation-details">
@@ -17,10 +17,10 @@
           </template>
         </div>
       </div>
-      
+
       <!-- 3D Backplot -->
       <div class="backplot-container">
-        <div class="backplot-viewer" ref="backplotContainer">
+        <div ref="backplotContainer" class="backplot-viewer">
           <Renderer ref="rendererRef" antialias>
             <Camera :position="cameraPosition" :look-at="cameraTarget" />
             <Scene />
@@ -28,19 +28,19 @@
         </div>
       </div>
     </div>
-    
+
     <div class="preview-actions">
-      <button 
-        @click="$emit('cancel')"
+      <button
         class="action-button cancel-button dro-font-mode"
         style="width: 8em;"
+        @click="$emit('cancel')"
       >
         ❌ Cancel
       </button>
-      <button 
-        @click="$emit('continue')"
+      <button
         class="action-button continue-button dro-font-mode"
         style="width: 8em;"
+        @click="$emit('continue')"
       >
         ✅ Start
       </button>
@@ -49,10 +49,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from "vue";
-import { Camera, Renderer, RendererPublicInterface, Scene } from "troisjs";
-import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { ref, onMounted, watch } from 'vue'
+import { Camera, Renderer, RendererPublicInterface, Scene } from 'troisjs'
+import * as THREE from 'three'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 interface OperationData {
   name: string;
@@ -64,19 +64,20 @@ interface OperationData {
 
 const props = defineProps<{
   operation: OperationData;
-}>();
+}>()
 
+// eslint-disable-next-line no-unused-vars
 const emit = defineEmits<{
   cancel: [];
   continue: [];
-}>();
+}>()
 
-const rendererRef = ref<RendererPublicInterface>();
-const backplotContainer = ref<HTMLElement>();
+const rendererRef = ref<RendererPublicInterface>()
+const backplotContainer = ref<HTMLElement>()
 
 // Reactive camera positioning
-const cameraPosition = ref({ x: 0, y: 1.25, z: 0 });
-const cameraTarget = ref({ x: 0, y: 0, z: 0 });
+const cameraPosition = ref({ x: 0, y: 1.25, z: 0 })
+const cameraTarget = ref({ x: 0, y: 0, z: 0 })
 
 const formatParameterName = (key: string): string => {
   // Convert camelCase to readable names
@@ -91,44 +92,44 @@ const formatParameterName = (key: string): string => {
     'CutMult': 'Cut Multiplier',
     'MinCut': 'Min Cut',
     'SpringCuts': 'Spring Cuts'
-  };
-  return nameMap[key] || key;
-};
+  }
+  return nameMap[key] || key
+}
 
 const formatParameterValue = (key: string, value: any): string => {
-  if (value === null || value === undefined) return 'Not set';
+  if (value === null || value === undefined) {return 'Not set'}
   if (typeof value === 'number') {
-    return value.toFixed(3);
+    return value.toFixed(3)
   }
-  return String(value);
-};
+  return String(value)
+}
 
 const setupBackplot = () => {
   if (!rendererRef.value || !props.operation.backplotData) {
-    return;
+    return
   }
-  
-  const renderer = rendererRef.value;
-  
+
+  const renderer = rendererRef.value
+
   // Force renderer to resize to container size
-  const containerElement = backplotContainer.value;
+  const containerElement = backplotContainer.value
   if (containerElement && renderer.renderer) {
-    renderer.renderer.setSize(containerElement.clientWidth, containerElement.clientHeight);
+    renderer.renderer.setSize(containerElement.clientWidth, containerElement.clientHeight)
   }
-  
+
   // Clear existing scene
   if (renderer.scene) {
-    renderer.scene.clear();
+    renderer.scene.clear()
   }
-  
-  // Create simple backplot using basic Three.js lines
-  const backplotData = props.operation.backplotData;
-  const extents = backplotData.extents;
-  
-  if (extents && extents.length >= 6) {
-    const [xmin, ymin, zmin, xmax, ymax, zmax] = extents;
 
-/*
+  // Create simple backplot using basic Three.js lines
+  const backplotData = props.operation.backplotData
+  const extents = backplotData.extents
+
+  if (extents && extents.length >= 6) {
+    // const [xmin, ymin, zmin, xmax, ymax, zmax] = extents
+
+    /*
     // Create bounding box
     const boxGeometry = new THREE.BoxGeometry(
       Math.abs(xmax - xmin),
@@ -144,39 +145,39 @@ const setupBackplot = () => {
       (zmin + zmax) / 2
     );
     renderer.scene?.add(box);
-  */  
+  */
     // Create cross marker at starting position (without lead-in)
     const createStartingPositionCross = () => {
-      const params = props.operation.parameters;
-      
+      const params = props.operation.parameters
+
       // Get the actual starting position from operation parameters
-      let startX = 0;
-      let startZ = 0;
-      
+      let startX = 0
+      let startZ = 0
+
       if (params.Stock && params.Target) {
         // For turning operations, start at stock diameter
-        startX = parseFloat(params.Stock);
-        startZ = 0; // Turning always starts at Z=0
+        startX = parseFloat(params.Stock)
+        startZ = 0 // Turning always starts at Z=0
       } else if (params.XStart && params.ZStart) {
         // For threading operations
-        startX = parseFloat(params.XStart);
-        startZ = parseFloat(params.ZStart);
+        startX = parseFloat(params.XStart)
+        startZ = parseFloat(params.ZStart)
       }
-      
+
       // Transform to normalized coordinates (same transform as backend)
       if (backplotData.transform) {
-        const transform = backplotData.transform;
-        const [centerX, centerY, centerZ] = transform.center;
-        const scaleFactor = transform.scale_factor;
-        
+        const transform = backplotData.transform
+        const [centerX, centerY, centerZ] = transform.center
+        const scaleFactor = transform.scale_factor
+
         // Apply same coordinate transformation as backend: X,Y,Z -> Z,Y,X
-        const normX = (startZ - centerZ) * scaleFactor; // startZ becomes normX
-        const normY = (0 - centerY) * scaleFactor;      // Y is always 0 for lathe
-        const normZ = (startX - centerX) * scaleFactor; // startX becomes normZ
-        
+        const normX = (startZ - centerZ) * scaleFactor // startZ becomes normX
+        const normY = (0 - centerY) * scaleFactor      // Y is always 0 for lathe
+        const normZ = (startX - centerX) * scaleFactor // startX becomes normZ
+
         // Create cross geometry
-        const crossSize = 0.1;
-        const crossGeometry = new THREE.BufferGeometry();
+        const crossSize = 0.1
+        const crossGeometry = new THREE.BufferGeometry()
         const crossVertices = new Float32Array([
           // Horizontal line
           normX - crossSize, normY, normZ,
@@ -184,42 +185,42 @@ const setupBackplot = () => {
           // Vertical line
           normX, normY, normZ - crossSize,
           normX, normY, normZ + crossSize
-        ]);
-        crossGeometry.setAttribute('position', new THREE.BufferAttribute(crossVertices, 3));
-        
-        const crossMaterial = new THREE.LineBasicMaterial({ 
+        ])
+        crossGeometry.setAttribute('position', new THREE.BufferAttribute(crossVertices, 3))
+
+        const crossMaterial = new THREE.LineBasicMaterial({
           color: 0xff0000, // Bright red
           linewidth: 3,
           depthTest: false,
           depthWrite: false
-        });
-        
-        const cross = new THREE.LineSegments(crossGeometry, crossMaterial);
-        cross.renderOrder = 3000; // Render on top of everything
-        renderer.scene?.add(cross);
+        })
+
+        const cross = new THREE.LineSegments(crossGeometry, crossMaterial)
+        cross.renderOrder = 3000 // Render on top of everything
+        renderer.scene?.add(cross)
       }
-    };
-    
-    createStartingPositionCross();
-    
+    }
+
+    createStartingPositionCross()
+
     // Create 2D stock visualization
     const createStockVisualization = () => {
-      const params = props.operation.parameters;
-      
+      const params = props.operation.parameters
+
       if (params.Stock && params.ZEnd) {
         // For turning operations, show 2D stock profile
-        const stockRadius = parseFloat(params.Stock);
-        const zEnd = parseFloat(params.ZEnd);
-        const zStart = 0;
-        
+        const stockRadius = parseFloat(params.Stock)
+        const zEnd = parseFloat(params.ZEnd)
+        const zStart = 0
+
         // Transform to normalized coordinates
         if (backplotData.transform) {
-          const transform = backplotData.transform;
-          const [centerX, centerY, centerZ] = transform.center;
-          const scaleFactor = transform.scale_factor;
-          
+          const transform = backplotData.transform
+          const [centerX, , centerZ] = transform.center
+          const scaleFactor = transform.scale_factor
+
           // Create solid 2D rectangular profile representing the stock
-          const stockGeometry = new THREE.BufferGeometry();
+          const stockGeometry = new THREE.BufferGeometry()
           const vertices = new Float32Array([
             // Triangle 1
             (zStart - centerZ) * scaleFactor, 0, (0 - centerX) * scaleFactor,
@@ -229,235 +230,233 @@ const setupBackplot = () => {
             (zEnd - centerZ) * scaleFactor, 0, (0 - centerX) * scaleFactor,
             (zEnd - centerZ) * scaleFactor, 0, (stockRadius - centerX) * scaleFactor,
             (zStart - centerZ) * scaleFactor, 0, (stockRadius - centerX) * scaleFactor
-          ]);
-          
-          stockGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-          
-          const stockMaterial = new THREE.MeshBasicMaterial({ 
+          ])
+
+          stockGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
+
+          const stockMaterial = new THREE.MeshBasicMaterial({
             color: 0x0088ff, // Blue
             transparent: true,
             opacity: 0.3,
             side: THREE.DoubleSide
-          });
-          
-          const stockOutline = new THREE.Mesh(stockGeometry, stockMaterial);
-          stockOutline.renderOrder = 1; // Render behind toolpath
-          renderer.scene?.add(stockOutline);
+          })
+
+          const stockOutline = new THREE.Mesh(stockGeometry, stockMaterial)
+          stockOutline.renderOrder = 1 // Render behind toolpath
+          renderer.scene?.add(stockOutline)
         }
       }
-    };
-    
-    createStockVisualization();
-    
+    }
+
+    createStockVisualization()
+
     // Create unique materials for each line to avoid sharing issues
-    const lines: { line: THREE.Line, entryType: string, materials: { future: THREE.LineBasicMaterial, active: THREE.LineBasicMaterial, completed: THREE.LineBasicMaterial } }[] = [];
-    let lineCount = 0;
-    
+    const lines: { line: THREE.Line, entryType: string, materials: { future: THREE.LineBasicMaterial, active: THREE.LineBasicMaterial, completed: THREE.LineBasicMaterial } }[] = []
+    let lineCount = 0
+
     for (const entry of backplotData.backplot) {
-      const entryType = entry.type;
+      const entryType = entry.type
       if (entryType === 'feed' || entryType === 'arcfeed' || entryType === 'trav') {
-        const moves = entry[entryType];
+        const moves = entry[entryType]
         for (const move of moves) {
           if (move.coords && move.coords.length >= 6) {
             const points = [
               new THREE.Vector3(move.coords[0], move.coords[1], move.coords[2]),
               new THREE.Vector3(move.coords[3], move.coords[4], move.coords[5])
-            ];
-            const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
-            
+            ]
+            const lineGeometry = new THREE.BufferGeometry().setFromPoints(points)
+
             // Create unique materials for this line with proper depth handling
             const materials = {
-              future: new THREE.LineBasicMaterial({ 
-                color: (entryType === 'trav') ? 0x804080 : 0x404040, 
+              future: new THREE.LineBasicMaterial({
+                color: (entryType === 'trav') ? 0x804080 : 0x404040,
                 linewidth: 1,
                 depthTest: false,
                 depthWrite: false
               }),
-              active: new THREE.LineBasicMaterial({ 
+              active: new THREE.LineBasicMaterial({
                 color: 0xffffff,  // White highlight for active line
                 linewidth: 4,
                 depthTest: false,
                 depthWrite: false
               }),
-              completed: new THREE.LineBasicMaterial({ 
-                color: (entryType === 'trav') ? 0xff00ff : 0x00ff00, 
+              completed: new THREE.LineBasicMaterial({
+                color: (entryType === 'trav') ? 0xff00ff : 0x00ff00,
                 linewidth: 2,
                 depthTest: false,
                 depthWrite: false
               })
-            };
-            
+            }
+
             // Start with future material
-            const line = new THREE.Line(lineGeometry, materials.future);
-            
-            renderer.scene?.add(line);
-            lines.push({ line, entryType, materials });
-            lineCount++;
+            const line = new THREE.Line(lineGeometry, materials.future)
+
+            renderer.scene?.add(line)
+            lines.push({ line, entryType, materials })
+            lineCount++
           }
         }
       }
     }
-    
+
     // Add orbit controls for interaction
     if (renderer.camera && renderer.renderer?.domElement) {
-      const controls = new OrbitControls(renderer.camera, renderer.renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.05;
-      controls.enableZoom = true;
-      controls.enableRotate = true;
-      controls.enablePan = true;
-      controls.maxDistance = 10.0;
-      controls.minDistance = 0.1;
-      
-      controls.target.set(0, 0, 0);
-      
+      const controls = new OrbitControls(renderer.camera, renderer.renderer.domElement)
+      controls.enableDamping = true
+      controls.dampingFactor = 0.05
+      controls.enableZoom = true
+      controls.enableRotate = true
+      controls.enablePan = true
+      controls.maxDistance = 10.0
+      controls.minDistance = 0.1
+
+      controls.target.set(0, 0, 0)
+
       // Force camera position through orbit controls
       if (renderer.camera) {
-        renderer.camera.position.set(cameraPosition.value.x, cameraPosition.value.y, cameraPosition.value.z);
-        renderer.camera.lookAt(cameraTarget.value.x, cameraTarget.value.y, cameraTarget.value.z);
+        renderer.camera.position.set(cameraPosition.value.x, cameraPosition.value.y, cameraPosition.value.z)
+        renderer.camera.lookAt(cameraTarget.value.x, cameraTarget.value.y, cameraTarget.value.z)
       }
-      
+
       controls.update();
-      
+
       // Store controls reference for cleanup
-      (renderer as any).orbitControls = controls;
+      (renderer as any).orbitControls = controls
     }
-    
+
     // Create lathe tool triangle indicator as solid equilateral triangle - stays in X-Z plane
     const createToolTriangle = () => {
-      const size = 0.06;
-      const height = size * Math.sqrt(3) / 2; // Height of equilateral triangle
-      
-      const toolGeometry = new THREE.BufferGeometry();
+      const size = 0.06
+      const height = size * Math.sqrt(3) / 2 // Height of equilateral triangle
+
+      const toolGeometry = new THREE.BufferGeometry()
       const vertices = new Float32Array([
         0, 0, 0,                    // tip (cutting point)
-        -height, 0, size/2,         // back left
-        -height, 0, -size/2         // back right
-      ]);
-      toolGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-      toolGeometry.setIndex([0, 1, 2]); // Triangle face
-      
-      const toolMaterial = new THREE.MeshBasicMaterial({ 
+        -height, 0, size / 2,         // back left
+        -height, 0, -size / 2         // back right
+      ])
+      toolGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
+      toolGeometry.setIndex([0, 1, 2]) // Triangle face
+
+      const toolMaterial = new THREE.MeshBasicMaterial({
         color: 0xff0000, // Bright red for visibility
         side: THREE.DoubleSide
-      });
-      
-      const toolTriangle = new THREE.Mesh(toolGeometry, toolMaterial);
-      renderer.scene?.add(toolTriangle);
-      
-      return toolTriangle;
-    };
-    
-    const toolTriangle = createToolTriangle();
-    
+      })
+
+      const toolTriangle = new THREE.Mesh(toolGeometry, toolMaterial)
+      renderer.scene?.add(toolTriangle)
+
+      return toolTriangle
+    }
+
+    const toolTriangle = createToolTriangle()
+
     // Animation loop for toolpath progress with smooth interpolation
-    let animationTime = 0;
-    const pauseDuration = 60; // 1 second pause at 60fps
-    const animationDuration = 1200; // 20 seconds for the actual animation
-    const totalDuration = pauseDuration + animationDuration + pauseDuration; // pause + animation + pause
-    
-    
+    let animationTime = 0
+    const pauseDuration = 60 // 1 second pause at 60fps
+    const animationDuration = 1200 // 20 seconds for the actual animation
+    const totalDuration = pauseDuration + animationDuration + pauseDuration // pause + animation + pause
+
     renderer.onBeforeRender(() => {
-      animationTime++;
-      
-      let currentLine = 0;
-      let lineProgress = 0;
-      
+      animationTime++
+
+      let currentLine = 0
+      let lineProgress = 0
+
       if (animationTime < pauseDuration) {
         // Initial pause - stay at beginning
-        currentLine = 0;
-        lineProgress = 0;
+        currentLine = 0
+        lineProgress = 0
       } else if (animationTime < pauseDuration + animationDuration) {
         // Active animation phase
-        const animProgress = (animationTime - pauseDuration) / animationDuration;
-        currentLine = animProgress * lineCount;
-        lineProgress = currentLine - Math.floor(currentLine);
+        const animProgress = (animationTime - pauseDuration) / animationDuration
+        currentLine = animProgress * lineCount
+        lineProgress = currentLine - Math.floor(currentLine)
       } else if (animationTime < totalDuration) {
         // Final pause - stay at end
-        currentLine = lineCount - 1;
-        lineProgress = 1;
+        currentLine = lineCount - 1
+        lineProgress = 1
       } else {
         // Reset animation
-        animationTime = 0;
-        currentLine = 0;
-        lineProgress = 0;
+        animationTime = 0
+        currentLine = 0
+        lineProgress = 0
       }
-      
+
       // Smooth line material updates
-      const currentLineIndex = Math.floor(currentLine);
-      
+      const currentLineIndex = Math.floor(currentLine)
+
       lines.forEach((lineData, index) => {
-        const { line, materials } = lineData;
-        
+        const { line, materials } = lineData
+
         if (index < currentLineIndex) {
           // Completed lines - render on top of future lines
-          line.material = materials.completed;
-          line.renderOrder = 1000 + index;
+          line.material = materials.completed
+          line.renderOrder = 1000 + index
         } else if (index === currentLineIndex) {
           // Active line - render on top of everything
-          line.material = materials.active;
-          line.renderOrder = 2000 + index;
+          line.material = materials.active
+          line.renderOrder = 2000 + index
         } else if (index === currentLineIndex + 1 && lineProgress > 0.7) {
           // Next line starts to highlight when current is 70% done
-          line.material = materials.active;
-          line.renderOrder = 2000 + index;
+          line.material = materials.active
+          line.renderOrder = 2000 + index
         } else {
           // Future lines - render under everything else
-          line.material = materials.future;
-          line.renderOrder = index; // Low render order
+          line.material = materials.future
+          line.renderOrder = index // Low render order
         }
-      });
-      
+      })
+
       // Update tool triangle position to current cutting point
       if (currentLineIndex < lines.length) {
-        const currentLineData = lines[currentLineIndex];
+        const currentLineData = lines[currentLineIndex]
         if (currentLineData) {
-          const line = currentLineData.line;
-          const geometry = line.geometry as THREE.BufferGeometry;
-          const positions = geometry.attributes.position.array as Float32Array;
-          
+          const line = currentLineData.line
+          const geometry = line.geometry as THREE.BufferGeometry
+          const positions = geometry.attributes.position.array as Float32Array
+
           // Interpolate position along current line
-          const startX = positions[0];
-          const startY = positions[1];
-          const startZ = positions[2];
-          const endX = positions[3];
-          const endY = positions[4];
-          const endZ = positions[5];
-          
-          const toolX = startX + (endX - startX) * lineProgress;
-          const toolY = startY + (endY - startY) * lineProgress;
-          const toolZ = startZ + (endZ - startZ) * lineProgress;
-          
-          toolTriangle.position.set(toolX, toolY, toolZ);
-          
+          const startX = positions[0]
+          const startY = positions[1]
+          const startZ = positions[2]
+          const endX = positions[3]
+          const endY = positions[4]
+          const endZ = positions[5]
+
+          const toolX = startX + (endX - startX) * lineProgress
+          const toolY = startY + (endY - startY) * lineProgress
+          const toolZ = startZ + (endZ - startZ) * lineProgress
+
+          toolTriangle.position.set(toolX, toolY, toolZ)
+
           // Rotate triangle to point in direction of cut
-          const direction = new THREE.Vector3(endX - startX, endY - startY, endZ - startZ).normalize();
-          const angle = Math.atan2(direction.z, direction.x);
-          toolTriangle.rotation.y = -angle;
+          const direction = new THREE.Vector3(endX - startX, endY - startY, endZ - startZ).normalize()
+          const angle = Math.atan2(direction.z, direction.x)
+          toolTriangle.rotation.y = -angle
         }
       }
-      
-      
+
       // Update orbit controls
       if ((renderer as any).orbitControls) {
-        (renderer as any).orbitControls.update();
+        (renderer as any).orbitControls.update()
       }
-    });
+    })
   }
-};
+}
 
 // Watch for backplot data changes
 watch(() => props.operation.backplotData, () => {
   if (props.operation.backplotData) {
-    setTimeout(setupBackplot, 100);
+    setTimeout(setupBackplot, 100)
   }
-}, { immediate: true });
+}, { immediate: true })
 
 onMounted(() => {
   if (props.operation.backplotData) {
-    setTimeout(setupBackplot, 200);
+    setTimeout(setupBackplot, 200)
   }
-});
+})
 </script>
 
 <style scoped>
@@ -537,7 +536,6 @@ onMounted(() => {
   min-width: 0;
   height: 100%;
 }
-
 
 .backplot-viewer {
   background: #1a1a1a;

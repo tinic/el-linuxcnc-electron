@@ -4,15 +4,14 @@ import { useDialog } from 'primevue/usedialog'
 
 import json from '../assets/manualpresets.json'
 
-import DialogRef from 'primevue/dialog'
-
 const emit = defineEmits(['selected'])
 const dialogRef = inject('dialogRef') as any
+// eslint-disable-next-line no-unused-vars
 const dialog = useDialog()
 
-var headers: string[] = []
+const headers: string[] = []
 
-var axis: number = 0
+let axis: number = 0
 for (var i: number = 0; i < json.length; i++) {
   if (json[i].axis == dialogRef.value.data.axis) {
     axis = i
@@ -33,12 +32,17 @@ onMounted(() => {})
 
 <template>
   <TabView>
-    <TabPanel v-for="(title, sindex) in headers" :key="sindex" :value="sindex" :header="title">
+    <TabPanel
+      v-for="(title, sindex) in headers"
+      :key="sindex"
+      :value="sindex"
+      :header="title"
+    >
       <div class="grid dro-font-preset-button">
-        <div class="col-3 p-1" v-for="(pitch, pindex) in json[axis].sections[sindex].pitches">
+        <div v-for="(pitch, pindex) in json[axis].sections[sindex].pitches" class="col-3 p-1">
           <button
-            @click="selectPitch(pitch.name, pitch.value, pitch.type)"
             class="w-full h-full button-pitchselector"
+            @click="selectPitch(pitch.name, pitch.value, pitch.type)"
           >
             {{ pitch.name }}
           </button>

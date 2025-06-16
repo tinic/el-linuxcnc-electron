@@ -9,7 +9,7 @@
           </div>
         </template>
         <div class="col-3 p-1">
-          <button @click="presetClicked(preset)" class="w-full h-full button-pitchselector">
+          <button class="w-full h-full button-pitchselector" @click="presetClicked(preset)">
             {{ preset.name }}
           </button>
         </div>

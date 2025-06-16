@@ -3,7 +3,6 @@ import { ref, onMounted, onUnmounted, computed, watch, defineAsyncComponent } fr
 import { useDialog } from 'primevue/usedialog'
 import Popover from 'primevue/popover'
 import Dialog from 'primevue/dialog'
-import { Camera, Renderer, RendererPublicInterface, Scene } from 'troisjs'
 
 import Numpad from './components/Numpad.vue'
 import DRODisplay from './components/DRODisplay.vue'
@@ -12,7 +11,7 @@ import { useHAL } from './composables/useHAL'
 import {
   useCannedCycles,
   ThreadingEntryType,
-  TurningEntryType,
+  TurningEntryType
 } from './composables/useCannedCycles'
 import { useSettings } from './composables/useSettings'
 
@@ -40,11 +39,9 @@ const {
   rpms,
   cannedCycleRunning,
   errorState,
-  putHalOut,
   putLinuxCNC,
   getHalIn,
   putAbort,
-  putEmergencyStop,
   putThreading,
   generateThreadingGcode,
   putTurning,
@@ -65,7 +62,7 @@ const {
   zpitchactive,
   xstepperactive,
   zstepperactive,
-  updateHALOut,
+  updateHALOut
 } = useHAL()
 
 const {
@@ -111,26 +108,24 @@ const {
   resetTurningParameters,
   convertTurningParameters,
   setTurningParameter,
-  clearTurningParameter,
+  clearTurningParameter
 } = useCannedCycles()
 
 // Computed display positions for diameter mode
-const displayXPos = computed(() => {
-  return diameterMode.value ? xpos.value * 2 : xpos.value
-})
+const displayXPos = computed(() => diameterMode.value ? xpos.value * 2 : xpos.value)
 
-const displayZPos = computed(() => {
-  return zpos.value // Z position is always radius, not affected by diameter mode
-})
+const displayZPos = computed(() =>
+  zpos.value // Z position is always radius, not affected by diameter mode
+)
 
 // Computed display values for turning parameters in diameter mode
 const displayTurningTarget = computed(() => {
-  if (turningTarget.value === null) return null
+  if (turningTarget.value === null) {return null}
   return diameterMode.value ? turningTarget.value * 2 : turningTarget.value
 })
 
 const displayTurningStock = computed(() => {
-  if (turningStock.value === null) return null
+  if (turningStock.value === null) {return null}
   return diameterMode.value ? turningStock.value * 2 : turningStock.value
 })
 
@@ -168,7 +163,7 @@ const statusDisplay = computed(() => {
       return {
         text: 'CANNED CYCLE',
         class: 'status-cannedCycle',
-        title: 'Machine: Canned Cycle Mode',
+        title: 'Machine: Canned Cycle Mode'
       }
     case 'idle':
       return { text: 'IDLE', class: 'status-idle', title: 'Machine: Idle' }
@@ -183,7 +178,7 @@ const xpitchlabel = ref('…')
 const zpitchlabel = ref('…')
 const xpitchangle = ref(0)
 // Get settings from composable
-const { metric, diameterMode, defaultMetricOnStartup, isQuitting, loadSettings, saveSettings } =
+const { metric, diameterMode, defaultMetricOnStartup, isQuitting, loadSettings } =
   useSettings()
 
 const cursorpos = ref(0)
@@ -228,30 +223,30 @@ const menuItems = ref([
     icon: 'pi pi-fw pi-wrench',
     command: () => {
       selectedMenu.value = MenuType.manual
-    },
+    }
   },
   {
     label: 'Canned Cycles',
     icon: 'pi pi-fw pi-cog',
     command: () => {
       selectedMenu.value = MenuType.cannedCycles
-    },
+    }
   },
   {
     label: 'HAL',
     icon: 'pi pi-fw pi-link',
     command: () => {
       selectedMenu.value = MenuType.halStatus
-    },
+    }
   },
   {
     label: 'Settings',
     icon: 'pi pi-fw pi-sliders-v',
     command: () => {
       selectedMenu.value = MenuType.settings
-    },
+    }
   },
-  { separator: true },
+  { separator: true }
 ])
 
 enum NumpadInputStage {
@@ -263,7 +258,7 @@ enum NumpadInputStage {
 const entryActive = ref(0)
 
 let numpadInputStage = NumpadInputStage.none
-let numbersClicked = new Array<string>()
+const numbersClicked = new Array<string>()
 let numbersNegative = false
 let numbersPrevious: number = 0
 
@@ -378,11 +373,12 @@ function setFinalNumber(value: number) {
       break
   }
   switch (entryActive.value) {
-    case EntryType.xPosition:
+    case EntryType.xPosition: {
       const actualXValue = diameterMode.value ? value / 2 : value
       setAxisValue('x', actualXValue)
       xpos.value = actualXValue
       break
+    }
     case EntryType.zPosition:
       setAxisValue('z', value)
       zpos.value = value
@@ -431,15 +427,17 @@ function setFinalNumber(value: number) {
     case ThreadingEntryType.threadSpringCuts:
       setThreadingParameter(ThreadingEntryType.threadSpringCuts, value)
       break
-    case TurningEntryType.turningTarget:
+    case TurningEntryType.turningTarget: {
       const actualTurningTarget = diameterMode.value ? value / 2 : value
       setTurningParameter(TurningEntryType.turningTarget, actualTurningTarget)
       updatePitchFromTurning()
       break
-    case TurningEntryType.turningStock:
+    }
+    case TurningEntryType.turningStock: {
       const actualTurningStock = diameterMode.value ? value / 2 : value
       setTurningParameter(TurningEntryType.turningStock, actualTurningStock)
       break
+    }
     case TurningEntryType.turningZStart:
       setTurningParameter(TurningEntryType.turningZStart, value)
       break
@@ -633,7 +631,7 @@ const halStdoutText = ref('')
 
 const startHAL = () => {
   halStdoutText.value = ''
-  var userAgent = navigator.userAgent.toLowerCase()
+  const userAgent = navigator.userAgent.toLowerCase()
   if (userAgent.indexOf(' electron/') > -1) {
     window.api.send('startHAL')
     xpos.value = 0
@@ -645,7 +643,7 @@ const startHAL = () => {
 
 const stopHAL = () => {
   halStdoutText.value = ''
-  var userAgent = navigator.userAgent.toLowerCase()
+  const userAgent = navigator.userAgent.toLowerCase()
   if (userAgent.indexOf(' electron/') > -1) {
     window.api.send('stopHAL')
     xpos.value = 0
@@ -656,7 +654,7 @@ const stopHAL = () => {
 }
 
 const quitApplication = async () => {
-  var userAgent = navigator.userAgent.toLowerCase()
+  const userAgent = navigator.userAgent.toLowerCase()
 
   if (userAgent.indexOf(' electron/') > -1) {
     isQuitting.value = true
@@ -665,7 +663,7 @@ const quitApplication = async () => {
     try {
       await window.settings.save({
         diameterMode: diameterMode.value,
-        defaultMetricOnStartup: defaultMetricOnStartup.value,
+        defaultMetricOnStartup: defaultMetricOnStartup.value
       })
     } catch (error) {
       console.error('Failed to save final settings:', error)
@@ -720,6 +718,8 @@ const reverseIcon = computed(() => {
       return '⬈'
     case FeedMode.backCompound:
       return '⬊'
+    default:
+      return ''
   }
 })
 
@@ -821,17 +821,17 @@ const pitchClicked = (axis: string) => {
     props: {
       header: 'Select Pitch',
       style: {
-        width: '70vw',
+        width: '70vw'
       },
       breakpoints: {
         '960px': '75vw',
-        '640px': '90vw',
+        '640px': '90vw'
       },
       position: 'top',
-      modal: true,
+      modal: true
     },
     data: {
-      axis: axis,
+      axis: axis
     },
     emits: {
       onSelected: (axis: string, name: string, value: number, type: string) => {
@@ -864,10 +864,10 @@ const pitchClicked = (axis: string) => {
             }
             break
         }
-      },
+      }
     },
     templates: {},
-    onClose: (options) => {},
+    onClose: (options) => {}
   })
 }
 
@@ -914,10 +914,10 @@ const threadStartClicked = async () => {
             FirstCut: threadFirstCut.value,
             CutMult: threadCutMult.value,
             MinCut: threadMinCut.value,
-            SpringCuts: threadSpringCuts.value,
+            SpringCuts: threadSpringCuts.value
           },
           gcode: result.gcode,
-          backplotData: backplotData,
+          backplotData: backplotData
         }
 
         // Show preview dialog with callback to execute threading
@@ -1048,10 +1048,10 @@ const turningStartClicked = async () => {
             StepDown: turningStepDown.value,
             SpringPasses: turningSpringPasses.value,
             FinalStepDown: turningFinalStepDown.value,
-            TaperAngle: turningTaperAngle.value,
+            TaperAngle: turningTaperAngle.value
           },
           gcode: result.gcode,
-          backplotData: backplotData,
+          backplotData: backplotData
         }
 
         // Show preview dialog with callback to execute turning
@@ -1103,7 +1103,7 @@ onMounted(async () => {
   // Load settings first
   await loadSettings()
 
-  var userAgent = navigator.userAgent.toLowerCase()
+  const userAgent = navigator.userAgent.toLowerCase()
   if (userAgent.indexOf(' electron/') > -1) {
     window.api.receive('halStarted', () => {
       selectedMenu.value = MenuType.manual
@@ -1113,7 +1113,7 @@ onMounted(async () => {
         DirectionMode,
         FeedMode,
         selectedDirectionMode,
-        selectedFeedMode,
+        selectedFeedMode
       })
       updateHALOut(selectedFeedMode, selectedDirectionMode, FeedMode, DirectionMode)
     })
@@ -1136,7 +1136,7 @@ onMounted(async () => {
       DirectionMode,
       FeedMode,
       selectedDirectionMode,
-      selectedFeedMode,
+      selectedFeedMode
     })
     updateHALOut(selectedFeedMode, selectedDirectionMode, FeedMode, DirectionMode)
   }
@@ -1189,8 +1189,8 @@ onUnmounted(() => {
           </div>
           <div class="menu-separator"></div>
           <button
-            @click="quitApplication"
             class="w-full p-link flex align-items-center justify-content-start p-2 pl-4 text-color hover:surface-200 border-noround"
+            @click="quitApplication"
           >
             <i class="pi pi-sign-out" />
             <span class="ml-2">Exit</span>
@@ -1202,7 +1202,7 @@ onUnmounted(() => {
       <div class="flex flex-row">
         <DRODisplay
           class="mr-2 h-min"
-          :entryActive="entryActive"
+          :entry-active="entryActive"
           :xpos="displayXPos"
           :zpos="displayZPos"
           :apos="apos"
@@ -1218,25 +1218,25 @@ onUnmounted(() => {
           :zpitchlabel="zpitchlabel"
           :metric="metric"
           :cursorpos="cursorpos"
-          :diameterMode="diameterMode"
-          :showXPitch="true"
-          @numberClicked="numberClicked"
-          @zeroClicked="zeroClicked"
-          @pitchClicked="pitchClicked"
-          @metricClicked="metricClicked"
-          @otherClicked="otherClicked"
+          :diameter-mode="diameterMode"
+          :show-x-pitch="true"
+          @number-clicked="numberClicked"
+          @zero-clicked="zeroClicked"
+          @pitch-clicked="pitchClicked"
+          @metric-clicked="metricClicked"
+          @other-clicked="otherClicked"
         />
         <div class="divider-vertical"></div>
-        <Numpad class="" @numPadClicked="numPadClicked" />
+        <Numpad class="" @num-pad-clicked="numPadClicked" />
       </div>
       <div class="divider-horizontal"></div>
       <div class="flex flex-row">
         <div class="grid dro-font-mode grid-nogutter p-3 pr-4 m-0 mt-2" style="width: 16em">
           <div class="col-12 align-content-center">Feed</div>
           <button
-            @click="feedModeLongitudinalClicked"
             size="large"
             class="col-12 dro-font-mode button-mode p-3 m-1"
+            @click="feedModeLongitudinalClicked"
           >
             <span class="flex flex-row align-items-center">
               <i
@@ -1249,9 +1249,9 @@ onUnmounted(() => {
             </span>
           </button>
           <button
-            @click="feedModeCrossClicked"
             size="large"
             class="col-12 dro-font-mode button-mode p-3 m-1"
+            @click="feedModeCrossClicked"
           >
             <span class="flex flex-row align-items-center">
               <i
@@ -1264,9 +1264,9 @@ onUnmounted(() => {
             </span>
           </button>
           <button
-            @click="feedModeFrontCompoundClicked"
             size="large"
             class="col-12 dro-font-mode button-mode p-3 m-1"
+            @click="feedModeFrontCompoundClicked"
           >
             <span class="flex flex-row align-items-center">
               <i
@@ -1279,9 +1279,9 @@ onUnmounted(() => {
             </span>
           </button>
           <button
-            @click="feedModeBackCompoundClicked"
             size="large"
             class="col-12 dro-font-mode button-mode p-3 m-1"
+            @click="feedModeBackCompoundClicked"
           >
             <span class="flex flex-row align-items-center">
               <i
@@ -1297,9 +1297,9 @@ onUnmounted(() => {
         <div class="grid dro-font-mode grid-nogutter p-3 pr-4 m-0 mt-2" style="width: 15em">
           <div class="col-12 align-content-center">Direction</div>
           <button
-            @click="directionModeForwardClicked"
             size="large"
             class="col-12 dro-font-mode button-mode p-3 m-1"
+            @click="directionModeForwardClicked"
           >
             <span class="flex flex-row align-items-center">
               <i
@@ -1312,9 +1312,9 @@ onUnmounted(() => {
             </span>
           </button>
           <button
-            @click="directionModeReverseClicked"
             size="large"
             class="col-12 dro-font-mode button-mode p-3 m-1"
+            @click="directionModeReverseClicked"
           >
             <span class="flex flex-row align-items-center">
               <i
@@ -1327,9 +1327,9 @@ onUnmounted(() => {
             </span>
           </button>
           <button
-            @click="directionModeHoldClicked"
             size="large"
             class="col-12 dro-font-mode button-mode p-3 m-1"
+            @click="directionModeHoldClicked"
           >
             <span class="flex flex-row align-items-center">
               <i
@@ -1342,9 +1342,9 @@ onUnmounted(() => {
             </span>
           </button>
           <button
-            @click="directionModeIdleClicked"
             size="large"
             class="col-12 dro-font-mode button-mode p-3 m-1"
+            @click="directionModeIdleClicked"
           >
             <span class="flex flex-row align-items-center">
               <i
@@ -1361,11 +1361,11 @@ onUnmounted(() => {
           <div class="col-4 p-1"></div>
           <div class="col-4 p-1">
             <button
+              class="button-arrow button-direction w-full h-full"
               @touchstart="touchStartUp"
               @touchend="touchEndUp"
               @touchcancel="touchEndUp"
               @touchleave="touchEndUp"
-              class="button-arrow button-direction w-full h-full"
             >
               ⏶
             </button>
@@ -1373,33 +1373,33 @@ onUnmounted(() => {
           <div class="col-4 p-1"></div>
           <div class="col-4 p-1">
             <button
+              class="button-arrow button-direction w-full h-full"
               @touchstart="touchStartLeft"
               @touchend="touchEndLeft"
               @touchcancel="touchEndLeft"
               @touchleave="touchEndLeft"
-              class="button-arrow button-direction w-full h-full"
             >
               ⏴
             </button>
           </div>
           <div class="col-4 p-1">
             <button
+              class="button-arrow button-direction w-full h-full"
               @touchstart="touchStop"
               @touchend="touchStop"
               @touchcancel="touchStop"
               @touchleave="touchStop"
-              class="button-arrow button-direction w-full h-full"
             >
               STOP
             </button>
           </div>
           <div class="col-4 p-1">
             <button
+              class="button-arrow button-direction w-full h-full"
               @touchstart="touchStartRight"
               @touchend="touchEndRight"
               @touchcancel="touchEndRight"
               @touchleave="touchEndRight"
-              class="button-arrow button-direction w-full h-full"
             >
               ⏵
             </button>
@@ -1407,11 +1407,11 @@ onUnmounted(() => {
           <div class="col-4 p-1"></div>
           <div class="col-4 p-1">
             <button
+              class="button-arrow button-direction w-full h-full"
               @touchstart="touchStartDown"
               @touchend="touchEndDown"
               @touchcancel="touchEndDown"
               @touchleave="touchEndDown"
-              class="button-arrow button-direction w-full h-full"
             >
               ⏷
             </button>
@@ -1425,7 +1425,7 @@ onUnmounted(() => {
       <div class="flex flex-row">
         <DRODisplay
           class="mr-2 h-min"
-          :entryActive="entryActive"
+          :entry-active="entryActive"
           :xpos="displayXPos"
           :zpos="displayZPos"
           :apos="apos"
@@ -1441,25 +1441,25 @@ onUnmounted(() => {
           :zpitchlabel="zpitchlabel"
           :metric="metric"
           :cursorpos="cursorpos"
-          :diameterMode="diameterMode"
-          :showXPitch="false"
-          @numberClicked="numberClicked"
-          @zeroClicked="zeroClicked"
-          @pitchClicked="pitchClicked"
-          @metricClicked="threadMetricClicked"
-          @otherClicked="otherClicked"
+          :diameter-mode="diameterMode"
+          :show-x-pitch="false"
+          @number-clicked="numberClicked"
+          @zero-clicked="zeroClicked"
+          @pitch-clicked="pitchClicked"
+          @metric-clicked="threadMetricClicked"
+          @other-clicked="otherClicked"
         />
         <div class="divider-vertical"></div>
-        <Numpad class="" @numPadClicked="numPadClicked" />
+        <Numpad class="" @num-pad-clicked="numPadClicked" />
       </div>
       <div class="divider-horizontal"></div>
       <div class="flex flex-row flex-grow-1">
         <div class="grid dro-font-mode grid-nogutter p-3 pr-4 m-0" style="width: 18em">
           <div class="col-12 align-content-center">Canned Cycles</div>
           <button
-            @click="cannedCycleClicked(CannedCycle.threading)"
             size="large"
             class="col-12 dro-font-mode button-mode p-3 m-1"
+            @click="cannedCycleClicked(CannedCycle.threading)"
           >
             <span class="flex flex-row align-items-center">
               <i
@@ -1472,9 +1472,9 @@ onUnmounted(() => {
             </span>
           </button>
           <button
-            @click="cannedCycleClicked(CannedCycle.turning)"
             size="large"
             class="col-12 dro-font-mode button-mode p-3 m-1"
+            @click="cannedCycleClicked(CannedCycle.turning)"
           >
             <span class="flex flex-row align-items-center">
               <i
@@ -1487,9 +1487,9 @@ onUnmounted(() => {
             </span>
           </button>
           <button
-            @click="cannedCycleClicked(CannedCycle.placeholder3)"
             size="large"
             class="col-12 dro-font-mode button-mode p-3 m-1"
+            @click="cannedCycleClicked(CannedCycle.placeholder3)"
           >
             <span class="flex flex-row align-items-center">
               <i
@@ -1502,9 +1502,9 @@ onUnmounted(() => {
             </span>
           </button>
           <button
-            @click="cannedCycleClicked(CannedCycle.placeholder4)"
             size="large"
             class="col-12 dro-font-mode button-mode p-3 m-1"
+            @click="cannedCycleClicked(CannedCycle.placeholder4)"
           >
             <span class="flex flex-row align-items-center">
               <i
@@ -1538,7 +1538,6 @@ onUnmounted(() => {
             </div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(ThreadingEntryType.threadPitch, threadPitch || 0)"
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
@@ -1554,6 +1553,7 @@ onUnmounted(() => {
                     ? String(numberentry)
                     : String(threadPitch ?? 'Pitch')
                 "
+                @click="numberClicked(ThreadingEntryType.threadPitch, threadPitch || 0)"
               >
                 {{
                   entryActive == ThreadingEntryType.threadPitch
@@ -1591,7 +1591,6 @@ onUnmounted(() => {
             </div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(ThreadingEntryType.threadZDepth, threadZDepth || 0)"
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
@@ -1607,6 +1606,7 @@ onUnmounted(() => {
                     ? String(numberentry)
                     : String(threadZDepth ?? 'Z Depth')
                 "
+                @click="numberClicked(ThreadingEntryType.threadZDepth, threadZDepth || 0)"
               >
                 {{
                   entryActive == ThreadingEntryType.threadZDepth
@@ -1623,7 +1623,6 @@ onUnmounted(() => {
             </div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(ThreadingEntryType.threadXDepth, threadXDepth || 0)"
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
@@ -1639,6 +1638,7 @@ onUnmounted(() => {
                     ? String(numberentry)
                     : String(threadXDepth ?? 'X Depth')
                 "
+                @click="numberClicked(ThreadingEntryType.threadXDepth, threadXDepth || 0)"
               >
                 {{
                   entryActive == ThreadingEntryType.threadXDepth
@@ -1658,7 +1658,6 @@ onUnmounted(() => {
             </div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(ThreadingEntryType.threadZEnd, threadZEnd || 0)"
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
@@ -1674,6 +1673,7 @@ onUnmounted(() => {
                     ? String(numberentry)
                     : String(threadZEnd ?? 'Z End')
                 "
+                @click="numberClicked(ThreadingEntryType.threadZEnd, threadZEnd || 0)"
               >
                 {{
                   entryActive == ThreadingEntryType.threadZEnd ? numberentry : threadZEnd ?? 'Z End'
@@ -1688,7 +1688,6 @@ onUnmounted(() => {
             </div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(ThreadingEntryType.threadAngle, threadAngle || 0)"
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
@@ -1704,6 +1703,7 @@ onUnmounted(() => {
                     ? String(numberentry)
                     : String(threadAngle ?? 'Angle')
                 "
+                @click="numberClicked(ThreadingEntryType.threadAngle, threadAngle || 0)"
               >
                 {{
                   entryActive == ThreadingEntryType.threadAngle
@@ -1723,7 +1723,6 @@ onUnmounted(() => {
             </div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(ThreadingEntryType.threadZPullout, threadZPullout || 0)"
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
@@ -1740,6 +1739,7 @@ onUnmounted(() => {
                     ? String(numberentry)
                     : String(threadZPullout ?? 'Z Pullout')
                 "
+                @click="numberClicked(ThreadingEntryType.threadZPullout, threadZPullout || 0)"
               >
                 {{
                   entryActive == ThreadingEntryType.threadZPullout
@@ -1756,7 +1756,6 @@ onUnmounted(() => {
             </div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(ThreadingEntryType.threadXPullout, threadXPullout || 0)"
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
@@ -1773,6 +1772,7 @@ onUnmounted(() => {
                     ? String(numberentry)
                     : String(threadXPullout ?? 'X Pullout')
                 "
+                @click="numberClicked(ThreadingEntryType.threadXPullout, threadXPullout || 0)"
               >
                 {{
                   entryActive == ThreadingEntryType.threadXPullout
@@ -1792,7 +1792,6 @@ onUnmounted(() => {
             </div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(ThreadingEntryType.threadCutMult, threadCutMult || 0)"
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
@@ -1809,6 +1808,7 @@ onUnmounted(() => {
                     ? String(numberentry)
                     : String(threadCutMult ?? 'Cut Multiplier')
                 "
+                @click="numberClicked(ThreadingEntryType.threadCutMult, threadCutMult || 0)"
               >
                 {{
                   entryActive == ThreadingEntryType.threadCutMult
@@ -1825,7 +1825,6 @@ onUnmounted(() => {
             </div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(ThreadingEntryType.threadFirstCut, threadFirstCut || 0)"
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
@@ -1842,6 +1841,7 @@ onUnmounted(() => {
                     ? String(numberentry)
                     : String(threadFirstCut ?? 'First Cut')
                 "
+                @click="numberClicked(ThreadingEntryType.threadFirstCut, threadFirstCut || 0)"
               >
                 {{
                   entryActive == ThreadingEntryType.threadFirstCut
@@ -1861,7 +1861,6 @@ onUnmounted(() => {
             </div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(ThreadingEntryType.threadSpringCuts, threadSpringCuts || 0)"
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
@@ -1879,6 +1878,7 @@ onUnmounted(() => {
                     ? String(numberentry)
                     : String(threadSpringCuts ?? 'Spring Cuts')
                 "
+                @click="numberClicked(ThreadingEntryType.threadSpringCuts, threadSpringCuts || 0)"
               >
                 {{
                   entryActive == ThreadingEntryType.threadSpringCuts
@@ -1895,7 +1895,6 @@ onUnmounted(() => {
             </div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(ThreadingEntryType.threadMinCut, threadMinCut || 0)"
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
@@ -1911,6 +1910,7 @@ onUnmounted(() => {
                     ? String(numberentry)
                     : String(threadMinCut ?? 'Min Cut')
                 "
+                @click="numberClicked(ThreadingEntryType.threadMinCut, threadMinCut || 0)"
               >
                 {{
                   entryActive == ThreadingEntryType.threadMinCut
@@ -1928,30 +1928,30 @@ onUnmounted(() => {
           <!-- Start, Stop, Preset and Reset buttons centered as a group -->
           <div class="flex justify-content-center gap-2 p-1">
             <button
-              @click="openThreadPresetDialog(metric, updatePitchFromThread)"
               class="dro-font-mode button-mode p-2"
               style="background: #555; color: #ffffff; width: 6em"
+              @click="openThreadPresetDialog(metric, updatePitchFromThread)"
             >
               ...
             </button>
             <button
-              @click="threadResetClicked"
               class="dro-font-mode button-mode p-2"
               style="background: #555; color: #ffffff; width: 6em"
+              @click="threadResetClicked"
             >
               Reset
             </button>
             <button
-              @click="threadStartClicked"
               class="dro-font-mode button-mode p-2"
               style="background: #22c55e; color: #ffffff; width: 6em"
+              @click="threadStartClicked"
             >
               ⏵ Start
             </button>
             <button
-              @click="threadStopClicked"
               class="dro-font-mode button-mode p-2"
               style="background: #ef4444; color: #ffffff; width: 6em"
+              @click="threadStopClicked"
             >
               ⏹ Stop
             </button>
@@ -2041,7 +2041,6 @@ onUnmounted(() => {
             </div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(TurningEntryType.turningTarget, displayTurningTarget || 0)"
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
@@ -2057,6 +2056,7 @@ onUnmounted(() => {
                     ? String(numberentry)
                     : String(displayTurningTarget ?? 'Target')
                 "
+                @click="numberClicked(TurningEntryType.turningTarget, displayTurningTarget || 0)"
               >
                 {{
                   entryActive == TurningEntryType.turningTarget
@@ -2073,7 +2073,6 @@ onUnmounted(() => {
             </div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(TurningEntryType.turningStock, displayTurningStock || 0)"
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
@@ -2089,6 +2088,7 @@ onUnmounted(() => {
                     ? String(numberentry)
                     : String(displayTurningStock ?? 'Stock')
                 "
+                @click="numberClicked(TurningEntryType.turningStock, displayTurningStock || 0)"
               >
                 {{
                   entryActive == TurningEntryType.turningStock
@@ -2108,7 +2108,6 @@ onUnmounted(() => {
             </div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(TurningEntryType.turningZEnd, turningZEnd || 0)"
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
@@ -2124,6 +2123,7 @@ onUnmounted(() => {
                     ? String(numberentry)
                     : String(turningZEnd ?? 'Z End')
                 "
+                @click="numberClicked(TurningEntryType.turningZEnd, turningZEnd || 0)"
               >
                 {{
                   entryActive == TurningEntryType.turningZEnd ? numberentry : turningZEnd ?? 'Z End'
@@ -2141,7 +2141,6 @@ onUnmounted(() => {
             </div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(TurningEntryType.turningFeedRate, turningFeedRate || 0)"
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
@@ -2158,6 +2157,7 @@ onUnmounted(() => {
                     ? String(numberentry)
                     : String(turningFeedRate ?? 'Feed Rate')
                 "
+                @click="numberClicked(TurningEntryType.turningFeedRate, turningFeedRate || 0)"
               >
                 {{
                   entryActive == TurningEntryType.turningFeedRate
@@ -2174,7 +2174,6 @@ onUnmounted(() => {
             </div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(TurningEntryType.turningStepDown, turningStepDown || 0)"
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
@@ -2191,6 +2190,7 @@ onUnmounted(() => {
                     ? String(numberentry)
                     : String(turningStepDown ?? 'Step Down')
                 "
+                @click="numberClicked(TurningEntryType.turningStepDown, turningStepDown || 0)"
               >
                 {{
                   entryActive == TurningEntryType.turningStepDown
@@ -2210,9 +2210,6 @@ onUnmounted(() => {
             </div>
             <div class="col-4 p-1">
               <button
-                @click="
-                  numberClicked(TurningEntryType.turningSpringPasses, turningSpringPasses || 0)
-                "
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
@@ -2230,6 +2227,9 @@ onUnmounted(() => {
                     ? String(numberentry)
                     : String(turningSpringPasses ?? 'Spring Passes')
                 "
+                @click="
+                  numberClicked(TurningEntryType.turningSpringPasses, turningSpringPasses || 0)
+                "
               >
                 {{
                   entryActive == TurningEntryType.turningSpringPasses
@@ -2246,9 +2246,6 @@ onUnmounted(() => {
             </div>
             <div class="col-4 p-1">
               <button
-                @click="
-                  numberClicked(TurningEntryType.turningFinalStepDown, turningFinalStepDown || 0)
-                "
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
@@ -2265,6 +2262,9 @@ onUnmounted(() => {
                   entryActive == TurningEntryType.turningFinalStepDown
                     ? String(numberentry)
                     : String(turningFinalStepDown ?? 'Final Step Down')
+                "
+                @click="
+                  numberClicked(TurningEntryType.turningFinalStepDown, turningFinalStepDown || 0)
                 "
               >
                 {{
@@ -2285,7 +2285,6 @@ onUnmounted(() => {
             </div>
             <div class="col-4 p-1">
               <button
-                @click="numberClicked(TurningEntryType.turningTaperAngle, turningTaperAngle || 0)"
                 :class="[
                   'w-full text-left dro-font-mode button-mode p-1 truncate',
                   {
@@ -2303,6 +2302,7 @@ onUnmounted(() => {
                     ? String(numberentry)
                     : String(turningTaperAngle ?? 'Taper Angle')
                 "
+                @click="numberClicked(TurningEntryType.turningTaperAngle, turningTaperAngle || 0)"
               >
                 {{
                   entryActive == TurningEntryType.turningTaperAngle
@@ -2320,30 +2320,30 @@ onUnmounted(() => {
           <!-- Buttons -->
           <div class="flex justify-content-center gap-2 p-1">
             <button
-              @click="openTurningPresetDialog(metric, updatePitchFromTurning)"
               class="dro-font-mode button-mode p-2"
               style="background: #555; color: #ffffff; width: 3em"
+              @click="openTurningPresetDialog(metric, updatePitchFromTurning)"
             >
               ...
             </button>
             <button
-              @click="turningResetClicked"
               class="dro-font-mode button-mode p-2"
               style="background: #555; color: #ffffff; width: 6em"
+              @click="turningResetClicked"
             >
               Reset
             </button>
             <button
-              @click="turningStartClicked"
               class="dro-font-mode button-mode p-2"
               style="background: #22c55e; color: #ffffff; width: 6em"
+              @click="turningStartClicked"
             >
               ⏵ Start
             </button>
             <button
-              @click="turningStopClicked"
               class="dro-font-mode button-mode p-2"
               style="background: #ef4444; color: #ffffff; width: 6em"
+              @click="turningStopClicked"
             >
               ⏹ Stop
             </button>
@@ -2403,7 +2403,7 @@ onUnmounted(() => {
       <Dialog
         v-model:visible="showOperationPreview"
         modal
-        :showHeader="false"
+        :show-header="false"
         :draggable="false"
         :closable="false"
         :style="{ width: '90vw', height: '90vh' }"
@@ -2420,13 +2420,23 @@ onUnmounted(() => {
     <div v-if="selectedMenu == MenuType.halStatus" class="flex-grow-1 flex flex-column">
       <Toolbar class="flex-none p-1">
         <template #start>
-          <Button @click="startHAL" label="Start HAL" icon="pi pi-play" class="mr-2" />
-          <Button @click="stopHAL" label="Stop HAL" icon="pi pi-stop" severity="success" />
+          <Button
+            label="Start HAL"
+            icon="pi pi-play"
+            class="mr-2"
+            @click="startHAL"
+          />
+          <Button
+            label="Stop HAL"
+            icon="pi pi-stop"
+            severity="success"
+            @click="stopHAL"
+          />
         </template>
       </Toolbar>
       <Textarea
         v-model="halStdoutText"
-        autoScroll="true"
+        auto-scroll="true"
         class="console-output flex-grow-1"
         spellcheck="false"
         autocomplete="off"
@@ -2448,14 +2458,14 @@ onUnmounted(() => {
               <div class="col-6">
                 <div class="flex gap-3">
                   <button
-                    @click="diameterMode = false"
                     :class="['button-mode p-2 px-4', { 'bg-primary': !diameterMode }]"
+                    @click="diameterMode = false"
                   >
                     Radius
                   </button>
                   <button
-                    @click="diameterMode = true"
                     :class="['button-mode p-2 px-4', { 'bg-primary': diameterMode }]"
+                    @click="diameterMode = true"
                   >
                     Diameter
                   </button>
@@ -2473,14 +2483,14 @@ onUnmounted(() => {
               <div class="col-6">
                 <div class="flex gap-3">
                   <button
-                    @click="defaultMetricOnStartup = true"
                     :class="['button-mode p-2 px-4', { 'bg-primary': defaultMetricOnStartup }]"
+                    @click="defaultMetricOnStartup = true"
                   >
                     Metric (mm)
                   </button>
                   <button
-                    @click="defaultMetricOnStartup = false"
                     :class="['button-mode p-2 px-4', { 'bg-primary': !defaultMetricOnStartup }]"
+                    @click="defaultMetricOnStartup = false"
                   >
                     Imperial (inch)
                   </button>
