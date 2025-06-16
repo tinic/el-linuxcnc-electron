@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { inject } from 'vue'
 import presetsData from '../assets/threadpresets.json'
+import { useSettings } from '../composables/useSettings'
 
 const emit = defineEmits(['selected'])
 const dialogRef = inject('dialogRef') as any
+const { selectedThreadingTab } = useSettings()
 
 interface ThreadPreset {
   name: string
@@ -60,7 +62,7 @@ const shouldShowSeparator = (section: any, pindex: number): boolean => {
 </script>
 
 <template>
-  <TabView>
+  <TabView v-model:active-index="selectedThreadingTab">
     <TabPanel
       v-for="(section, sindex) in sections"
       :key="sindex"

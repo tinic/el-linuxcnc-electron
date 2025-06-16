@@ -6,7 +6,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 import type { BrowserWindowConstructorOptions } from 'electron'
-import { app, BrowserWindow, ipcMain, screen } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, nativeTheme } from 'electron'
 import { isDev } from './config.js'
 import { appConfig } from './electron-store/configuration.js'
 import type { ChildProcess } from 'node:child_process'
@@ -76,7 +76,12 @@ async function createWindow() {
 // Settings handlers (global)
 ipcMain.handle('getSettings', () => ({
   diameterMode: (appConfig as any).get('setting.diameterMode'),
-  defaultMetricOnStartup: (appConfig as any).get('setting.defaultMetricOnStartup')
+  defaultMetricOnStartup: (appConfig as any).get('setting.defaultMetricOnStartup'),
+  selectedThreadingTab: (appConfig as any).get('setting.selectedThreadingTab', 0),
+  selectedTurningTab: (appConfig as any).get('setting.selectedTurningTab', 0),
+  selectedPitchTab: (appConfig as any).get('setting.selectedPitchTab', [0, 0]),
+  pitchX: (appConfig as any).get('setting.pitchX', 0.0),
+  pitchZ: (appConfig as any).get('setting.pitchZ', 0.0)
 }))
 
 ipcMain.handle('saveSettings', (event, settings) => {
@@ -84,19 +89,22 @@ ipcMain.handle('saveSettings', (event, settings) => {
   ;(appConfig as any).set('setting', {
     ...currentSettings,
     diameterMode: settings.diameterMode,
-    defaultMetricOnStartup: settings.defaultMetricOnStartup
+    defaultMetricOnStartup: settings.defaultMetricOnStartup,
+    selectedThreadingTab: settings.selectedThreadingTab,
+    selectedTurningTab: settings.selectedTurningTab,
+    selectedPitchTab: settings.selectedPitchTab,
+    pitchX: settings.pitchX,
+    pitchZ: settings.pitchZ
   })
   return true
 })
 
-// Silence Intel GPU dmesg noise
-//app.commandLine.appendSwitch('ignore-gpu-blacklist');
-//app.commandLine.appendSwitch('disable-gpu');
-//app.commandLine.appendSwitch('disable-gpu-compositing');
-//app.disableHardwareAcceleration()
 app.commandLine.appendSwitch('gtk-version', '3')
 
 app.whenReady().then(async () => {
+  // Force dark mode for the entire application
+  nativeTheme.themeSource = 'dark'
+  
   if (isDev) {
     try {
       const { installExt } = await import('./installDevTool.js')

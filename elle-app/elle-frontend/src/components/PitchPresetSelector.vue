@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, inject } from 'vue'
 import { useDialog } from 'primevue/usedialog'
+import { useSettings } from '../composables/useSettings'
 
 import json from '../assets/manualpresets.json'
 
@@ -8,6 +9,7 @@ const emit = defineEmits(['selected'])
 const dialogRef = inject('dialogRef') as any
 // eslint-disable-next-line no-unused-vars
 const dialog = useDialog()
+const { selectedPitchTab } = useSettings()
 
 const headers: string[] = []
 
@@ -31,7 +33,7 @@ onMounted(() => {})
 </script>
 
 <template>
-  <TabView>
+  <TabView v-model:active-index="selectedPitchTab[axis]">
     <TabPanel
       v-for="(title, sindex) in headers"
       :key="sindex"

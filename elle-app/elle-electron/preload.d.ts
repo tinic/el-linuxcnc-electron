@@ -4,6 +4,6 @@ declare interface api {
 }
 
 declare interface settings {
-  get: () => Promise<{ diameterMode: boolean; defaultMetricOnStartup: boolean }>
-  save: (settings: { diameterMode: boolean; defaultMetricOnStartup: boolean }) => Promise<boolean>
+  get: () => Promise<{ diameterMode: boolean; defaultMetricOnStartup: boolean; selectedThreadingTab: number; selectedTurningTab: number; selectedPitchTab: number[]; pitchX: number; pitchZ: number }>
+  save: (settings: { diameterMode: boolean; defaultMetricOnStartup: boolean; selectedThreadingTab: number; selectedTurningTab: number; selectedPitchTab: number[]; pitchX: number; pitchZ: number }) => Promise<boolean>
 }

@@ -244,7 +244,7 @@ export function useCannedCycles() {
     const _dialogRef = dialog.open(ThreadPresetSelector, {
       props: {
         header: 'Select Threading Preset',
-        style: { width: '70vw' },
+        style: { width: '70vw', height: '90vh' },
         breakpoints: { '960px': '75vw', '640px': '90vw' },
         position: 'top',
         modal: true
@@ -543,7 +543,7 @@ export function useCannedCycles() {
     const _dialogRef = dialog.open(TurningPresetSelector, {
       props: {
         header: 'Select Turning Preset',
-        style: { width: '70vw' },
+        style: { width: '70vw', height: '90vh' },
         breakpoints: { '960px': '75vw', '640px': '90vw' },
         position: 'top',
         modal: true

@@ -182,7 +182,7 @@ const xpitchlabel = ref('…')
 const zpitchlabel = ref('…')
 const xpitchangle = ref(0)
 // Get settings from composable
-const { metric, diameterMode, defaultMetricOnStartup, isQuitting, loadSettings } = useSettings()
+const { metric, diameterMode, defaultMetricOnStartup, selectedThreadingTab, selectedTurningTab, selectedPitchTab, pitchX, pitchZ, isQuitting, loadSettings } = useSettings()
 
 const cursorpos = ref(0)
 
@@ -636,7 +636,7 @@ const startHAL = () => {
   halStdoutText.value = ''
   const userAgent = navigator.userAgent.toLowerCase()
   if (userAgent.indexOf(' electron/') > -1) {
-    window.api.send('startHAL')
+    window.api.send('startHAL', {})
     xpos.value = 0
     zpos.value = 0
     setAxisOffset('x', 0)
@@ -648,7 +648,7 @@ const stopHAL = () => {
   halStdoutText.value = ''
   const userAgent = navigator.userAgent.toLowerCase()
   if (userAgent.indexOf(' electron/') > -1) {
-    window.api.send('stopHAL')
+    window.api.send('stopHAL', {})
     xpos.value = 0
     zpos.value = 0
     setAxisOffset('x', 0)
@@ -666,13 +666,18 @@ const quitApplication = async () => {
     try {
       await window.settings.save({
         diameterMode: diameterMode.value,
-        defaultMetricOnStartup: defaultMetricOnStartup.value
+        defaultMetricOnStartup: defaultMetricOnStartup.value,
+        selectedThreadingTab: selectedThreadingTab.value,
+        selectedTurningTab: selectedTurningTab.value,
+        selectedPitchTab: selectedPitchTab.value,
+        pitchX: pitchX.value,
+        pitchZ: pitchZ.value
       })
     } catch (error) {
       console.error('Failed to save final settings:', error)
     }
 
-    window.api.send('quit')
+    window.api.send('quit', {})
   }
 }
 
@@ -804,6 +809,9 @@ watch([selectedFeedMode, selectedDirectionMode], () => {
 
 watch([zpitch, xpitch], () => {
   updateHALOut(selectedFeedMode, selectedDirectionMode, FeedMode, DirectionMode)
+  // Save pitch values to global settings
+  pitchX.value = xpitch.value
+  pitchZ.value = zpitch.value
 })
 
 watch(selectedMenu, () => {
@@ -1107,6 +1115,14 @@ const updatePitchFromTurning = () => {
 onMounted(async () => {
   // Load settings first
   await loadSettings()
+  
+  // Initialize pitch values from settings
+  if (pitchX.value > 0) {
+    xpitch.value = pitchX.value
+  }
+  if (pitchZ.value > 0) {
+    zpitch.value = pitchZ.value
+  }
 
   const userAgent = navigator.userAgent.toLowerCase()
   if (userAgent.indexOf(' electron/') > -1) {
@@ -1464,21 +1480,6 @@ onUnmounted(() => {
           <button
             size="large"
             class="col-12 dro-font-mode button-mode p-3 m-1"
-            @click="cannedCycleClicked(CannedCycle.threading)"
-          >
-            <span class="flex flex-row align-items-center">
-              <i
-                v-if="selectedCannedCycle == CannedCycle.threading"
-                class="pi pi-circle-fill mr-3"
-                style="color: #ff0000"
-              />
-              <i v-else class="pi pi-circle mr-3" />
-              Threading
-            </span>
-          </button>
-          <button
-            size="large"
-            class="col-12 dro-font-mode button-mode p-3 m-1"
             @click="cannedCycleClicked(CannedCycle.turning)"
           >
             <span class="flex flex-row align-items-center">
@@ -1489,6 +1490,21 @@ onUnmounted(() => {
               />
               <i v-else class="pi pi-circle mr-3" />
               Turning
+            </span>
+          </button>
+          <button
+            size="large"
+            class="col-12 dro-font-mode button-mode p-3 m-1"
+            @click="cannedCycleClicked(CannedCycle.threading)"
+          >
+            <span class="flex flex-row align-items-center">
+              <i
+                v-if="selectedCannedCycle == CannedCycle.threading"
+                class="pi pi-circle-fill mr-3"
+                style="color: #ff0000"
+              />
+              <i v-else class="pi pi-circle mr-3" />
+              Threading
             </span>
           </button>
           <button
