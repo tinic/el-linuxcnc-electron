@@ -1,4 +1,152 @@
 {
+  "metric": [
+    {
+      "name": "10mm Bar",
+      "description": "Standard 10mm turning operation",
+      "target": 4.0,
+      "stock": 5.0,
+      "zEnd": -20.0,
+      "feedRate": 0.15,
+      "finalStepDown": 0.1,
+      "taperAngle": 0,
+      "stepDown": 0.5,
+      "springPasses": 0
+    },
+    {
+      "name": "12mm Bar",
+      "description": "Standard 12mm turning operation",
+      "target": 5.0,
+      "stock": 6.0,
+      "zEnd": -25.0,
+      "feedRate": 0.15,
+      "finalStepDown": 0.1,
+      "taperAngle": 0,
+      "stepDown": 0.5,
+      "springPasses": 0
+    },
+    {
+      "name": "16mm Bar",
+      "description": "Standard 16mm turning operation",
+      "target": 6.0,
+      "stock": 8.0,
+      "zEnd": -30.0,
+      "feedRate": 0.2,
+      "finalStepDown": 0.15,
+      "taperAngle": 0,
+      "stepDown": 0.75,
+      "springPasses": 0
+    },
+    {
+      "name": "20mm Bar",
+      "description": "Standard 20mm turning operation",
+      "target": 8.0,
+      "stock": 10.0,
+      "zEnd": -40.0,
+      "feedRate": 0.25,
+      "finalStepDown": 0.15,
+      "taperAngle": 0,
+      "stepDown": 1.0,
+      "springPasses": 0
+    },
+    {
+      "name": "25mm Bar",
+      "description": "Standard 25mm turning operation",
+      "target": 10.0,
+      "stock": 12.5,
+      "zEnd": -50.0,
+      "feedRate": 0.3,
+      "finalStepDown": 0.2,
+      "taperAngle": 0,
+      "stepDown": 1.25,
+      "springPasses": 0
+    },
+    {
+      "name": "30mm Bar",
+      "description": "Standard 30mm turning operation",
+      "target": 12.0,
+      "stock": 15.0,
+      "zEnd": -60.0,
+      "feedRate": 0.3,
+      "finalStepDown": 0.2,
+      "taperAngle": 0,
+      "stepDown": 1.5,
+      "springPasses": 0
+    }
+  ],
+  "imperial": [
+    {
+      "name": "1/2\" Bar",
+      "description": "Standard 1/2 inch turning operation",
+      "target": 4.76,
+      "stock": 6.35,
+      "zEnd": -25.4,
+      "feedRate": 0.006,
+      "finalStepDown": 0.004,
+      "taperAngle": 0,
+      "stepDown": 0.02,
+      "springPasses": 0
+    },
+    {
+      "name": "5/8\" Bar",
+      "description": "Standard 5/8 inch turning operation",
+      "target": 6.35,
+      "stock": 7.94,
+      "zEnd": -31.75,
+      "feedRate": 0.008,
+      "finalStepDown": 0.004,
+      "taperAngle": 0,
+      "stepDown": 0.025,
+      "springPasses": 0
+    },
+    {
+      "name": "3/4\" Bar",
+      "description": "Standard 3/4 inch turning operation",
+      "target": 9.53,
+      "stock": 9.53,
+      "zEnd": -38.1,
+      "feedRate": 0.008,
+      "finalStepDown": 0.006,
+      "taperAngle": 0,
+      "stepDown": 0.03,
+      "springPasses": 0
+    },
+    {
+      "name": "1\" Bar",
+      "description": "Standard 1 inch turning operation",
+      "target": 12.7,
+      "stock": 12.7,
+      "zEnd": -50.8,
+      "feedRate": 0.01,
+      "finalStepDown": 0.006,
+      "taperAngle": 0,
+      "stepDown": 0.04,
+      "springPasses": 0
+    },
+    {
+      "name": "1-1/4\" Bar",
+      "description": "Standard 1-1/4 inch turning operation",
+      "target": 15.88,
+      "stock": 15.88,
+      "zEnd": -63.5,
+      "feedRate": 0.012,
+      "finalStepDown": 0.008,
+      "taperAngle": 0,
+      "stepDown": 0.05,
+      "springPasses": 0
+    },
+    {
+      "name": "1-1/2\" Bar",
+      "description": "Standard 1-1/2 inch turning operation",
+      "target": 19.05,
+      "stock": 19.05,
+      "zEnd": -76.2,
+      "feedRate": 0.012,
+      "finalStepDown": 0.008,
+      "taperAngle": 0,
+      "stepDown": 0.06,
+      "springPasses": 0
+    }
+  ],
   "npt": [
     {
       "name": "⅛-27 NPT-2A",
