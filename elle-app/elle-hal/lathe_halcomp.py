@@ -218,6 +218,12 @@ def generate_threading_gcode_core(params, for_backplot=False):
         # Break if we've completed all cuts including spring cuts
         if spring_cuts_remaining < 0:
             break
+
+    # Debug: Print the generated G-code
+    print("=== GENERATED TURNING G-CODE ===")
+    for i, line in enumerate(gcode_lines):
+        print(f"{i+1:3d}: {line}")
+    print("=== END G-CODE ===")
     
     # Final return to safe position (line 78)
     gcode_lines.append(f"G0 X{x_return:.6f} Z{z_return:.6f}")
@@ -227,18 +233,10 @@ def generate_threading_gcode_core(params, for_backplot=False):
 def generate_turning_gcode_core(params, for_backplot=False):
     import math
     
-    # Debug: Print received parameters
-    print("=== TURNING PARAMETERS RECEIVED ===")
-    for key, value in params.items():
-        print(f"  {key}: {value}")
-    print("=== END PARAMETERS ===")
-    
     pitch = abs(float(params['Pitch'])) # Cutting pitch for G33
     x_stock = float(params['Stock']) # Stock radius (larger, starting diameter)
     x_target = float(params['Target']) # Target radius (smaller, finished diameter)
     
-    print(f"DEBUG: x_stock = {x_stock}, x_target = {x_target}")
-    print(f"DEBUG: total_cut_depth will be = {abs(x_stock - x_target)}")
     z_start = 0 # Starting Z, we always start at zero. Note that z_lead need to be added when cutting and X adjusted based on the taper angle.
     z_lead = float(params['ZLead']) # Leading cut depth, used to compensate for backlash. usually positive.
     z_end = float(params['ZEnd']) # Full cut depth, usually negative
