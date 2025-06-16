@@ -1,588 +1,597 @@
 [
-    { 
+  {
     "axis": "x",
-    "sections": [{ 
-        "header" : "Turning",
+    "sections": [
+      {
+        "header": "Turning",
         "pitches": [
-        { 
+          {
             "name": "Fine",
             "value": 0.02,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "Finish",
             "value": 0.05,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "Balanced",
             "value": 0.1,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "Roughing",
             "value": 0.2,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "Hold",
             "value": 0.0,
             "type": "pitch"
-        }
+          }
         ]
-    },{ 
-        "header" : "Tapers",
+      },
+      {
+        "header": "Tapers",
         "pitches": [
-        { 
+          {
             "name": "NTP",
             "value": 1.789910608,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "MT#0",
             "value": 1.4908,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "MT#1",
             "value": 1.4287,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "MT#2",
             "value": 1.4307,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "MT#3",
             "value": 1.4377,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "MT#4",
             "value": 1.4876,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "MT#5",
             "value": 1.5072,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "MT#6",
             "value": 1.4933,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "MT#7",
             "value": 1.4894,
             "type": "angle"
-        }]
-    },{ 
-        "header" : "Angles",
+          }
+        ]
+      },
+      {
+        "header": "Angles",
         "pitches": [
-        { 
+          {
             "name": "4.5°",
             "value": 4.5,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "5.62°",
             "value": 5.62,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "7.5°",
             "value": 7.5,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "10°",
             "value": 10,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "12.5°",
             "value": 12.5,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "15°",
             "value": 15,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "20°",
             "value": 20,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "25°",
             "value": 25,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "30°",
             "value": 30,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "35°",
             "value": 35,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "40°",
             "value": 40,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "45°",
             "value": 45,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "50°",
             "value": 50,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "55°",
             "value": 55,
             "type": "angle"
-        },
-        { 
+          },
+          {
             "name": "60°",
             "value": 60,
             "type": "angle"
-        }]
-    }]
-    },
-    { 
+          }
+        ]
+      }
+    ]
+  },
+  {
     "axis": "z",
-    "sections": [{ 
-        "header" : "Turning",
+    "sections": [
+      {
+        "header": "Turning",
         "pitches": [
-        { 
+          {
             "name": "Fine",
             "value": 0.02,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "Finish",
             "value": 0.05,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "Balanced",
             "value": 0.1,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "Roughing",
             "value": 0.2,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "Hold",
             "value": 0.0,
             "type": "pitch"
-        }
+          }
         ]
-    },
-    {
+      },
+      {
         "header": "Metric",
         "pitches": [
-        { 
+          {
             "name": "M3x0.5",
             "value": 0.5,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "M4x0.7",
             "value": 0.7,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "M5x0.8",
             "value": 0.8,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "M6x1.0",
             "value": 1.0,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "M7x1.0",
             "value": 1.0,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "M8x1.25",
             "value": 1.25,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "M10x1.5",
             "value": 1.5,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "M12x1.75",
             "value": 1.75,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "M14x2.0",
             "value": 2,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "M16x2.0",
             "value": 2,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "M18x2.5",
             "value": 2.5,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "M20x2.5",
             "value": 2.5,
             "type": "pitch"
-        }]
+          }
+        ]
       },
       {
         "header": "Metric Fine",
         "pitches": [
-        { 
+          {
             "name": "MF3x0.35",
             "value": 0.35,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF3x0.6",
             "value": 0.6,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF4x0.5",
             "value": 0.5,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF4x0.75",
             "value": 0.75,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF5x0.5",
             "value": 0.5,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF5x0.9",
             "value": 0.9,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF6x0.75",
             "value": 0.75,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF8x1.0",
             "value": 1.0,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF9x1.0",
             "value": 1.0,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF10x0.75",
             "value": 0.75,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF10x1.0",
             "value": 1.0,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF10x1.25",
             "value": 1.25,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF12x1.0",
             "value": 1.0,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF12x1.25",
             "value": 1.25,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF12x1.5",
             "value": 1.5,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF14x1.5",
             "value": 1.5,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF16x1.0",
             "value": 1.0,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF16x1.5",
             "value": 1.5,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF18x1.5",
             "value": 1.5,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF20x1.0",
             "value": 1.0,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF20x1.5",
             "value": 1.5,
             "type": "pitch"
-        },
-        { 
+          },
+          {
             "name": "MF20x2.0",
             "value": 2.0,
             "type": "pitch"
-        }]
+          }
+        ]
       },
       {
         "header": "Imperial UNC",
         "pitches": [
-            { 
-                "name": "#6-32",
-                "value": 0.793750,
-                "type": "pitch"
-            },
-            { 
-                "name": "#8-32",
-                "value": 0.793750,
-                "type": "pitch"
-            },
-            { 
-                "name": "#10-24",
-                "value": 1.05833333333333333333,
-                "type": "pitch"
-            },
-            { 
-                "name": "#12-24",
-                "value": 1.05833333333333333333,
-                "type": "pitch"
-            },
-            { 
-                "name": "¹⁄₄″-20",
-                "value": 1.27000000000000000000,
-                "type": "pitch"
-            },
-            { 
-                "name": "⁵⁄₁₆″-18",
-                "value": 1.41111111111111111111,
-                "type": "pitch"
-            },
-            { 
-                "name": "³⁄₈″-16",
-                "value": 1.58750000000000000000,
-                "type": "pitch"
-            },
-            { 
-                "name": "⁷⁄₁₆″-14",
-                "value": 1.81428571428571428571,
-                "type": "pitch"
-            },
-            { 
-                "name": "¹⁄₂″-13",
-                "value": 1.95384615384615384615,
-                "type": "pitch"
-            },
-            { 
-                "name": "⁹⁄₁₆″-12",
-                "value": 2.11666666666666666666,
-                "type": "pitch"
-            },
-            { 
-                "name": "⁵⁄₈″-11",
-                "value": 2.30909090909090909090,
-                "type": "pitch"
-            },
-            { 
-                "name": "³⁄₄″-10",
-                "value": 2.54000000000000000000,
-                "type": "pitch"
-            },
-            { 
-                "name": "⁷⁄₈″-9",
-                "value": 2.82222222222222222222,
-                "type": "pitch"
-            },
-            { 
-                "name": "1″-8",
-                "value": 3.17500000000000000000,
-                "type": "pitch"
-            }
-            ]
-        },
-        {
-            "header": "Imperial UNF",
-            "pitches": [
-                { 
-                    "name": "#6-40",
-                    "value": 0.63500000000000000000,
-                    "type": "pitch"
-                },
-                { 
-                    "name": "#8-36",
-                    "value": 0.70555555555555555555,
-                    "type": "pitch"
-                },
-                { 
-                    "name": "#10-32",
-                    "value": 0.79375000000000000000,
-                    "type": "pitch"
-                },
-                { 
-                    "name": "#12-28",
-                    "value": 0.90714285714000000000,
-                    "type": "pitch"
-                },
-                { 
-                    "name": "¹⁄₄″-28",
-                    "value": 0.90714285714000000000,
-                    "type": "pitch"
-                },
-                { 
-                    "name": "⁵⁄₁₆″-24",
-                    "value": 1.05833333333000000000,
-                    "type": "pitch"
-                },
-                { 
-                    "name": "³⁄₈″-24",
-                    "value": 1.05833333333000000000,
-                    "type": "pitch"
-                },
-                { 
-                    "name": "⁷⁄₁₆″-20",
-                    "value": 1.27000000000000000000,
-                    "type": "pitch"
-                },
-                { 
-                    "name": "¹⁄₂″-20",
-                    "value": 1.2700000000000000000,
-                    "type": "pitch"
-                },
-                { 
-                    "name": "⁹⁄₁₆″-18",
-                    "value": 1.4111111111111111111,
-                    "type": "pitch"
-                },
-                { 
-                    "name": "⁵⁄₈″-18",
-                    "value": 1.4111111111111111111,
-                    "type": "pitch"
-                },
-                { 
-                    "name": "³⁄₄″-16",
-                    "value": 1.5875000000000000000,
-                    "type": "pitch"
-                },
-                { 
-                    "name": "⁷⁄₈″-14",
-                    "value": 1.8142857142900000000,
-                    "type": "pitch"
-                },
-                { 
-                    "name": "1″-14",
-                    "value": 1.8142857142900000000,
-                    "type": "pitch"
-                }
-                ]
-            },
-            {
-                "header": "NPT",
-                "pitches": [
-                    { 
-                        "name": "¹⁄₁₆″-27",
-                        "value": 0.940740740740740740,
-                        "type": "pitch"
-                    },
-                    { 
-                        "name": "¹⁄₈″-27",
-                        "value": 0.940740740740740740,
-                        "type": "pitch"
-                    },
-                    { 
-                        "name": "¹⁄₄″-18",
-                        "value": 1.411111111111111111111111,
-                        "type": "pitch"
-                    },
-                    { 
-                        "name": "³⁄₈″-18",
-                        "value": 1.411111111111111111111111,
-                        "type": "pitch"
-                    },
-                    { 
-                        "name": "¹⁄₂″-14",
-                        "value": 1.81428571428571428571,
-                        "type": "pitch"
-                    },
-                    { 
-                        "name": "³⁄₄″-14",
-                        "value": 1.81428571428571428571,
-                        "type": "pitch"
-                    },
-                    { 
-                        "name": "1″-11¹⁄₂",
-                        "value": 2.2086956521739130434782,
-                        "type": "pitch"
-                    },
-                    { 
-                        "name": "1¹⁄₄″-11¹⁄₂",
-                        "value": 2.2086956521739130434782,
-                        "type": "pitch"
-                    },
-                    { 
-                        "name": "1¹⁄₂″-11¹⁄₂",
-                        "value": 2.2086956521739130434782,
-                        "type": "pitch"
-                    },
-                    { 
-                        "name": "2¹⁄₂″-11¹⁄₂",
-                        "value": 2.2086956521739130434782,
-                        "type": "pitch"
-                    },
-                    { 
-                        "name": "3″-8",
-                        "value": 3.175,
-                        "type": "pitch"
-                    },
-                    { 
-                        "name": "3¹⁄₂″-8",
-                        "value": 3.175,
-                        "type": "pitch"
-                    }
-                ]
-            }
+          {
+            "name": "#6-32",
+            "value": 0.79375,
+            "type": "pitch"
+          },
+          {
+            "name": "#8-32",
+            "value": 0.79375,
+            "type": "pitch"
+          },
+          {
+            "name": "#10-24",
+            "value": 1.05833333333333333333,
+            "type": "pitch"
+          },
+          {
+            "name": "#12-24",
+            "value": 1.05833333333333333333,
+            "type": "pitch"
+          },
+          {
+            "name": "¹⁄₄″-20",
+            "value": 1.27,
+            "type": "pitch"
+          },
+          {
+            "name": "⁵⁄₁₆″-18",
+            "value": 1.41111111111111111111,
+            "type": "pitch"
+          },
+          {
+            "name": "³⁄₈″-16",
+            "value": 1.5875,
+            "type": "pitch"
+          },
+          {
+            "name": "⁷⁄₁₆″-14",
+            "value": 1.81428571428571428571,
+            "type": "pitch"
+          },
+          {
+            "name": "¹⁄₂″-13",
+            "value": 1.95384615384615384615,
+            "type": "pitch"
+          },
+          {
+            "name": "⁹⁄₁₆″-12",
+            "value": 2.11666666666666666666,
+            "type": "pitch"
+          },
+          {
+            "name": "⁵⁄₈″-11",
+            "value": 2.3090909090909090909,
+            "type": "pitch"
+          },
+          {
+            "name": "³⁄₄″-10",
+            "value": 2.54,
+            "type": "pitch"
+          },
+          {
+            "name": "⁷⁄₈″-9",
+            "value": 2.82222222222222222222,
+            "type": "pitch"
+          },
+          {
+            "name": "1″-8",
+            "value": 3.175,
+            "type": "pitch"
+          }
         ]
-   }
+      },
+      {
+        "header": "Imperial UNF",
+        "pitches": [
+          {
+            "name": "#6-40",
+            "value": 0.635,
+            "type": "pitch"
+          },
+          {
+            "name": "#8-36",
+            "value": 0.70555555555555555555,
+            "type": "pitch"
+          },
+          {
+            "name": "#10-32",
+            "value": 0.79375,
+            "type": "pitch"
+          },
+          {
+            "name": "#12-28",
+            "value": 0.90714285714,
+            "type": "pitch"
+          },
+          {
+            "name": "¹⁄₄″-28",
+            "value": 0.90714285714,
+            "type": "pitch"
+          },
+          {
+            "name": "⁵⁄₁₆″-24",
+            "value": 1.05833333333,
+            "type": "pitch"
+          },
+          {
+            "name": "³⁄₈″-24",
+            "value": 1.05833333333,
+            "type": "pitch"
+          },
+          {
+            "name": "⁷⁄₁₆″-20",
+            "value": 1.27,
+            "type": "pitch"
+          },
+          {
+            "name": "¹⁄₂″-20",
+            "value": 1.27,
+            "type": "pitch"
+          },
+          {
+            "name": "⁹⁄₁₆″-18",
+            "value": 1.4111111111111111111,
+            "type": "pitch"
+          },
+          {
+            "name": "⁵⁄₈″-18",
+            "value": 1.4111111111111111111,
+            "type": "pitch"
+          },
+          {
+            "name": "³⁄₄″-16",
+            "value": 1.5875,
+            "type": "pitch"
+          },
+          {
+            "name": "⁷⁄₈″-14",
+            "value": 1.81428571429,
+            "type": "pitch"
+          },
+          {
+            "name": "1″-14",
+            "value": 1.81428571429,
+            "type": "pitch"
+          }
+        ]
+      },
+      {
+        "header": "NPT",
+        "pitches": [
+          {
+            "name": "¹⁄₁₆″-27",
+            "value": 0.94074074074074074,
+            "type": "pitch"
+          },
+          {
+            "name": "¹⁄₈″-27",
+            "value": 0.94074074074074074,
+            "type": "pitch"
+          },
+          {
+            "name": "¹⁄₄″-18",
+            "value": 1.411111111111111111111111,
+            "type": "pitch"
+          },
+          {
+            "name": "³⁄₈″-18",
+            "value": 1.411111111111111111111111,
+            "type": "pitch"
+          },
+          {
+            "name": "¹⁄₂″-14",
+            "value": 1.81428571428571428571,
+            "type": "pitch"
+          },
+          {
+            "name": "³⁄₄″-14",
+            "value": 1.81428571428571428571,
+            "type": "pitch"
+          },
+          {
+            "name": "1″-11¹⁄₂",
+            "value": 2.2086956521739130434782,
+            "type": "pitch"
+          },
+          {
+            "name": "1¹⁄₄″-11¹⁄₂",
+            "value": 2.2086956521739130434782,
+            "type": "pitch"
+          },
+          {
+            "name": "1¹⁄₂″-11¹⁄₂",
+            "value": 2.2086956521739130434782,
+            "type": "pitch"
+          },
+          {
+            "name": "2¹⁄₂″-11¹⁄₂",
+            "value": 2.2086956521739130434782,
+            "type": "pitch"
+          },
+          {
+            "name": "3″-8",
+            "value": 3.175,
+            "type": "pitch"
+          },
+          {
+            "name": "3¹⁄₂″-8",
+            "value": 3.175,
+            "type": "pitch"
+          }
+        ]
+      }
+    ]
+  }
 ]

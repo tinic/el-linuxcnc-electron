@@ -288,7 +288,6 @@
       "MinCut": 0.05,
       "SpringCuts": 1
     }
-
   ],
   "imperial": [
     {
@@ -536,7 +535,7 @@
       "description": "5/8-11 UNC internal thread",
       "Pitch": 2.309,
       "Diameter": "15.88/13.49",
-      "XDepth": 1.250,
+      "XDepth": 1.25,
       "ZDepth": 0,
       "Angle": 0,
       "ZEnd": -25.4,

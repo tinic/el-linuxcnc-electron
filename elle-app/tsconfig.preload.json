@@ -1,15 +1,15 @@
 {
-    "extends": "./tsconfig.json",
-    "compilerOptions": {
-        "module": "CommonJS",
-        "target": "ES2020",
-        "outDir": "./dist",
-        "moduleResolution": "node",
-        "esModuleInterop": true,
-        "allowSyntheticDefaultImports": true,
-        "skipLibCheck": true,
-        "strict": true
-    },
-    "include": ["elle-electron/preload.ts"],
-    "exclude": ["node_modules", "dist"]
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "target": "ES2020",
+    "outDir": "./dist",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "strict": true
+  },
+  "include": ["elle-electron/preload.ts"],
+  "exclude": ["node_modules", "dist"]
 }

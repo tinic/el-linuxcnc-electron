@@ -142,7 +142,7 @@
     },
     {
       "name": "¼-18 NPT-2B",
-      "description": "¼ inch National Pipe Thread Internal (Tapered)", 
+      "description": "¼ inch National Pipe Thread Internal (Tapered)",
       "drillDiameter": 11.11,
       "boringDepth": 1.3025,
       "target": 6.121,
@@ -213,7 +213,7 @@
     {
       "name": "1¼-11.5 NPT-2B",
       "description": "1¼ inch National Pipe Thread Internal (Tapered)",
-      "drillDiameter": 38.10,
+      "drillDiameter": 38.1,
       "boringDepth": 1.929,
       "target": 19.688,
       "stock": 20.993,
