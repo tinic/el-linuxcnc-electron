@@ -52,7 +52,7 @@ addf motion-controller servo-thread
 addf pid.x.do-pid-calcs servo-thread
 addf pid.z.do-pid-calcs servo-thread
 
-setp pid.z.Pgain     200.0
+setp pid.z.Pgain     50.0
 setp pid.z.Igain     0.1
 setp pid.z.Dgain     0.01
 setp pid.z.bias      0.0
@@ -70,7 +70,7 @@ net jnt-z-pos-cmd       =>  pid.z.command
 net mux-z-position-fb   =>  pid.z.feedback
 net pid-z-output        <=  pid.z.output
 
-setp pid.x.Pgain     200.0
+setp pid.x.Pgain     50.0
 setp pid.x.Igain     0.1
 setp pid.x.Dgain     0.01
 setp pid.x.bias      0.0
