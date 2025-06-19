@@ -52,17 +52,17 @@ addf motion-controller servo-thread
 addf pid.x.do-pid-calcs servo-thread
 addf pid.z.do-pid-calcs servo-thread
 
-setp pid.z.Pgain     1000.0
-setp pid.z.Igain     0.0
-setp pid.z.Dgain     0.0
+setp pid.z.Pgain     200.0
+setp pid.z.Igain     0.1
+setp pid.z.Dgain     0.01
 setp pid.z.bias      0.0
 setp pid.z.FF0       0.0
 setp pid.z.FF1       1.0
 setp pid.z.FF2       0.0
 setp pid.z.deadband  0.0
-setp pid.z.maxoutput 0.0
+setp pid.z.maxoutput 20.0
 setp pid.z.error-previous-target true
-setp pid.z.maxerror .0005
+setp pid.z.maxerror  0.05
 
 net pid-z-index-enable  <=> pid.z.index-enable
 net jnt-z-stepper-enbl  =>  pid.z.enable
@@ -70,17 +70,17 @@ net jnt-z-pos-cmd       =>  pid.z.command
 net mux-z-position-fb   =>  pid.z.feedback
 net pid-z-output        <=  pid.z.output
 
-setp pid.x.Pgain     1000.0
-setp pid.x.Igain     0.0
-setp pid.x.Dgain     0.0
+setp pid.x.Pgain     200.0
+setp pid.x.Igain     0.1
+setp pid.x.Dgain     0.01
 setp pid.x.bias      0.0
 setp pid.x.FF0       0.0
 setp pid.x.FF1       1.0
 setp pid.x.FF2       0.0
 setp pid.x.deadband  0.0
-setp pid.x.maxoutput 0.0
+setp pid.x.maxoutput 20.0
 setp pid.x.error-previous-target true
-setp pid.x.maxerror .0005
+setp pid.x.maxerror  0.005
 
 net pid-x-index-enable  <=> pid.x.index-enable
 net jnt-x-stepper-enbl  =>  pid.x.enable
