@@ -4,7 +4,6 @@ import sys
 import linuxcnc
 import time
 import os
-import tempfile
 
 from flask import Flask
 from flask_cors import CORS
@@ -30,6 +29,8 @@ hal_pin_enable_x = halc.newpin("enable_x", hal.HAL_BIT, hal.HAL_OUT)
 hal_pin_enable_stepper_z = halc.newpin("enable_stepper_z", hal.HAL_BIT, hal.HAL_OUT)
 hal_pin_enable_stepper_x = halc.newpin("enable_stepper_x", hal.HAL_BIT, hal.HAL_OUT)
 
+hal_pin_position_z_encoder = halc.newpin("position_z_encoder", hal.HAL_FLOAT, hal.HAL_IN)
+hal_pin_position_x_encoder = halc.newpin("position_x_encoder", hal.HAL_FLOAT, hal.HAL_IN)
 hal_pin_offset_z_encoder = halc.newpin("offset_z_encoder", hal.HAL_FLOAT, hal.HAL_OUT)
 hal_pin_offset_z_stepper = halc.newpin("offset_z_stepper", hal.HAL_FLOAT, hal.HAL_OUT)
 hal_pin_offset_x_encoder = halc.newpin("offset_x_encoder", hal.HAL_FLOAT, hal.HAL_OUT)
@@ -40,9 +41,11 @@ hal_pin_control_x_type = halc.newpin("control_x_type", hal.HAL_BIT, hal.HAL_OUT)
 hal_pin_velocity_z_cmd = halc.newpin("velocity_z_cmd", hal.HAL_FLOAT, hal.HAL_OUT)
 hal_pin_velocity_x_cmd = halc.newpin("velocity_x_cmd", hal.HAL_FLOAT, hal.HAL_OUT)
 
+hal_pin_reset_z = halc.newpin("reset_z", hal.HAL_BIT, hal.HAL_OUT)
+hal_pin_reset_x = halc.newpin("reset_x", hal.HAL_BIT, hal.HAL_OUT)
+
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
-
 
 @app.route("/")
 def index():
@@ -535,6 +538,11 @@ def write_hal_out():
         hal_pin_velocity_x_cmd.set(0)
         hal_pin_control_z_type.set(0)
         hal_pin_control_x_type.set(0)
+        
+    hal_pin_offset_z_encoder.set(-hal_pin_position_a.get())
+    hal_pin_offset_z_stepper.set(+hal_pin_position_z_encoder.get())
+    hal_pin_offset_x_encoder.set(-hal_pin_position_a.get())
+    hal_pin_offset_x_stepper.set(+hal_pin_position_x_encoder.get())
 
     if "control_z_type" in json:
         hal_pin_control_z_type.set(json["control_z_type"])
@@ -544,11 +552,6 @@ def write_hal_out():
         hal_pin_velocity_z_cmd.set(json["velocity_z_cmd"])
     if "velocity_x_cmd" in json:
         hal_pin_velocity_x_cmd.set(json["velocity_x_cmd"])
-
-    hal_pin_offset_z_encoder.set(-hal_pin_position_a.get())
-    hal_pin_offset_z_stepper.set(+hal_pin_position_z.get())
-    hal_pin_offset_x_encoder.set(-hal_pin_position_a.get())
-    hal_pin_offset_x_stepper.set(+hal_pin_position_x.get())
 
     if "control_source" in json:
         hal_pin_control_source.set(json["control_source"])
@@ -573,6 +576,9 @@ def write_hal_out():
 
 halc.ready()
 haluic.ready()
+
+hal_pin_reset_z.set(1)
+hal_pin_reset_x.set(1)
 
 print("{REST_API_READY}")
 

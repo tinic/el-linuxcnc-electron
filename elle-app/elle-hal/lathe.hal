@@ -34,6 +34,12 @@ setp scale.4.gain 1
 setp scale.5.gain 1
 
 ##################################################
+## load custom DRO readout module
+##################################################
+
+loadusr -W rp2040_encoder
+
+##################################################
 ## create real-time thread using motion
 ##################################################
 
@@ -191,8 +197,13 @@ net mux-z-velocity-cmd => hm2_7i96.0.stepgen.00.velocity-cmd
 net mux-x-velocity-cmd <= mux2.3.out
 net mux-x-velocity-cmd => hm2_7i96.0.stepgen.01.velocity-cmd
 
-net mux-z-position-fb  <= hm2_7i96.0.stepgen.00.position-fb
-net mux-x-position-fb  <= hm2_7i96.0.stepgen.01.position-fb
+net mux-z-stepper-position-fb <= hm2_7i96.0.stepgen.00.position-fb
+net mux-x-stepper-position-fb <= hm2_7i96.0.stepgen.01.position-fb
+net mux-z-stepper-position-fb => lathe.position_z_encoder
+net mux-x-stepper-position-fb => lathe.position_x_encoder
+
+net mux-z-position-fb  <= rp2040-encoder.0.position-0
+net mux-x-position-fb  <= rp2040-encoder.0.position-1
 
 net mux-z-control-type <= mux-gen.00.out-bit
 net mux-z-control-type => hm2_7i96.0.stepgen.00.control-type
@@ -241,6 +252,11 @@ net mux-x-position-fb => lathe.position_x
 net mux-a-position-rv => lathe.position_a
 net mux-a-position-rv => scale.0.in
 net mux-a-position-rv => scale.3.in
+
+net mux-z-reset <= lathe.reset_z
+net mux-x-reset <= lathe.reset_x
+net mux-z-reset => rp2040-encoder.0.reset-0
+net mux-x-reset => rp2040-encoder.0.reset-1
 
 net z-stepper-enable <= lathe.enable_stepper_z 
 net z-stepper-enable => mux-gen.02.in-bit-00 # hm2_7i96.0.stepgen.00.enable
