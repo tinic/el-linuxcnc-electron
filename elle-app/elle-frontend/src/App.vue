@@ -52,6 +52,7 @@ const {
   endPoll,
   stopJogNow,
   setAxisOffset,
+  scheduleResetPosition,
   scheduleHALOut,
   setButtonTime,
   scheduleButtonUp,
@@ -816,6 +817,7 @@ watch([zpitch, xpitch], () => {
 })
 
 watch(selectedMenu, () => {
+  scheduleResetPosition()
   scheduleHALOut()
 })
 
@@ -1209,6 +1211,7 @@ onUnmounted(() => {
             </div>
             <span class="ml-3 text-sm font-semibold">{{ statusDisplay.text }}</span>
           </div>
+          
           <div class="menu-separator"></div>
           <button
             class="w-full p-link flex align-items-center justify-content-start p-2 pl-4 text-color hover:surface-200 border-noround"

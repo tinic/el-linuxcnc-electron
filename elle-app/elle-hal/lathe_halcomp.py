@@ -12,6 +12,8 @@ from flask import request
 halc = hal.component("lathe")
 haluic = hal.component("halui")
 c = linuxcnc.command()
+reset_z = 0
+reset_x = 0
 
 hal_pin_machine_is_on = haluic.newpin("machine.is-on", hal.HAL_BIT, hal.HAL_OUT)
 
@@ -41,8 +43,8 @@ hal_pin_control_x_type = halc.newpin("control_x_type", hal.HAL_BIT, hal.HAL_OUT)
 hal_pin_velocity_z_cmd = halc.newpin("velocity_z_cmd", hal.HAL_FLOAT, hal.HAL_OUT)
 hal_pin_velocity_x_cmd = halc.newpin("velocity_x_cmd", hal.HAL_FLOAT, hal.HAL_OUT)
 
-hal_pin_reset_z = halc.newpin("reset_z", hal.HAL_BIT, hal.HAL_OUT)
-hal_pin_reset_x = halc.newpin("reset_x", hal.HAL_BIT, hal.HAL_OUT)
+hal_pin_reset_z = halc.newpin("reset_z", hal.HAL_U32, hal.HAL_OUT)
+hal_pin_reset_x = halc.newpin("reset_x", hal.HAL_U32, hal.HAL_OUT)
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -498,6 +500,7 @@ def execute_threading():
         return {"status": "Error", "message": error_msg}, 500
 
 
+
 @app.put("/hal/cleanup")
 def cleanup_canned_cycle_files():
     """Clean up temporary canned cycle .ngc files"""
@@ -531,6 +534,7 @@ def cleanup_canned_cycle_files():
 
 @app.put("/hal/hal_out")
 def write_hal_out():
+    global reset_z, reset_x
     json = request.json
 
     if "control_stop_now" in json:
@@ -538,7 +542,15 @@ def write_hal_out():
         hal_pin_velocity_x_cmd.set(0)
         hal_pin_control_z_type.set(0)
         hal_pin_control_x_type.set(0)
-        
+
+    if "reset_position" in json:
+        print(f"reset_position {reset_z} {reset_x}")
+        reset_z = reset_z + 1
+        hal_pin_reset_z.set(reset_z)
+        reset_x = reset_x + 1
+        hal_pin_reset_x.set(reset_x)
+        c.reset_interpreter()
+
     hal_pin_offset_z_encoder.set(-hal_pin_position_a.get())
     hal_pin_offset_z_stepper.set(+hal_pin_position_z_encoder.get())
     hal_pin_offset_x_encoder.set(-hal_pin_position_a.get())
@@ -573,12 +585,18 @@ def write_hal_out():
 
     return {"status": "OK"}
 
-
 halc.ready()
 haluic.ready()
 
-hal_pin_reset_z.set(1)
-hal_pin_reset_x.set(1)
+hal_pin_reset_z.set(reset_z)
+hal_pin_reset_x.set(reset_x)
+
+time.sleep(0.500)
+
+reset_z = reset_z + 1
+hal_pin_reset_z.set(reset_z)
+reset_x = reset_x + 1
+hal_pin_reset_x.set(reset_x)
 
 print("{REST_API_READY}")
 

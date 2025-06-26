@@ -28,6 +28,7 @@ export function useHAL() {
   const zstepperactive = ref(false)
 
   let updateInterval: NodeJS.Timeout
+  let halOutResetPositionScheduled: boolean = false
   let halOutScheduled: boolean = false
   let xaxisoffset: number = 0
   let zaxisoffset: number = 0
@@ -66,6 +67,15 @@ export function useHAL() {
     selectedFeedMode: any
   }) {
     updateInterval = setInterval(() => {
+      if (halOutResetPositionScheduled) {
+        halOutResetPositionScheduled = false
+        xaxisoffset = -xpos.value
+        zaxisoffset = -zpos.value
+        const halOut = {
+          reset_position: true
+        }
+        putHalOut(halOut)
+      }
       try {
         getHalIn().then((halIn) => {
           if (xaxissetscheduled) {
@@ -179,6 +189,10 @@ export function useHAL() {
     if (axis === 'x') {xaxisoffset = value}
     else if (axis === 'z') {zaxisoffset = value}
     else if (axis === 'a') {aaxisoffset = value}
+  }
+
+  const scheduleResetPosition = () => {
+    halOutResetPositionScheduled = true
   }
 
   const scheduleHALOut = () => {
@@ -399,6 +413,7 @@ export function useHAL() {
     endPoll,
     stopJogNow,
     setAxisOffset,
+    scheduleResetPosition,
     scheduleHALOut,
     setButtonTime,
     scheduleButtonUp,
