@@ -544,7 +544,6 @@ def write_hal_out():
         hal_pin_control_x_type.set(0)
 
     if "reset_position" in json:
-        print(f"reset_position {reset_z} {reset_x}")
         reset_z = reset_z + 1
         hal_pin_reset_z.set(reset_z)
         reset_x = reset_x + 1
