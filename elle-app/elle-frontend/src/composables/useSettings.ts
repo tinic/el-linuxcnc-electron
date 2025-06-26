@@ -1,15 +1,20 @@
 import { ref, watch } from 'vue'
 
+// Global state - created once and shared across all components
+const metric = ref(true)
+const diameterMode = ref(false)
+const defaultMetricOnStartup = ref(true)
+const selectedThreadingTab = ref(0)
+const selectedTurningTab = ref(0)
+const selectedPitchTab = ref([0, 0]) // [x-axis, z-axis]
+const pitchX = ref(0.0)
+const pitchZ = ref(0.0)
+const isQuitting = ref(false)
+
+// Flag to ensure watcher is only set up once
+let isWatcherSetup = false
+
 export function useSettings() {
-  const metric = ref(true)
-  const diameterMode = ref(false)
-  const defaultMetricOnStartup = ref(true)
-  const selectedThreadingTab = ref(0)
-  const selectedTurningTab = ref(0)
-  const selectedPitchTab = ref([0, 0]) // [x-axis, z-axis]
-  const pitchX = ref(0.0)
-  const pitchZ = ref(0.0)
-  const isQuitting = ref(false)
 
   const loadSettings = async () => {
     const userAgent = navigator.userAgent.toLowerCase()
@@ -55,10 +60,13 @@ export function useSettings() {
     }
   }
 
-  // Auto-save settings when they change
-  watch([diameterMode, defaultMetricOnStartup, selectedThreadingTab, selectedTurningTab, selectedPitchTab, pitchX, pitchZ], () => {
-    saveSettings()
-  })
+  // Auto-save settings when they change (only set up once)
+  if (!isWatcherSetup) {
+    watch([diameterMode, defaultMetricOnStartup, selectedThreadingTab, selectedTurningTab, selectedPitchTab, pitchX, pitchZ], () => {
+      saveSettings()
+    })
+    isWatcherSetup = true
+  }
 
   return {
     metric,

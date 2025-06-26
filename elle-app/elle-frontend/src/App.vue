@@ -93,8 +93,6 @@ const {
   setThreadingParameter,
   clearThreadingParameter,
   turningTarget,
-  turningStock,
-  turningZStart,
   turningZEnd,
   turningFeedRate,
   turningStepDown,
@@ -128,12 +126,6 @@ const displayTurningTarget = computed(() => {
   return diameterMode.value ? turningTarget.value * 2 : turningTarget.value
 })
 
-const displayTurningStock = computed(() => {
-  if (turningStock.value === null) {
-    return null
-  }
-  return diameterMode.value ? turningStock.value * 2 : turningStock.value
-})
 
 // Machine status computed from various states
 const machineStatus = computed(() => {
@@ -298,8 +290,6 @@ const numberClicked = (entry: number, value: number) => {
     case ThreadingEntryType.threadFirstCut:
     case ThreadingEntryType.threadMinCut:
     case TurningEntryType.turningTarget:
-    case TurningEntryType.turningStock:
-    case TurningEntryType.turningZStart:
     case TurningEntryType.turningZEnd:
     case TurningEntryType.turningFeedRate:
     case TurningEntryType.turningStepDown:
@@ -360,8 +350,6 @@ function setFinalNumber(value: number) {
     case ThreadingEntryType.threadFirstCut:
     case ThreadingEntryType.threadMinCut:
     case TurningEntryType.turningTarget:
-    case TurningEntryType.turningStock:
-    case TurningEntryType.turningZStart:
     case TurningEntryType.turningZEnd:
     case TurningEntryType.turningFeedRate:
     case TurningEntryType.turningStepDown:
@@ -438,14 +426,6 @@ function setFinalNumber(value: number) {
       updatePitchFromTurning()
       break
     }
-    case TurningEntryType.turningStock: {
-      const actualTurningStock = diameterMode.value ? value / 2 : value
-      setTurningParameter(TurningEntryType.turningStock, actualTurningStock)
-      break
-    }
-    case TurningEntryType.turningZStart:
-      setTurningParameter(TurningEntryType.turningZStart, value)
-      break
     case TurningEntryType.turningZEnd:
       setTurningParameter(TurningEntryType.turningZEnd, value)
       break
@@ -540,12 +520,6 @@ const numPadClicked = (key: string) => {
             break
           case TurningEntryType.turningTarget:
             clearTurningParameter(TurningEntryType.turningTarget)
-            break
-          case TurningEntryType.turningStock:
-            clearTurningParameter(TurningEntryType.turningStock)
-            break
-          case TurningEntryType.turningZStart:
-            clearTurningParameter(TurningEntryType.turningZStart)
             break
           case TurningEntryType.turningZEnd:
             clearTurningParameter(TurningEntryType.turningZEnd)
@@ -1057,8 +1031,7 @@ const turningStartClicked = async () => {
           type: 'turning',
           parameters: {
             Target: turningTarget.value,
-            Stock: turningStock.value,
-            ZStart: turningZStart.value,
+            Stock: xpos.value,
             ZEnd: turningZEnd.value,
             FeedRate: turningFeedRate.value,
             StepDown: turningStepDown.value,
@@ -2089,39 +2062,9 @@ onUnmounted(() => {
                 }}
               </button>
             </div>
-            <div
-              class="col-1 text-right p-0 flex align-items-center justify-content-end cursor-pointer"
-              @click="showTurningLabelPopover($event, 'XE')"
-            >
-              Stock
-            </div>
-            <div class="col-4 p-1">
-              <button
-                :class="[
-                  'w-full text-left dro-font-mode button-mode p-1 truncate',
-                  {
-                    'placeholder-text':
-                      entryActive != TurningEntryType.turningStock && turningStock === null
-                  }
-                ]"
-                :style="{
-                  backgroundColor: entryActive == TurningEntryType.turningStock ? '#666' : '#333'
-                }"
-                :title="
-                  entryActive == TurningEntryType.turningStock
-                    ? String(numberentry)
-                    : String(displayTurningStock ?? 'Stock')
-                "
-                @click="numberClicked(TurningEntryType.turningStock, displayTurningStock || 0)"
-              >
-                {{
-                  entryActive == TurningEntryType.turningStock
-                    ? numberentry
-                    : displayTurningStock ?? 'Stock'
-                }}
-              </button>
-            </div>
             <div class="col-2 p-0"></div>
+            <div class="col-1 p-0"></div>
+            <div class="col-4 p-0"></div>
 
             <!-- Row 2: Z End -->
             <div

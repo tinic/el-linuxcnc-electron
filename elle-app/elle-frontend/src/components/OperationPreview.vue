@@ -12,7 +12,7 @@
           <template v-for="(value, key) in operation.parameters" :key="key">
             <div class="detail-row">
               <span class="detail-label">{{ formatParameterName(key) }}:</span>
-              <span class="detail-value">{{ formatParameterValue(key, value) }}</span>
+              <span class="detail-value">{{ formattedParameters[key] }}</span>
             </div>
           </template>
         </div>
@@ -49,10 +49,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { Camera, Renderer, RendererPublicInterface, Scene } from 'troisjs'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { useSettings } from '../composables/useSettings'
 
 interface OperationData {
   name: string;
@@ -74,32 +75,71 @@ const emit = defineEmits<{
 
 const rendererRef = ref<RendererPublicInterface>()
 const backplotContainer = ref<HTMLElement>()
+const { diameterMode } = useSettings()
+
+// Computed property for formatted parameters that reacts to diameter mode changes
+const formattedParameters = computed(() => {
+  const formatted: Record<string, string> = {}
+  
+  for (const [key, value] of Object.entries(props.operation.parameters)) {
+    formatted[key] = formatParameterValue(key, value)
+  }
+  
+  return formatted
+})
 
 // Reactive camera positioning
 const cameraPosition = ref({ x: 0, y: 1.25, z: 0 })
 const cameraTarget = ref({ x: 0, y: 0, z: 0 })
 
 const formatParameterName = (key: string): string => {
-  // Convert camelCase to readable names
-  const nameMap: Record<string, string> = {
-    'Pitch': 'Pitch',
-    'XDepth': 'X Depth',
-    'ZDepth': 'Z Depth',
-    'ZEnd': 'Z End',
-    'XPullout': 'X Pullout',
-    'ZPullout': 'Z Pullout',
-    'FirstCut': 'First Cut',
-    'CutMult': 'Cut Multiplier',
-    'MinCut': 'Min Cut',
-    'SpringCuts': 'Spring Cuts'
+  const paramConfig = getParameterConfig(key)
+  return paramConfig.displayName
+}
+
+const getParameterConfig = (key: string) => {
+  const parameterMap: Record<string, { displayName: string, doubleInDiameterMode: boolean, isInteger: boolean }> = {
+    'Pitch': { displayName: 'Pitch', doubleInDiameterMode: false, isInteger: false },
+    'XDepth': { displayName: 'X Depth', doubleInDiameterMode: true, isInteger: false },
+    'ZDepth': { displayName: 'Z Depth', doubleInDiameterMode: false, isInteger: false },
+    'ZEnd': { displayName: 'Z End', doubleInDiameterMode: false, isInteger: false },
+    'XPullout': { displayName: 'X Pullout', doubleInDiameterMode: true, isInteger: false },
+    'ZPullout': { displayName: 'Z Pullout', doubleInDiameterMode: false, isInteger: false },
+    'FirstCut': { displayName: 'First Cut', doubleInDiameterMode: true, isInteger: false },
+    'CutMult': { displayName: 'Cut Multiplier', doubleInDiameterMode: false, isInteger: false },
+    'MinCut': { displayName: 'Min Cut', doubleInDiameterMode: true, isInteger: false },
+    'SpringCuts': { displayName: 'Spring Cuts', doubleInDiameterMode: false, isInteger: true },
+    'Target': { displayName: 'Target', doubleInDiameterMode: true, isInteger: false },
+    'Stock': { displayName: 'Stock', doubleInDiameterMode: true, isInteger: false },
+    'FeedRate': { displayName: 'Feed Rate', doubleInDiameterMode: false, isInteger: false },
+    'StepDown': { displayName: 'Step Down', doubleInDiameterMode: true, isInteger: false },
+    'FinalStepDown': { displayName: 'Final Step', doubleInDiameterMode: true, isInteger: false },
+    'SpringPasses': { displayName: 'Spring Passes', doubleInDiameterMode: false, isInteger: true },
+    'TaperAngle': { displayName: 'Taper Angle', doubleInDiameterMode: false, isInteger: false },
+    'XStart': { displayName: 'X Start', doubleInDiameterMode: true, isInteger: false },
+    'XEnd': { displayName: 'X End', doubleInDiameterMode: true, isInteger: false }
   }
-  return nameMap[key] || key
+  
+  return parameterMap[key] || { displayName: key, doubleInDiameterMode: false, isInteger: false }
 }
 
 const formatParameterValue = (key: string, value: any): string => {
   if (value === null || value === undefined) {return 'Not set'}
   if (typeof value === 'number') {
-    return value.toFixed(3)
+    const paramConfig = getParameterConfig(key)
+    let displayValue = value
+    
+    // Apply diameter mode doubling if applicable
+    if (paramConfig.doubleInDiameterMode && diameterMode.value) {
+      displayValue = value * 2
+    }
+    
+    // Format based on whether it's an integer parameter
+    if (paramConfig.isInteger) {
+      return Math.round(displayValue).toString()
+    } else {
+      return displayValue.toFixed(3)
+    }
   }
   return String(value)
 }
@@ -154,9 +194,9 @@ const setupBackplot = () => {
       let startX = 0
       let startZ = 0
 
-      if (params.Stock && params.Target) {
-        // For turning operations, start at stock diameter
-        startX = parseFloat(params.Stock)
+      if (params.Target) {
+        // For turning operations, start at current position (Stock)
+        startX = params.Stock ? parseFloat(params.Stock) : 0
         startZ = 0 // Turning always starts at Z=0
       } else if (params.XStart && params.ZStart) {
         // For threading operations
@@ -209,7 +249,7 @@ const setupBackplot = () => {
 
       if (params.Stock && params.ZEnd) {
         // For turning operations, show 2D stock profile
-        const stockRadius = parseFloat(params.Stock)
+        const stockRadius = params.Stock ? parseFloat(params.Stock) : 0
         const zEnd = parseFloat(params.ZEnd)
         const zStart = 0
 

@@ -45,7 +45,6 @@ interface TurningPreset {
   boringDepth?: number
   // Common properties
   target: number
-  stock: number
   zEnd: number
   feedRate: number
   finalStepDown: number
