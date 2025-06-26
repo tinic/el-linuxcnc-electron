@@ -548,7 +548,30 @@ def write_hal_out():
         hal_pin_reset_z.set(reset_z)
         reset_x = reset_x + 1
         hal_pin_reset_x.set(reset_x)
+        c.mode(linuxcnc.MODE_MDI)
+        c.wait_complete()
+        s = linuxcnc.stat()
+        while True:
+            s.poll()
+            if s.estop:
+                return {"status": "Error", "message": "Machine is in ESTOP state"}, 400
+            if not s.enabled:
+                return {"status": "Error", "message": "Machine is not enabled"}, 400
+            if not s.homed:
+                return {"status": "Error", "message": "Machine is not homed"}, 400
+            if s.interp_state != linuxcnc.INTERP_IDLE:
+                return {"status": "Error", "message": "Interpreter is not idle"}, 400
+            if s.task_mode != linuxcnc.MODE_MDI:
+                c.mode(linuxcnc.MODE_MDI)
+                time.sleep(0.1)
+                continue
+            break
+        c.state(linuxcnc.STATE_OFF)
+        c.wait_complete()
+        c.state(linuxcnc.STATE_ON)
+        c.wait_complete()
         c.reset_interpreter()
+        c.wait_complete()
 
     hal_pin_offset_z_encoder.set(-hal_pin_position_a.get())
     hal_pin_offset_z_stepper.set(+hal_pin_position_z_encoder.get())

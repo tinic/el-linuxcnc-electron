@@ -520,10 +520,10 @@ export function useCannedCycles() {
       StepDown: formatForLinuxCNC(stepDown),
       FinalStepDown: formatForLinuxCNC(finalStepDown),
       SpringPasses: Math.round(springPasses),
-      XReturn: formatForLinuxCNC(currentXPos),
+      XReturn: formatForLinuxCNC(targetRadius),
       ZReturn: formatForLinuxCNC(currentZPos)
     }
-  }
+  } 
 
   // Turning preset handling
   function openTurningPresetDialog(metric: boolean, updatePitchCallback: () => void) {
