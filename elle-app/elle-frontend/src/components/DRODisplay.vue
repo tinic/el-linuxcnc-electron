@@ -41,6 +41,8 @@ interface Props {
   cursorpos?: number
   diameterMode?: boolean
   showXPitch?: boolean
+  showZPitch?: boolean
+  toolIndex?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -61,7 +63,9 @@ const props = withDefaults(defineProps<Props>(), {
   metric: true,
   cursorpos: 0,
   diameterMode: false,
-  showXPitch: true
+  showXPitch: true,
+  showZPitch: true,
+  toolIndex: 0
 })
 
 enum ZeroEntry {
@@ -190,6 +194,11 @@ const zpitchCursorFormatted = computed(() => {
 })
 
 const rpmsUnitFormatted = computed(() => `rpm${  ' '.repeat(3)}`)
+
+const toolFormatted = computed(() => {
+  const toolNum = props.toolIndex.toString().padStart(2, '0')
+  return `🧰${toolNum}`
+})
 
 const xposClicked = () => {
   emit('numberClicked', NumberEntry.xpos, props.xpos)
@@ -322,12 +331,17 @@ const zpitchLabel = computed(() => props.entryActive == NumberEntry.zpitch
       {{ props.xpitchlabel }}
     </button>
     <br />
-    <div class="inline" @click="zpitchClicked">
+    <div
+      class="inline"
+      :style="{ visibility: showZPitch ? 'visible' : 'hidden' }"
+      @click="zpitchClicked"
+    >
       <span v-html="zpitchLabel" />{{ zpitchFormatted }}<font size="-1">&nbsp;</font><font color="#aaaaaa">{{ zpitchUnitFormatted }}</font>
     </div>
     <button
       class="dro-font-display-button align-content-center ml-5"
       style="width: 6em; padding: 0.75rem"
+      :style="{ visibility: showZPitch ? 'visible' : 'hidden' }"
       @click="zpitchSelectClicked"
     >
       {{ props.zpitchlabel }}
@@ -343,6 +357,7 @@ const zpitchLabel = computed(() => props.entryActive == NumberEntry.zpitch
     >
       mm↔in
     </button>
+    <div class="inline ml-3">{{ toolFormatted }}</div>
     <br />
     <div style="position: absolute; top: 0.71em">
       <span style="color: #ff0000">{{ xposCursorFormatted }}</span>

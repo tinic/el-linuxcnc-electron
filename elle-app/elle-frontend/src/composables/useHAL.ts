@@ -26,6 +26,8 @@ export function useHAL() {
   const zpitchactive = ref(false)
   const xstepperactive = ref(false)
   const zstepperactive = ref(false)
+  const currentToolIndex = ref(0)
+  const currentToolOffset = ref(0)
 
   let updateInterval: NodeJS.Timeout
   let halOutResetPositionScheduled: boolean = false
@@ -399,6 +401,8 @@ export function useHAL() {
     zpitchactive,
     xstepperactive,
     zstepperactive,
+    currentToolIndex,
+    currentToolOffset,
     putHalOut,
     putLinuxCNC,
     getHalIn,

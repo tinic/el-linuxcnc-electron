@@ -64,6 +64,7 @@ const {
   zpitchactive,
   xstepperactive,
   zstepperactive,
+  currentToolIndex,
   updateHALOut
 } = useHAL()
 
@@ -431,7 +432,6 @@ function setFinalNumber(value: number) {
       break
     case TurningEntryType.turningFeedRate:
       setTurningParameter(TurningEntryType.turningFeedRate, value)
-      updatePitchFromTurning()
       break
     case TurningEntryType.turningStepDown:
       setTurningParameter(TurningEntryType.turningStepDown, value)
@@ -833,13 +833,6 @@ const pitchClicked = (axis: string) => {
               if (xpitchangle.value > 0) {
                 xpitch.value = pitchForAngle(zpitch.value, xpitchangle.value)
               }
-              // If we're in turning mode, also update the turning feed rate parameter
-              if (
-                selectedMenu.value === MenuType.cannedCycles &&
-                selectedCannedCycle.value === CannedCycle.turning
-              ) {
-                turningFeedRate.value = value
-              }
             }
             break
           case 'x':
@@ -1078,11 +1071,6 @@ const turningResetClicked = () => {
 }
 
 const updatePitchFromTurning = () => {
-  // Update feed rate display for turning (feed rate is in mm/rev)
-  if (turningFeedRate.value !== null) {
-    zpitch.value = Math.abs(turningFeedRate.value)
-  }
-
   // Minimal cross feed for turning
   xpitch.value = 0.001
   xpitchangle.value = 0
@@ -1218,6 +1206,8 @@ onUnmounted(() => {
           :cursorpos="cursorpos"
           :diameter-mode="diameterMode"
           :show-x-pitch="true"
+          :show-z-pitch="true"
+          :tool-index="currentToolIndex"
           @number-clicked="numberClicked"
           @zero-clicked="zeroClicked"
           @pitch-clicked="pitchClicked"
@@ -1441,6 +1431,8 @@ onUnmounted(() => {
           :cursorpos="cursorpos"
           :diameter-mode="diameterMode"
           :show-x-pitch="false"
+          :show-z-pitch="false"
+          :tool-index="currentToolIndex"
           @number-clicked="numberClicked"
           @zero-clicked="zeroClicked"
           @pitch-clicked="pitchClicked"
