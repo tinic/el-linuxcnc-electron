@@ -6,7 +6,8 @@ const emit = defineEmits([
   'zeroClicked',
   'pitchClicked',
   'otherClicked',
-  'metricClicked'
+  'metricClicked',
+  'toolClicked'
 ])
 
 enum NumberEntry {
@@ -197,7 +198,7 @@ const rpmsUnitFormatted = computed(() => `rpm${  ' '.repeat(3)}`)
 
 const toolFormatted = computed(() => {
   const toolNum = props.toolIndex.toString().padStart(2, '0')
-  return `🧰${toolNum}`
+  return `🧰 ${toolNum}`
 })
 
 const xposClicked = () => {
@@ -246,6 +247,10 @@ const rpmClicked = () => {
 
 const unitClicked = () => {
   emit('metricClicked')
+}
+
+const toolClicked = () => {
+  emit('toolClicked')
 }
 
 const xposLabel = computed(() => {
@@ -357,7 +362,13 @@ const zpitchLabel = computed(() => props.entryActive == NumberEntry.zpitch
     >
       mm↔in
     </button>
-    <div class="inline ml-3">{{ toolFormatted }}</div>
+    <button
+      class="dro-font-display-button align-content-center ml-3"
+      style="width: 6em; padding: 0.75rem"
+      @click="toolClicked"
+    >
+      {{ toolFormatted }}
+    </button>
     <br />
     <div style="position: absolute; top: 0.71em">
       <span style="color: #ff0000">{{ xposCursorFormatted }}</span>
@@ -400,4 +411,5 @@ const zpitchLabel = computed(() => props.entryActive == NumberEntry.zpitch
   font-size: 0.6em;
   text-align: center;
 }
+
 </style>

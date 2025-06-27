@@ -7,6 +7,7 @@ import Dialog from 'primevue/dialog'
 import Numpad from './components/Numpad.vue'
 import DRODisplay from './components/DRODisplay.vue'
 import OperationPreview from './components/OperationPreview.vue'
+import ToolTable from './components/ToolTable.vue'
 import { useHAL } from './composables/useHAL'
 import {
   useCannedCycles,
@@ -14,6 +15,7 @@ import {
   TurningEntryType
 } from './composables/useCannedCycles'
 import { useSettings } from './composables/useSettings'
+import { useToolTable } from './composables/useToolTable'
 
 enum EntryType {
   xPosition = 1,
@@ -65,7 +67,10 @@ const {
   xstepperactive,
   zstepperactive,
   currentToolIndex,
-  updateHALOut
+  currentToolOffset,
+  updateHALOut,
+  loadCurrentTool,
+  saveCurrentTool
 } = useHAL()
 
 const {
@@ -179,6 +184,9 @@ const xpitchangle = ref(0)
 // Get settings from composable
 const { metric, diameterMode, defaultMetricOnStartup, selectedThreadingTab, selectedTurningTab, selectedPitchTab, pitchX, pitchZ, isQuitting, loadSettings } = useSettings()
 
+// Get tool table functions
+const { loadTools } = useToolTable()
+
 const cursorpos = ref(0)
 
 enum FeedMode {
@@ -213,6 +221,19 @@ const showOperationPreview = ref(false)
 const showBackplot = ref(false)
 const currentOperation = ref<any>(null)
 const pendingOperationExecution = ref<(() => void) | null>(null)
+
+// Tool Table state
+const showToolTable = ref(false)
+
+const openToolTable = () => {
+  showToolTable.value = true
+}
+
+const onToolSelected = (toolId: number, offset: number) => {
+  currentToolIndex.value = toolId
+  currentToolOffset.value = offset
+  showToolTable.value = false
+}
 
 const menuItems = ref([
   { separator: true },
@@ -795,6 +816,11 @@ watch(selectedMenu, () => {
   scheduleHALOut()
 })
 
+// Auto-save current tool when it changes
+watch([currentToolIndex, currentToolOffset], () => {
+  saveCurrentTool()
+})
+
 const PitchPresetSelector = defineAsyncComponent(
   () => import('./components/PitchPresetSelector.vue')
 )
@@ -1080,6 +1106,12 @@ onMounted(async () => {
   // Load settings first
   await loadSettings()
   
+  // Load tool table
+  await loadTools()
+  
+  // Load current tool
+  await loadCurrentTool()
+  
   // Initialize pitch values from settings
   if (pitchX.value > 0) {
     xpitch.value = pitchX.value
@@ -1213,6 +1245,7 @@ onUnmounted(() => {
           @pitch-clicked="pitchClicked"
           @metric-clicked="metricClicked"
           @other-clicked="otherClicked"
+          @tool-clicked="openToolTable"
         />
         <div class="divider-vertical"></div>
         <Numpad class="" @num-pad-clicked="numPadClicked" />
@@ -1438,6 +1471,7 @@ onUnmounted(() => {
           @pitch-clicked="pitchClicked"
           @metric-clicked="threadMetricClicked"
           @other-clicked="otherClicked"
+          @tool-clicked="openToolTable"
         />
         <div class="divider-vertical"></div>
         <Numpad class="" @num-pad-clicked="numPadClicked" />
@@ -2459,6 +2493,14 @@ onUnmounted(() => {
       </div>
     </div>
   </div>
+
+  <!-- Tool Table Modal -->
+  <ToolTable 
+    :visible="showToolTable"
+    @update:visible="showToolTable = $event"
+    :current-tool-id="currentToolIndex"
+    @tool-selected="onToolSelected"
+  />
 </template>
 
 <style scoped>
