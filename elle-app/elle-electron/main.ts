@@ -81,7 +81,10 @@ ipcMain.handle('getSettings', () => ({
   selectedTurningTab: (appConfig as any).get('setting.selectedTurningTab', 0),
   selectedPitchTab: (appConfig as any).get('setting.selectedPitchTab', [0, 0]),
   pitchX: (appConfig as any).get('setting.pitchX', 0.0),
-  pitchZ: (appConfig as any).get('setting.pitchZ', 0.0)
+  pitchZ: (appConfig as any).get('setting.pitchZ', 0.0),
+  tools: (appConfig as any).get('setting.tools'),
+  currentToolIndex: (appConfig as any).get('setting.currentToolIndex', 0),
+  currentToolOffset: (appConfig as any).get('setting.currentToolOffset', 0)
 }))
 
 ipcMain.handle('saveSettings', (event, settings) => {
@@ -94,7 +97,10 @@ ipcMain.handle('saveSettings', (event, settings) => {
     selectedTurningTab: settings.selectedTurningTab,
     selectedPitchTab: settings.selectedPitchTab,
     pitchX: settings.pitchX,
-    pitchZ: settings.pitchZ
+    pitchZ: settings.pitchZ,
+    tools: settings.tools,
+    currentToolIndex: settings.currentToolIndex,
+    currentToolOffset: settings.currentToolOffset
   })
   return true
 })

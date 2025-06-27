@@ -26,8 +26,6 @@ export function useHAL() {
   const zpitchactive = ref(false)
   const xstepperactive = ref(false)
   const zstepperactive = ref(false)
-  const currentToolIndex = ref(0)
-  const currentToolOffset = ref(0)
 
   let updateInterval: NodeJS.Timeout
   let halOutResetPositionScheduled: boolean = false
@@ -387,43 +385,6 @@ export function useHAL() {
     scheduleHALOut()
   }
 
-  const loadCurrentTool = async () => {
-    const userAgent = navigator.userAgent.toLowerCase()
-    if (userAgent.indexOf(' electron/') > -1) {
-      try {
-        if (window.settings && window.settings.get) {
-          const settings = await window.settings.get()
-          if (settings.currentToolIndex !== undefined) {
-            currentToolIndex.value = settings.currentToolIndex
-          }
-          if (settings.currentToolOffset !== undefined) {
-            currentToolOffset.value = settings.currentToolOffset
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load current tool:', error)
-      }
-    }
-  }
-
-  const saveCurrentTool = async () => {
-    const userAgent = navigator.userAgent.toLowerCase()
-    if (userAgent.indexOf(' electron/') > -1) {
-      try {
-        if (window.settings && window.settings.get && window.settings.save) {
-          const currentSettings = await window.settings.get()
-          await window.settings.save({
-            ...currentSettings,
-            currentToolIndex: currentToolIndex.value,
-            currentToolOffset: currentToolOffset.value
-          })
-        }
-      } catch (error) {
-        console.error('Failed to save current tool:', error)
-      }
-    }
-  }
-
   return {
     xpos,
     zpos,
@@ -438,8 +399,6 @@ export function useHAL() {
     zpitchactive,
     xstepperactive,
     zstepperactive,
-    currentToolIndex,
-    currentToolOffset,
     putHalOut,
     putLinuxCNC,
     getHalIn,
@@ -460,8 +419,6 @@ export function useHAL() {
     scheduleButtonUp,
     getAxisOffset,
     setAxisValue,
-    updateHALOut,
-    loadCurrentTool,
-    saveCurrentTool
+    updateHALOut
   }
 }

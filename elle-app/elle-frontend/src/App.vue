@@ -66,11 +66,7 @@ const {
   zpitchactive,
   xstepperactive,
   zstepperactive,
-  currentToolIndex,
-  currentToolOffset,
-  updateHALOut,
-  loadCurrentTool,
-  saveCurrentTool
+  updateHALOut
 } = useHAL()
 
 const {
@@ -182,10 +178,7 @@ const xpitchlabel = ref('…')
 const zpitchlabel = ref('…')
 const xpitchangle = ref(0)
 // Get settings from composable
-const { metric, diameterMode, defaultMetricOnStartup, selectedThreadingTab, selectedTurningTab, selectedPitchTab, pitchX, pitchZ, isQuitting, loadSettings } = useSettings()
-
-// Get tool table functions
-const { loadTools } = useToolTable()
+const { metric, diameterMode, defaultMetricOnStartup, selectedThreadingTab, selectedTurningTab, selectedPitchTab, pitchX, pitchZ, isQuitting, loadSettings, tools, currentToolIndex, currentToolOffset } = useSettings()
 
 const cursorpos = ref(0)
 
@@ -816,10 +809,7 @@ watch(selectedMenu, () => {
   scheduleHALOut()
 })
 
-// Auto-save current tool when it changes
-watch([currentToolIndex, currentToolOffset], () => {
-  saveCurrentTool()
-})
+// Current tool changes are now auto-saved via the settings watcher
 
 const PitchPresetSelector = defineAsyncComponent(
   () => import('./components/PitchPresetSelector.vue')
@@ -1103,14 +1093,8 @@ const updatePitchFromTurning = () => {
 }
 
 onMounted(async () => {
-  // Load settings first
+  // Load settings first (includes tool table and current tool)
   await loadSettings()
-  
-  // Load tool table
-  await loadTools()
-  
-  // Load current tool
-  await loadCurrentTool()
   
   // Initialize pitch values from settings
   if (pitchX.value > 0) {
