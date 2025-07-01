@@ -3,19 +3,21 @@ import { useSettings } from './useSettings'
 
 export interface Tool {
   id: number
-  offset: number
+  offsetX: number
+  offsetZ: number
   description: string
 }
 
 export function useToolTable() {
-  const { metric, tools, currentToolIndex, currentToolOffset } = useSettings()
+  const { metric, tools, currentToolIndex, currentToolOffsetX, currentToolOffsetZ } = useSettings()
 
   const selectedToolId = ref(0)
 
-  const updateTool = (id: number, offset: number, description: string) => {
+  const updateTool = (id: number, offsetX: number, offsetZ: number, description: string) => {
     const tool = tools.value.find(t => t.id === id)
     if (tool) {
-      tool.offset = offset
+      tool.offsetX = offsetX
+      tool.offsetZ = offsetZ
       tool.description = description
     }
   }
@@ -28,12 +30,12 @@ export function useToolTable() {
     return tools.value.find(t => t.id === id)
   }
 
-  const formatOffset = (offset: number) => {
+  const formatOffset = (offsetX: number) => {
     if (metric.value) {
-      return offset.toFixed(3)
+      return offsetX.toFixed(3)
     } else {
       // Convert mm to inches
-      return (offset / 25.4).toFixed(4)
+      return (offsetX / 25.4).toFixed(4)
     }
   }
 

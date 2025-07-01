@@ -2,7 +2,8 @@ import Store from 'electron-store'
 
 interface Tool {
   id: number
-  offset: number
+  offsetX: number
+  offsetZ: number
   description: string
 }
 
@@ -18,7 +19,8 @@ interface AppConfig {
     pitchZ?: number
     tools?: Tool[]
     currentToolIndex?: number
-    currentToolOffset?: number
+    currentToolOffsetX?: number
+    currentToolOffsetZ?: number
   }
 }
 

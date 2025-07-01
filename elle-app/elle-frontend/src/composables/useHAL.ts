@@ -58,7 +58,7 @@ export function useHAL() {
     putHalOut(halOut)
   }
 
-  function startPoll(params: {
+  function startPoll(toolOffsets: { currentToolOffsetX: any, currentToolOffsetZ: any }, params: {
     selectedMenu: any
     MenuType: any
     DirectionMode: any
@@ -69,8 +69,8 @@ export function useHAL() {
     updateInterval = setInterval(() => {
       if (halOutResetPositionScheduled) {
         halOutResetPositionScheduled = false
-        xaxisoffset = -xpos.value
-        zaxisoffset = -zpos.value
+        xaxisoffset = -xpos.value - toolOffsets.currentToolOffsetX.value
+        zaxisoffset = -zpos.value - toolOffsets.currentToolOffsetZ.value
         const halOut = {
           reset_position: true
         }
@@ -93,8 +93,8 @@ export function useHAL() {
             aaxisoffset = (halIn as any).position_a - ((aaxisset / 360) % 1)
             aaxisset = 0
           }
-          zpos.value = (halIn as any).position_z - zaxisoffset
-          xpos.value = (halIn as any).position_x - xaxisoffset
+          zpos.value = (halIn as any).position_z - zaxisoffset + toolOffsets.currentToolOffsetZ.value
+          xpos.value = (halIn as any).position_x - xaxisoffset + toolOffsets.currentToolOffsetX.value
           apos.value = Math.abs((((halIn as any).position_a - aaxisoffset) % 1) * 360)
           const newRpm = Math.abs((halIn as any).speed_rps * 60)
           rpms.value = newRpm

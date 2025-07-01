@@ -17,7 +17,7 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:visible': [value: boolean]
-  'tool-selected': [toolId: number, offset: number]
+  'tool-selected': [toolId: number, offsetX: number, offsetZ: number]
 }>()
 
 const { tools, selectTool, updateTool, formatOffset, parseOffset } = useToolTable()
@@ -42,16 +42,19 @@ const closeDialog = () => {
 const onRowClick = (event: any) => {
   const tool = event.data
   selectTool(tool.id)
-  const offset = tool.offset
-  emit('tool-selected', tool.id, offset)
+  const offsetX = tool.offsetX
+  const offsetZ = tool.offsetZ
+  emit('tool-selected', tool.id, offsetX, offsetZ)
 }
 
 const startEdit = (tool: any, field: string) => {
   editingId.value = tool.id
   editingField.value = field
   
-  if (field === 'offset') {
-    editingValue.value = formatOffset(tool.offset)
+  if (field === 'offsetX') {
+    editingValue.value = formatOffset(tool.offsetX)
+  } else if (field === 'offsetZ') {
+    editingValue.value = formatOffset(tool.offsetZ)
   } else if (field === 'description') {
     editingValue.value = tool.description
   }
@@ -61,11 +64,14 @@ const finishEdit = () => {
   if (editingId.value !== null && editingField.value) {
     const tool = tools.value.find(t => t.id === editingId.value)
     if (tool) {
-      if (editingField.value === 'offset') {
-        const offset = parseOffset(editingValue.value)
-        updateTool(tool.id, offset, tool.description)
+      if (editingField.value === 'offsetX') {
+        const offsetX = parseOffset(editingValue.value)
+        updateTool(tool.id, offsetX, tool.offsetZ, tool.description)
+      } else if (editingField.value === 'offsetZ') {
+        const offsetZ = parseOffset(editingValue.value)
+        updateTool(tool.id, tool.offsetX, offsetZ, tool.description)
       } else if (editingField.value === 'description') {
-        updateTool(tool.id, tool.offset, editingValue.value)
+        updateTool(tool.id, tool.offsetX, tool.offsetZ, editingValue.value)
       }
     }
   }
@@ -135,9 +141,9 @@ const getRowClass = (tool: any) => {
         </template>
       </Column>
 
-      <Column field="offset" :header="`Tool Offset (${unitLabel})`" :style="{ width: '150px' }">
+      <Column field="offsetX" :header="`X Offset (${unitLabel})`" :style="{ width: '150px' }">
         <template #body="slotProps">
-          <div v-if="editingId === slotProps.data.id && editingField === 'offset'">
+          <div v-if="editingId === slotProps.data.id && editingField === 'offsetX'">
             <InputText 
               v-model="editingValue" 
               @keyup.enter="finishEdit"
@@ -150,10 +156,33 @@ const getRowClass = (tool: any) => {
           </div>
           <div 
             v-else 
-            @click="startEdit(slotProps.data, 'offset')"
+            @click="startEdit(slotProps.data, 'offsetX')"
             class="editable-field"
           >
-            {{ formatOffset(slotProps.data.offset) }}
+            {{ formatOffset(slotProps.data.offsetX) }}
+          </div>
+        </template>
+      </Column>
+
+      <Column field="offsetZ" :header="`Z Offset (${unitLabel})`" :style="{ width: '150px' }">
+        <template #body="slotProps">
+          <div v-if="editingId === slotProps.data.id && editingField === 'offsetZ'">
+            <InputText 
+              v-model="editingValue" 
+              @keyup.enter="finishEdit"
+              @keyup.escape="cancelEdit"
+              @blur="finishEdit"
+              class="w-full"
+              type="number"
+              :step="metric ? '0.001' : '0.0001'"
+            />
+          </div>
+          <div 
+            v-else 
+            @click="startEdit(slotProps.data, 'offsetZ')"
+            class="editable-field"
+          >
+            {{ formatOffset(slotProps.data.offsetZ) }}
           </div>
         </template>
       </Column>

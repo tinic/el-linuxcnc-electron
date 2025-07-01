@@ -178,7 +178,7 @@ const xpitchlabel = ref('…')
 const zpitchlabel = ref('…')
 const xpitchangle = ref(0)
 // Get settings from composable
-const { metric, diameterMode, defaultMetricOnStartup, selectedThreadingTab, selectedTurningTab, selectedPitchTab, pitchX, pitchZ, isQuitting, loadSettings, tools, currentToolIndex, currentToolOffset } = useSettings()
+const { metric, diameterMode, defaultMetricOnStartup, selectedThreadingTab, selectedTurningTab, selectedPitchTab, pitchX, pitchZ, isQuitting, loadSettings, tools, currentToolIndex, currentToolOffsetX, currentToolOffsetZ } = useSettings()
 
 const cursorpos = ref(0)
 
@@ -222,9 +222,10 @@ const openToolTable = () => {
   showToolTable.value = true
 }
 
-const onToolSelected = (toolId: number, offset: number) => {
+const onToolSelected = (toolId: number, offsetX: number, offsetZ: number) => {
   currentToolIndex.value = toolId
-  currentToolOffset.value = offset
+  currentToolOffsetX.value = offsetX
+  currentToolOffsetZ.value = offsetZ
   showToolTable.value = false
 }
 
@@ -1108,7 +1109,7 @@ onMounted(async () => {
   if (userAgent.indexOf(' electron/') > -1) {
     window.api.receive('halStarted', () => {
       selectedMenu.value = MenuType.manual
-      startPoll({
+      startPoll({ currentToolOffsetX, currentToolOffsetZ }, {
         selectedMenu,
         MenuType,
         DirectionMode,
@@ -1131,7 +1132,7 @@ onMounted(async () => {
     selectedMenu.value = MenuType.halStatus
     startHAL()
   } else {
-    startPoll({
+    startPoll({ currentToolOffsetX, currentToolOffsetZ }, {
       selectedMenu,
       MenuType,
       DirectionMode,

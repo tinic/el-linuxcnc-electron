@@ -84,7 +84,8 @@ ipcMain.handle('getSettings', () => ({
   pitchZ: (appConfig as any).get('setting.pitchZ', 0.0),
   tools: (appConfig as any).get('setting.tools'),
   currentToolIndex: (appConfig as any).get('setting.currentToolIndex', 0),
-  currentToolOffset: (appConfig as any).get('setting.currentToolOffset', 0)
+  currentToolOffsetX: (appConfig as any).get('setting.currentToolOffsetX', 0),
+  currentToolOffsetZ: (appConfig as any).get('setting.currentToolOffsetZ', 0)
 }))
 
 ipcMain.handle('saveSettings', (event, settings) => {
@@ -100,7 +101,8 @@ ipcMain.handle('saveSettings', (event, settings) => {
     pitchZ: settings.pitchZ,
     tools: settings.tools,
     currentToolIndex: settings.currentToolIndex,
-    currentToolOffset: settings.currentToolOffset
+    currentToolOffsetX: settings.currentToolOffsetX,
+    currentToolOffsetZ: settings.currentToolOffsetZ
   })
   return true
 })

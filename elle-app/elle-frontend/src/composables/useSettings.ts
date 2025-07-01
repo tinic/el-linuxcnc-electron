@@ -3,7 +3,8 @@ import { ref, watch } from 'vue'
 // Import tool types
 interface Tool {
   id: number
-  offset: number
+  offsetX: number
+  offsetZ: number
   description: string
 }
 
@@ -20,20 +21,21 @@ const isQuitting = ref(false)
 
 // Tool table state
 const tools = ref<Tool[]>([
-  { id: 0, offset: 0, description: 'Reference Tool' },
-  { id: 1, offset: 0, description: '' },
-  { id: 2, offset: 0, description: '' },
-  { id: 3, offset: 0, description: '' },
-  { id: 4, offset: 0, description: '' },
-  { id: 5, offset: 0, description: '' },
-  { id: 6, offset: 0, description: '' },
-  { id: 7, offset: 0, description: '' },
-  { id: 8, offset: 0, description: '' },
-  { id: 9, offset: 0, description: '' }
+  { id: 0, offsetX: 0, offsetZ: 0, description: 'Reference Tool' },
+  { id: 1, offsetX: 0, offsetZ: 0, description: '' },
+  { id: 2, offsetX: 0, offsetZ: 0, description: '' },
+  { id: 3, offsetX: 0, offsetZ: 0, description: '' },
+  { id: 4, offsetX: 0, offsetZ: 0, description: '' },
+  { id: 5, offsetX: 0, offsetZ: 0, description: '' },
+  { id: 6, offsetX: 0, offsetZ: 0, description: '' },
+  { id: 7, offsetX: 0, offsetZ: 0, description: '' },
+  { id: 8, offsetX: 0, offsetZ: 0, description: '' },
+  { id: 9, offsetX: 0, offsetZ: 0, description: '' }
 ])
 
 const currentToolIndex = ref(0)
-const currentToolOffset = ref(0)
+const currentToolOffsetX = ref(0)
+const currentToolOffsetZ = ref(0)
 
 // Flag to ensure watcher is only set up once
 let isWatcherSetup = false
@@ -65,8 +67,11 @@ export function useSettings() {
           if (settings.currentToolIndex !== undefined) {
             currentToolIndex.value = settings.currentToolIndex
           }
-          if (settings.currentToolOffset !== undefined) {
-            currentToolOffset.value = settings.currentToolOffset
+          if (settings.currentToolOffsetX !== undefined) {
+            currentToolOffsetX.value = settings.currentToolOffsetX
+          }
+          if (settings.currentToolOffsetZ !== undefined) {
+            currentToolOffsetZ.value = settings.currentToolOffsetZ
           }
         } else {
           console.error('window.settings is not available')
@@ -96,7 +101,8 @@ export function useSettings() {
           pitchZ: pitchZ.value,
           tools: plainTools,
           currentToolIndex: currentToolIndex.value,
-          currentToolOffset: currentToolOffset.value
+          currentToolOffsetX: currentToolOffsetX.value,
+          currentToolOffsetZ: currentToolOffsetZ.value
         })
       } catch (error) {
         console.error('Failed to save settings:', error)
@@ -106,7 +112,7 @@ export function useSettings() {
 
   // Auto-save settings when they change (only set up once)
   if (!isWatcherSetup) {
-    watch([diameterMode, defaultMetricOnStartup, selectedThreadingTab, selectedTurningTab, selectedPitchTab, pitchX, pitchZ, tools, currentToolIndex, currentToolOffset], () => {
+    watch([diameterMode, defaultMetricOnStartup, selectedThreadingTab, selectedTurningTab, selectedPitchTab, pitchX, pitchZ, tools, currentToolIndex, currentToolOffsetX, currentToolOffsetZ], () => {
       saveSettings()
     }, { deep: true })
     isWatcherSetup = true
@@ -126,6 +132,7 @@ export function useSettings() {
     saveSettings,
     tools,
     currentToolIndex,
-    currentToolOffset
+    currentToolOffsetX,
+    currentToolOffsetZ
   }
 }

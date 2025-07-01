@@ -5,11 +5,12 @@ declare interface api {
 
 declare interface Tool {
   id: number
-  offset: number
+  offsetX: number
+  offsetZ: number
   description: string
 }
 
 declare interface settings {
-  get: () => Promise<{ diameterMode: boolean; defaultMetricOnStartup: boolean; selectedThreadingTab: number; selectedTurningTab: number; selectedPitchTab: number[]; pitchX: number; pitchZ: number; tools?: Tool[]; currentToolIndex?: number; currentToolOffset?: number }>
-  save: (settings: { diameterMode: boolean; defaultMetricOnStartup: boolean; selectedThreadingTab: number; selectedTurningTab: number; selectedPitchTab: number[]; pitchX: number; pitchZ: number; tools?: Tool[]; currentToolIndex?: number; currentToolOffset?: number }) => Promise<boolean>
+  get: () => Promise<{ diameterMode: boolean; defaultMetricOnStartup: boolean; selectedThreadingTab: number; selectedTurningTab: number; selectedPitchTab: number[]; pitchX: number; pitchZ: number; tools?: Tool[]; currentToolIndex?: number; currentToolOffsetX?: number; currentToolOffsetZ?: number }>
+  save: (settings: { diameterMode: boolean; defaultMetricOnStartup: boolean; selectedThreadingTab: number; selectedTurningTab: number; selectedPitchTab: number[]; pitchX: number; pitchZ: number; tools?: Tool[]; currentToolIndex?: number; currentToolOffsetX?: number; currentToolOffsetZ?: number }) => Promise<boolean>
 }
