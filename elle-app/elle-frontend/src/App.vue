@@ -178,7 +178,7 @@ const xpitchlabel = ref('…')
 const zpitchlabel = ref('…')
 const xpitchangle = ref(0)
 // Get settings from composable
-const { metric, diameterMode, defaultMetricOnStartup, selectedThreadingTab, selectedTurningTab, selectedPitchTab, pitchX, pitchZ, isQuitting, loadSettings, tools, currentToolIndex, currentToolOffsetX, currentToolOffsetZ } = useSettings()
+const { metric, diameterMode, defaultMetricOnStartup, selectedThreadingTab, selectedTurningTab, selectedPitchTab, pitchX, pitchZ, isQuitting, loadSettings, saveSettings, tools, currentToolIndex, currentToolOffsetX, currentToolOffsetZ } = useSettings()
 
 const cursorpos = ref(0)
 
@@ -653,17 +653,9 @@ const quitApplication = async () => {
   if (userAgent.indexOf(' electron/') > -1) {
     isQuitting.value = true
 
-    // Save settings one final time before quitting
+    // Save settings one final time before quitting using the proper save function
     try {
-      await window.settings.save({
-        diameterMode: diameterMode.value,
-        defaultMetricOnStartup: defaultMetricOnStartup.value,
-        selectedThreadingTab: selectedThreadingTab.value,
-        selectedTurningTab: selectedTurningTab.value,
-        selectedPitchTab: selectedPitchTab.value,
-        pitchX: pitchX.value,
-        pitchZ: pitchZ.value
-      })
+      await saveSettings()
     } catch (error) {
       console.error('Failed to save final settings:', error)
     }

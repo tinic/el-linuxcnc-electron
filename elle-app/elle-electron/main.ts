@@ -88,6 +88,9 @@ ipcMain.handle('getSettings', () => ({
   currentToolOffsetZ: (appConfig as any).get('setting.currentToolOffsetZ', 0)
 }))
 
+// IMPORTANT: This handler should save ALL settings passed from useSettings.ts
+// If you add new settings, make sure they're included both here AND in useSettings.ts
+// Do NOT create duplicate save logic elsewhere - use the useSettings saveSettings function
 ipcMain.handle('saveSettings', (event, settings) => {
   const currentSettings = (appConfig as any).get('setting', {})
   ;(appConfig as any).set('setting', {

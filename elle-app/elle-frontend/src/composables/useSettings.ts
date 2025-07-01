@@ -83,27 +83,30 @@ export function useSettings() {
   }
 
   const saveSettings = async () => {
-    if (isQuitting.value) {return} // Don't save settings when quitting
-
     const userAgent = navigator.userAgent.toLowerCase()
     if (userAgent.indexOf(' electron/') > -1) {
       try {
-        // Convert reactive arrays to plain objects for serialization
-        const plainTools = JSON.parse(JSON.stringify(tools.value))
-        
-        await window.settings.save({
+        // Convert reactive refs to plain values for serialization
+        const settingsToSave = {
           diameterMode: diameterMode.value,
           defaultMetricOnStartup: defaultMetricOnStartup.value,
           selectedThreadingTab: selectedThreadingTab.value,
           selectedTurningTab: selectedTurningTab.value,
-          selectedPitchTab: selectedPitchTab.value,
+          selectedPitchTab: [...selectedPitchTab.value],
           pitchX: pitchX.value,
           pitchZ: pitchZ.value,
-          tools: plainTools,
+          tools: tools.value.map(tool => ({
+            id: tool.id,
+            offsetX: tool.offsetX,
+            offsetZ: tool.offsetZ,
+            description: tool.description
+          })),
           currentToolIndex: currentToolIndex.value,
           currentToolOffsetX: currentToolOffsetX.value,
           currentToolOffsetZ: currentToolOffsetZ.value
-        })
+        }
+
+        await window.settings.save(settingsToSave)
       } catch (error) {
         console.error('Failed to save settings:', error)
       }
