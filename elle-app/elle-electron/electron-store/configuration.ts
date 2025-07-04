@@ -17,6 +17,8 @@ interface AppConfig {
     selectedPitchTab?: number[]
     pitchX?: number
     pitchZ?: number
+    encoderScaleZ?: number
+    encoderScaleX?: number
     tools?: Tool[]
     currentToolIndex?: number
     currentToolOffsetX?: number

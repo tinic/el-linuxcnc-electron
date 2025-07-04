@@ -11,6 +11,6 @@ declare interface Tool {
 }
 
 declare interface settings {
-  get: () => Promise<{ diameterMode: boolean; defaultMetricOnStartup: boolean; selectedThreadingTab: number; selectedTurningTab: number; selectedPitchTab: number[]; pitchX: number; pitchZ: number; tools?: Tool[]; currentToolIndex?: number; currentToolOffsetX?: number; currentToolOffsetZ?: number }>
-  save: (settings: { diameterMode: boolean; defaultMetricOnStartup: boolean; selectedThreadingTab: number; selectedTurningTab: number; selectedPitchTab: number[]; pitchX: number; pitchZ: number; tools?: Tool[]; currentToolIndex?: number; currentToolOffsetX?: number; currentToolOffsetZ?: number }) => Promise<boolean>
+  get: () => Promise<{ diameterMode: boolean; defaultMetricOnStartup: boolean; selectedThreadingTab: number; selectedTurningTab: number; selectedPitchTab: number[]; pitchX: number; pitchZ: number; encoderScaleZ: number; encoderScaleX: number; tools?: Tool[]; currentToolIndex?: number; currentToolOffsetX?: number; currentToolOffsetZ?: number }>
+  save: (settings: { diameterMode: boolean; defaultMetricOnStartup: boolean; selectedThreadingTab: number; selectedTurningTab: number; selectedPitchTab: number[]; pitchX: number; pitchZ: number; encoderScaleZ: number; encoderScaleX: number; tools?: Tool[]; currentToolIndex?: number; currentToolOffsetX?: number; currentToolOffsetZ?: number }) => Promise<boolean>
 }

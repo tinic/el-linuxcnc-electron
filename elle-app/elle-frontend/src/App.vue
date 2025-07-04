@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, computed, watch, defineAsyncComponent } fr
 import { useDialog } from 'primevue/usedialog'
 import Popover from 'primevue/popover'
 import Dialog from 'primevue/dialog'
+import InputNumber from 'primevue/inputnumber'
 
 import Numpad from './components/Numpad.vue'
 import DRODisplay from './components/DRODisplay.vue'
@@ -178,7 +179,7 @@ const xpitchlabel = ref('…')
 const zpitchlabel = ref('…')
 const xpitchangle = ref(0)
 // Get settings from composable
-const { metric, diameterMode, defaultMetricOnStartup, selectedThreadingTab, selectedTurningTab, selectedPitchTab, pitchX, pitchZ, isQuitting, loadSettings, saveSettings, tools, currentToolIndex, currentToolOffsetX, currentToolOffsetZ } = useSettings()
+const { metric, diameterMode, defaultMetricOnStartup, selectedThreadingTab, selectedTurningTab, selectedPitchTab, pitchX, pitchZ, encoderScaleZ, encoderScaleX, isQuitting, loadSettings, saveSettings, tools, currentToolIndex, currentToolOffsetX, currentToolOffsetZ } = useSettings()
 
 const cursorpos = ref(0)
 
@@ -2462,6 +2463,49 @@ onUnmounted(() => {
                   >
                     Imperial (inch)
                   </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Encoder Scale Settings -->
+          <div class="col-12 mb-4">
+            <div class="grid grid-nogutter align-items-center">
+              <div class="col-6 text-right pr-4">
+                <label class="text-lg font-semibold">Encoder Scale Z:</label>
+              </div>
+              <div class="col-6">
+                <div class="flex gap-3">
+                  <InputNumber
+                    v-model="encoderScaleZ"
+                    :min="-1"
+                    :max="1"
+                    :step="0.0001"
+                    :minFractionDigits="4"
+                    :maxFractionDigits="4"
+                    class="w-8rem"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 mb-4">
+            <div class="grid grid-nogutter align-items-center">
+              <div class="col-6 text-right pr-4">
+                <label class="text-lg font-semibold">Encoder Scale X:</label>
+              </div>
+              <div class="col-6">
+                <div class="flex gap-3">
+                  <InputNumber
+                    v-model="encoderScaleX"
+                    :min="-1"
+                    :max="1"
+                    :step="0.0001"
+                    :minFractionDigits="4"
+                    :maxFractionDigits="4"
+                    class="w-8rem"
+                  />
                 </div>
               </div>
             </div>

@@ -19,6 +19,10 @@ const pitchX = ref(0.0)
 const pitchZ = ref(0.0)
 const isQuitting = ref(false)
 
+// Encoder scale factors
+const encoderScaleZ = ref(0.001)
+const encoderScaleX = ref(-0.001)
+
 // Tool table state
 const tools = ref<Tool[]>([
   { id: 0, offsetX: 0, offsetZ: 0, description: 'Reference Tool' },
@@ -58,6 +62,14 @@ export function useSettings() {
           pitchZ.value = settings.pitchZ || 0.0
           metric.value = settings.defaultMetricOnStartup
           
+          // Load encoder scale factors
+          if (settings.encoderScaleZ !== undefined) {
+            encoderScaleZ.value = settings.encoderScaleZ
+          }
+          if (settings.encoderScaleX !== undefined) {
+            encoderScaleX.value = settings.encoderScaleX
+          }
+          
           // Load tool table
           if (settings.tools && Array.isArray(settings.tools)) {
             tools.value = settings.tools
@@ -95,6 +107,8 @@ export function useSettings() {
           selectedPitchTab: [...selectedPitchTab.value],
           pitchX: pitchX.value,
           pitchZ: pitchZ.value,
+          encoderScaleZ: encoderScaleZ.value,
+          encoderScaleX: encoderScaleX.value,
           tools: tools.value.map(tool => ({
             id: tool.id,
             offsetX: tool.offsetX,
@@ -115,7 +129,7 @@ export function useSettings() {
 
   // Auto-save settings when they change (only set up once)
   if (!isWatcherSetup) {
-    watch([diameterMode, defaultMetricOnStartup, selectedThreadingTab, selectedTurningTab, selectedPitchTab, pitchX, pitchZ, tools, currentToolIndex, currentToolOffsetX, currentToolOffsetZ], () => {
+    watch([diameterMode, defaultMetricOnStartup, selectedThreadingTab, selectedTurningTab, selectedPitchTab, pitchX, pitchZ, encoderScaleZ, encoderScaleX, tools, currentToolIndex, currentToolOffsetX, currentToolOffsetZ], () => {
       saveSettings()
     }, { deep: true })
     isWatcherSetup = true
@@ -130,6 +144,8 @@ export function useSettings() {
     selectedPitchTab,
     pitchX,
     pitchZ,
+    encoderScaleZ,
+    encoderScaleX,
     isQuitting,
     loadSettings,
     saveSettings,

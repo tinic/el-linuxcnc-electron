@@ -11,8 +11,12 @@ import {
   generateTurningGcode,
   cleanupCannedCycles
 } from '../HAL'
+import { useSettings } from './useSettings'
 
 export function useHAL() {
+  // Get encoder scale values from settings
+  const { encoderScaleZ, encoderScaleX } = useSettings()
+  
   const xpos = ref(0)
   const zpos = ref(0)
   const apos = ref(0)
@@ -72,7 +76,9 @@ export function useHAL() {
         xaxisoffset = -xpos.value - toolOffsets.currentToolOffsetX.value
         zaxisoffset = -zpos.value - toolOffsets.currentToolOffsetZ.value
         const halOut = {
-          reset_position: true
+          reset_position: true,
+          encoder_scale_z: encoderScaleZ.value,
+          encoder_scale_x: encoderScaleX.value
         }
         putHalOut(halOut)
       }
@@ -160,7 +166,9 @@ export function useHAL() {
             enable_z: zpitchactive.value,
             enable_x: xpitchactive.value,
             enable_stepper_z: zstepperactive.value,
-            enable_stepper_x: xstepperactive.value
+            enable_stepper_x: xstepperactive.value,
+            encoder_scale_z: encoderScaleZ.value,
+            encoder_scale_x: encoderScaleX.value
           }
           putHalOut(halOut)
         } else if (params.selectedMenu.value == params.MenuType.cannedCycles) {
@@ -173,7 +181,9 @@ export function useHAL() {
             enable_z: true,
             enable_x: true,
             enable_stepper_z: true,
-            enable_stepper_x: true
+            enable_stepper_x: true,
+            encoder_scale_z: encoderScaleZ.value,
+            encoder_scale_x: encoderScaleX.value
           }
           putHalOut(halOut)
         }

@@ -576,8 +576,9 @@ def write_hal_out():
         c.reset_interpreter()
         c.wait_complete()
 
-    hal_pin_scale_encoder_z.set(+0.001)
-    hal_pin_scale_encoder_x.set(-0.001)
+    # Set encoder scale factors from frontend settings or use defaults
+    hal_pin_scale_encoder_z.set(json.get("encoder_scale_z", 0.001))
+    hal_pin_scale_encoder_x.set(json.get("encoder_scale_x", -0.001))
 
     hal_pin_offset_z_encoder.set(-hal_pin_position_a.get())
     hal_pin_offset_z_stepper.set(+hal_pin_position_z_encoder.get())
