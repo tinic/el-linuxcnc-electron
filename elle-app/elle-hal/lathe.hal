@@ -258,6 +258,11 @@ net mux-x-reset <= lathe.reset_x
 net mux-z-reset => rp2040-encoder.0.reset-0
 net mux-x-reset => rp2040-encoder.0.reset-1
 
+net mux-z-encoder-scale <= lathe.scale_encoder_z
+net mux-x-encoder-scale <= lathe.scale_encoder_x
+net mux-z-encoder-scale => rp2040-encoder.0.scale-0
+net mux-x-encoder-scale => rp2040-encoder.0.scale-1
+
 net z-stepper-enable <= lathe.enable_stepper_z 
 net z-stepper-enable => mux-gen.02.in-bit-00 # hm2_7i96.0.stepgen.00.enable
 

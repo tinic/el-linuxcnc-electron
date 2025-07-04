@@ -46,6 +46,9 @@ hal_pin_velocity_x_cmd = halc.newpin("velocity_x_cmd", hal.HAL_FLOAT, hal.HAL_OU
 hal_pin_reset_z = halc.newpin("reset_z", hal.HAL_U32, hal.HAL_OUT)
 hal_pin_reset_x = halc.newpin("reset_x", hal.HAL_U32, hal.HAL_OUT)
 
+hal_pin_scale_encoder_z = halc.newpin("scale_encoder_z", hal.HAL_FLOAT, hal.HAL_OUT)
+hal_pin_scale_encoder_x = halc.newpin("scale_encoder_x", hal.HAL_FLOAT, hal.HAL_OUT)
+
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
@@ -572,6 +575,9 @@ def write_hal_out():
         c.wait_complete()
         c.reset_interpreter()
         c.wait_complete()
+
+    hal_pin_scale_encoder_z.set(+0.001)
+    hal_pin_scale_encoder_x.set(-0.001)
 
     hal_pin_offset_z_encoder.set(-hal_pin_position_a.get())
     hal_pin_offset_z_stepper.set(+hal_pin_position_z_encoder.get())
