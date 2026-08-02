@@ -1,0 +1,567 @@
+{
+  "$defs": {
+    "CleanupResponse": {
+      "properties": {
+        "files_removed": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "CleanupResponse",
+      "type": "object"
+    },
+    "GcodeResponse": {
+      "description": "Response carrying generated G-code (generate + execute endpoints).",
+      "properties": {
+        "gcode": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "type": "string"
+        },
+        "subroutine_file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "GcodeResponse",
+      "type": "object"
+    },
+    "HalIn": {
+      "description": "Position/status snapshot returned by GET /hal/hal_in (30 Hz poll).",
+      "properties": {
+        "error_state": {
+          "type": "boolean"
+        },
+        "position_a": {
+          "type": "number"
+        },
+        "position_x": {
+          "type": "number"
+        },
+        "position_z": {
+          "type": "number"
+        },
+        "program_running": {
+          "type": "boolean"
+        },
+        "speed_rps": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "position_z",
+        "position_x",
+        "position_a",
+        "speed_rps",
+        "program_running",
+        "error_state"
+      ],
+      "title": "HalIn",
+      "type": "object"
+    },
+    "HalOut": {
+      "description": "Control command for PUT /hal/hal_out.\n\nAll fields are optional; the backend only acts on fields that are\npresent in the request (presence semantics, not null semantics).",
+      "properties": {
+        "control_source": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "control_stop_now": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "control_x_type": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "control_z_type": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "enable_stepper_x": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "enable_stepper_z": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "enable_x": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "enable_z": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "encoder_scale_x": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "encoder_scale_z": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "forward_x": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "forward_z": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reset_position": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "velocity_x_cmd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "velocity_z_cmd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "HalOut",
+      "type": "object"
+    },
+    "StatusResponse": {
+      "description": "Generic status envelope used by command endpoints.",
+      "properties": {
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "StatusResponse",
+      "type": "object"
+    },
+    "ThreadingExecuteParams": {
+      "description": "Threading execution additionally needs the current work position.",
+      "properties": {
+        "CutMult": {
+          "type": "number"
+        },
+        "FirstCut": {
+          "type": "number"
+        },
+        "MinCut": {
+          "type": "number"
+        },
+        "Pitch": {
+          "type": "number"
+        },
+        "SpringCuts": {
+          "type": "integer"
+        },
+        "XDepth": {
+          "type": "number"
+        },
+        "XEnd": {
+          "type": "number"
+        },
+        "XPos": {
+          "type": "number"
+        },
+        "XPullout": {
+          "type": "number"
+        },
+        "XReturn": {
+          "type": "number"
+        },
+        "XStart": {
+          "type": "number"
+        },
+        "ZDepth": {
+          "type": "number"
+        },
+        "ZEnd": {
+          "type": "number"
+        },
+        "ZPos": {
+          "type": "number"
+        },
+        "ZPullout": {
+          "type": "number"
+        },
+        "ZReturn": {
+          "type": "number"
+        },
+        "ZStart": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "XStart",
+        "ZStart",
+        "Pitch",
+        "XDepth",
+        "ZDepth",
+        "XEnd",
+        "ZEnd",
+        "XPullout",
+        "ZPullout",
+        "FirstCut",
+        "CutMult",
+        "MinCut",
+        "SpringCuts",
+        "XReturn",
+        "ZReturn",
+        "XPos",
+        "ZPos"
+      ],
+      "title": "ThreadingExecuteParams",
+      "type": "object"
+    },
+    "ThreadingParams": {
+      "description": "Parameters for the G33 threading cycle (backplot generation).",
+      "properties": {
+        "CutMult": {
+          "type": "number"
+        },
+        "FirstCut": {
+          "type": "number"
+        },
+        "MinCut": {
+          "type": "number"
+        },
+        "Pitch": {
+          "type": "number"
+        },
+        "SpringCuts": {
+          "type": "integer"
+        },
+        "XDepth": {
+          "type": "number"
+        },
+        "XEnd": {
+          "type": "number"
+        },
+        "XPullout": {
+          "type": "number"
+        },
+        "XReturn": {
+          "type": "number"
+        },
+        "XStart": {
+          "type": "number"
+        },
+        "ZDepth": {
+          "type": "number"
+        },
+        "ZEnd": {
+          "type": "number"
+        },
+        "ZPullout": {
+          "type": "number"
+        },
+        "ZReturn": {
+          "type": "number"
+        },
+        "ZStart": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "XStart",
+        "ZStart",
+        "Pitch",
+        "XDepth",
+        "ZDepth",
+        "XEnd",
+        "ZEnd",
+        "XPullout",
+        "ZPullout",
+        "FirstCut",
+        "CutMult",
+        "MinCut",
+        "SpringCuts",
+        "XReturn",
+        "ZReturn"
+      ],
+      "title": "ThreadingParams",
+      "type": "object"
+    },
+    "TurningExecuteParams": {
+      "description": "Turning execution additionally needs the current work position.",
+      "properties": {
+        "Angle": {
+          "type": "number"
+        },
+        "FinalStepDown": {
+          "type": "number"
+        },
+        "Pitch": {
+          "type": "number"
+        },
+        "SpringPasses": {
+          "type": "integer"
+        },
+        "StepDown": {
+          "type": "number"
+        },
+        "Stock": {
+          "type": "number"
+        },
+        "Target": {
+          "type": "number"
+        },
+        "XPos": {
+          "type": "number"
+        },
+        "XReturn": {
+          "type": "number"
+        },
+        "ZEnd": {
+          "type": "number"
+        },
+        "ZLead": {
+          "type": "number"
+        },
+        "ZPos": {
+          "type": "number"
+        },
+        "ZReturn": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "Pitch",
+        "Stock",
+        "Target",
+        "ZLead",
+        "ZEnd",
+        "Angle",
+        "StepDown",
+        "FinalStepDown",
+        "SpringPasses",
+        "XReturn",
+        "ZReturn",
+        "XPos",
+        "ZPos"
+      ],
+      "title": "TurningExecuteParams",
+      "type": "object"
+    },
+    "TurningParams": {
+      "description": "Parameters for the G33 turning cycle (backplot generation).",
+      "properties": {
+        "Angle": {
+          "type": "number"
+        },
+        "FinalStepDown": {
+          "type": "number"
+        },
+        "Pitch": {
+          "type": "number"
+        },
+        "SpringPasses": {
+          "type": "integer"
+        },
+        "StepDown": {
+          "type": "number"
+        },
+        "Stock": {
+          "type": "number"
+        },
+        "Target": {
+          "type": "number"
+        },
+        "XReturn": {
+          "type": "number"
+        },
+        "ZEnd": {
+          "type": "number"
+        },
+        "ZLead": {
+          "type": "number"
+        },
+        "ZReturn": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "Pitch",
+        "Stock",
+        "Target",
+        "ZLead",
+        "ZEnd",
+        "Angle",
+        "StepDown",
+        "FinalStepDown",
+        "SpringPasses",
+        "XReturn",
+        "ZReturn"
+      ],
+      "title": "TurningParams",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ElleApi"
+}
