@@ -4,7 +4,6 @@ import Dialog from 'primevue/dialog'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import InputText from 'primevue/inputtext'
-import InputNumber from 'primevue/inputnumber'
 import { useToolTable } from '../composables/useToolTable'
 import { useSettings } from '../composables/useSettings'
 
@@ -50,7 +49,7 @@ const onRowClick = (event: any) => {
 const startEdit = (tool: any, field: string) => {
   editingId.value = tool.id
   editingField.value = field
-  
+
   if (field === 'offsetX') {
     editingValue.value = formatOffset(tool.offsetX)
   } else if (field === 'offsetZ') {
@@ -75,7 +74,7 @@ const finishEdit = () => {
       }
     }
   }
-  
+
   editingId.value = null
   editingField.value = null
   editingValue.value = ''
@@ -87,19 +86,14 @@ const cancelEdit = () => {
   editingValue.value = ''
 }
 
-const isRowSelected = (tool: any) => {
-  return tool.id === props.currentToolId
-}
+const isRowSelected = (tool: any) => tool.id === props.currentToolId
 
-const getRowClass = (tool: any) => {
-  return isRowSelected(tool) ? 'selected-row' : ''
-}
+const getRowClass = (tool: any) => isRowSelected(tool) ? 'selected-row' : ''
 </script>
 
 <template>
-  <Dialog 
-    :visible="props.visible" 
-    @update:visible="closeDialog"
+  <Dialog
+    :visible="props.visible"
     modal
     header="Tool Table"
     :style="{ width: '90vw', maxWidth: '800px' }"
@@ -107,26 +101,26 @@ const getRowClass = (tool: any) => {
       header: { class: 'p-3' },
       content: { class: 'p-0' }
     }"
+    @update:visible="closeDialog"
   >
-
-    <DataTable 
-      :value="tools" 
+    <DataTable
+      :value="tools"
       :row-class="getRowClass"
       class="tool-table"
       scrollable
-      :scrollHeight="'60vh'"
+      :scroll-height="'60vh'"
     >
       <Column header="" :style="{ width: '60px', textAlign: 'center' }">
         <template #body="slotProps">
-          <div @click="onRowClick({ data: slotProps.data })" class="clickable-cell">
-            <i 
-              v-if="isRowSelected(slotProps.data)" 
-              class="pi pi-check-circle" 
+          <div class="clickable-cell" @click="onRowClick({ data: slotProps.data })">
+            <i
+              v-if="isRowSelected(slotProps.data)"
+              class="pi pi-check-circle"
               style="color: #22c55e; font-size: 1.5rem"
             />
-            <i 
-              v-else 
-              class="pi pi-circle" 
+            <i
+              v-else
+              class="pi pi-circle"
               style="color: #666; font-size: 1.5rem"
             />
           </div>
@@ -135,7 +129,7 @@ const getRowClass = (tool: any) => {
 
       <Column field="id" header="Tool ID" :style="{ width: '100px' }">
         <template #body="slotProps">
-          <div @click="onRowClick({ data: slotProps.data })" class="clickable-cell">
+          <div class="clickable-cell" @click="onRowClick({ data: slotProps.data })">
             <span class="tool-id">T{{ slotProps.data.id.toString().padStart(2, '0') }}</span>
           </div>
         </template>
@@ -144,20 +138,20 @@ const getRowClass = (tool: any) => {
       <Column field="offsetX" :header="`X Offset (${unitLabel})`" :style="{ width: '150px' }">
         <template #body="slotProps">
           <div v-if="editingId === slotProps.data.id && editingField === 'offsetX'">
-            <InputText 
-              v-model="editingValue" 
-              @keyup.enter="finishEdit"
-              @keyup.escape="cancelEdit"
-              @blur="finishEdit"
+            <InputText
+              v-model="editingValue"
               class="w-full"
               type="number"
               :step="metric ? '0.001' : '0.0001'"
+              @keyup.enter="finishEdit"
+              @keyup.escape="cancelEdit"
+              @blur="finishEdit"
             />
           </div>
-          <div 
-            v-else 
-            @click="startEdit(slotProps.data, 'offsetX')"
+          <div
+            v-else
             class="editable-field"
+            @click="startEdit(slotProps.data, 'offsetX')"
           >
             {{ formatOffset(slotProps.data.offsetX) }}
           </div>
@@ -167,20 +161,20 @@ const getRowClass = (tool: any) => {
       <Column field="offsetZ" :header="`Z Offset (${unitLabel})`" :style="{ width: '150px' }">
         <template #body="slotProps">
           <div v-if="editingId === slotProps.data.id && editingField === 'offsetZ'">
-            <InputText 
-              v-model="editingValue" 
-              @keyup.enter="finishEdit"
-              @keyup.escape="cancelEdit"
-              @blur="finishEdit"
+            <InputText
+              v-model="editingValue"
               class="w-full"
               type="number"
               :step="metric ? '0.001' : '0.0001'"
+              @keyup.enter="finishEdit"
+              @keyup.escape="cancelEdit"
+              @blur="finishEdit"
             />
           </div>
-          <div 
-            v-else 
-            @click="startEdit(slotProps.data, 'offsetZ')"
+          <div
+            v-else
             class="editable-field"
+            @click="startEdit(slotProps.data, 'offsetZ')"
           >
             {{ formatOffset(slotProps.data.offsetZ) }}
           </div>
@@ -190,18 +184,18 @@ const getRowClass = (tool: any) => {
       <Column field="description" header="Tool Description">
         <template #body="slotProps">
           <div v-if="editingId === slotProps.data.id && editingField === 'description'">
-            <InputText 
-              v-model="editingValue" 
+            <InputText
+              v-model="editingValue"
+              class="w-full"
               @keyup.enter="finishEdit"
               @keyup.escape="cancelEdit"
               @blur="finishEdit"
-              class="w-full"
             />
           </div>
-          <div 
-            v-else 
-            @click="startEdit(slotProps.data, 'description')"
+          <div
+            v-else
             class="editable-field"
+            @click="startEdit(slotProps.data, 'description')"
           >
             {{ slotProps.data.description || '—' }}
           </div>

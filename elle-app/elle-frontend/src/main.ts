@@ -2,7 +2,6 @@ import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
 import PrimeVue from 'primevue/config'
-import { createWebHistory, createRouter } from 'vue-router'
 import { definePreset } from '@primevue/themes'
 import Aura from '@primevue/themes/aura'
 
@@ -56,20 +55,6 @@ import Textarea from 'primevue/textarea'
 import Toolbar from 'primevue/toolbar'
 import SelectButton from 'primevue/selectbutton'
 import FileUpload from 'primevue/fileupload'
-//import { AppImageUpdater } from 'electron-updater';
-
-const routes = [
-  {
-    path: '/',
-    name: 'Home',
-    component: App
-  }
-]
-
-const router = createRouter({
-  history: createWebHistory(),
-  routes
-})
 
 const app = createApp(App)
 app.use(PrimeVue, {
@@ -80,8 +65,7 @@ app.use(PrimeVue, {
     }
   }
 })
-app.use(DialogService as any)
-app.use(router as any)
+app.use(DialogService)
 
 // eslint-disable-next-line vue/multi-word-component-names, vue/no-reserved-component-names
 app.component('Button', Button)

@@ -146,3 +146,55 @@ label {
 [class*='pi-'] {
   font-family: 'primeicons' !important;
 }
+
+/* Shared application classes (used across screens/components) */
+.button-mode {
+  background: #333;
+  color: #ffffff;
+}
+
+.button-arrow {
+  background: #333;
+  color: #ffffff;
+  border: none;
+  outline: none;
+  cursor: none;
+  text-decoration: none;
+}
+
+.button-direction {
+  font-size: 1.5em;
+}
+
+.dro-font-mode {
+  font-family: 'iosevka';
+  font-weight: bold;
+  font-size: 1.1em;
+  text-align: center;
+}
+
+.fixed-width-font {
+  font-family: 'iosevka';
+  font-weight: normal;
+}
+
+.divider-vertical {
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  margin: 0 1rem;
+}
+
+.divider-horizontal {
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  margin: 1rem 0;
+  width: 100%;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.placeholder-text {
+  color: #aaaaaa;
+}

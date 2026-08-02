@@ -52,7 +52,7 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { Camera, Renderer, RendererPublicInterface, Scene } from 'troisjs'
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { useSettings } from '../composables/useSettings'
 
 interface OperationData {
@@ -67,8 +67,7 @@ const props = defineProps<{
   operation: OperationData;
 }>()
 
-// eslint-disable-next-line no-unused-vars
-const emit = defineEmits<{
+defineEmits<{
   cancel: [];
   continue: [];
 }>()
@@ -80,11 +79,11 @@ const { diameterMode } = useSettings()
 // Computed property for formatted parameters that reacts to diameter mode changes
 const formattedParameters = computed(() => {
   const formatted: Record<string, string> = {}
-  
+
   for (const [key, value] of Object.entries(props.operation.parameters)) {
     formatted[key] = formatParameterValue(key, value)
   }
-  
+
   return formatted
 })
 
@@ -119,7 +118,7 @@ const getParameterConfig = (key: string) => {
     'XStart': { displayName: 'X Start', doubleInDiameterMode: true, isInteger: false },
     'XEnd': { displayName: 'X End', doubleInDiameterMode: true, isInteger: false }
   }
-  
+
   return parameterMap[key] || { displayName: key, doubleInDiameterMode: false, isInteger: false }
 }
 
@@ -128,12 +127,12 @@ const formatParameterValue = (key: string, value: any): string => {
   if (typeof value === 'number') {
     const paramConfig = getParameterConfig(key)
     let displayValue = value
-    
+
     // Apply diameter mode doubling if applicable
     if (paramConfig.doubleInDiameterMode && diameterMode.value) {
       displayValue = value * 2
     }
-    
+
     // Format based on whether it's an integer parameter
     if (paramConfig.isInteger) {
       return Math.round(displayValue).toString()
@@ -400,8 +399,8 @@ const setupBackplot = () => {
     renderer.onBeforeRender(() => {
       animationTime++
 
-      let currentLine = 0
-      let lineProgress = 0
+      let currentLine: number
+      let lineProgress: number
 
       if (animationTime < pauseDuration) {
         // Initial pause - stay at beginning

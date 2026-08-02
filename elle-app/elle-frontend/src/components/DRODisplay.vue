@@ -11,16 +11,16 @@ const emit = defineEmits([
 ])
 
 enum NumberEntry {
-  // eslint-disable-next-line no-unused-vars
+
   xpos = 1,
-  // eslint-disable-next-line no-unused-vars
+
   zpos = 2,
-  // eslint-disable-next-line no-unused-vars
+
   apos = 3,
-  // eslint-disable-next-line no-unused-vars
+
   xpitch = 4,
-  // eslint-disable-next-line no-unused-vars
-  zpitch = 5,
+
+  zpitch = 5
 }
 
 interface Props {
@@ -70,12 +70,12 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 enum ZeroEntry {
-  // eslint-disable-next-line no-unused-vars
+
   xpos0 = 1,
-  // eslint-disable-next-line no-unused-vars
+
   zpos0 = 2,
-  // eslint-disable-next-line no-unused-vars
-  apos0 = 3,
+
+  apos0 = 3
 }
 
 const numberTotalLength: number = 10

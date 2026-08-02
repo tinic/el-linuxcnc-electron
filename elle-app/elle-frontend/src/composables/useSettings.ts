@@ -1,157 +1,60 @@
-import { ref, watch } from 'vue'
+import { reactive, ref, toRefs, watch } from 'vue'
+import { SettingsSchema, settingsDefaults } from '../../../elle-electron/settings-schema'
 
-// Import tool types
-interface Tool {
-  id: number
-  offsetX: number
-  offsetZ: number
-  description: string
-}
+// Persisted state — the field list comes from the schema, the single source
+// of truth shared with the electron main process. Adding a setting only
+// requires a schema change; load, save, and typing all follow.
+const persisted = reactive(settingsDefaults())
 
-// Global state - created once and shared across all components
+// Runtime-only state (never persisted)
 const metric = ref(true)
-const diameterMode = ref(false)
-const defaultMetricOnStartup = ref(true)
-const selectedThreadingTab = ref(0)
-const selectedTurningTab = ref(0)
-const selectedPitchTab = ref([0, 0]) // [x-axis, z-axis]
-const pitchX = ref(0.0)
-const pitchZ = ref(0.0)
 const isQuitting = ref(false)
 
-// Encoder scale factors
-const encoderScaleZ = ref(0.001)
-const encoderScaleX = ref(-0.001)
+const isElectron = () => navigator.userAgent.toLowerCase().includes(' electron/')
 
-// Tool table state
-const tools = ref<Tool[]>([
-  { id: 0, offsetX: 0, offsetZ: 0, description: 'Reference Tool' },
-  { id: 1, offsetX: 0, offsetZ: 0, description: '' },
-  { id: 2, offsetX: 0, offsetZ: 0, description: '' },
-  { id: 3, offsetX: 0, offsetZ: 0, description: '' },
-  { id: 4, offsetX: 0, offsetZ: 0, description: '' },
-  { id: 5, offsetX: 0, offsetZ: 0, description: '' },
-  { id: 6, offsetX: 0, offsetZ: 0, description: '' },
-  { id: 7, offsetX: 0, offsetZ: 0, description: '' },
-  { id: 8, offsetX: 0, offsetZ: 0, description: '' },
-  { id: 9, offsetX: 0, offsetZ: 0, description: '' }
-])
+const loadSettings = async () => {
+  if (!isElectron()) {
+    return
+  }
+  try {
+    if (window.settings && window.settings.get) {
+      const stored = await window.settings.get()
+      Object.assign(persisted, SettingsSchema.parse(stored))
+      metric.value = persisted.defaultMetricOnStartup
+    } else {
+      console.error('window.settings is not available')
+    }
+  } catch (error) {
+    console.error('Failed to load settings:', error)
+  }
+}
 
-const currentToolIndex = ref(0)
-const currentToolOffsetX = ref(0)
-const currentToolOffsetZ = ref(0)
+const saveSettings = async () => {
+  if (!isElectron()) {
+    return
+  }
+  try {
+    // Parsing through the schema turns the reactive proxy into a plain,
+    // structured-clone-safe object — refs and proxies never cross IPC.
+    await window.settings.save(SettingsSchema.parse(persisted))
+  } catch (error) {
+    console.error('Failed to save settings:', error)
+  }
+}
 
-// Flag to ensure watcher is only set up once
-let isWatcherSetup = false
+// Auto-save on any change, including nested tool edits (module-level, so it
+// is registered exactly once). Never gate this on isQuitting — the final
+// save during quit must always go through.
+watch(persisted, () => {
+  saveSettings()
+}, { deep: true })
 
 export function useSettings() {
-
-  const loadSettings = async () => {
-    const userAgent = navigator.userAgent.toLowerCase()
-    if (userAgent.indexOf(' electron/') > -1) {
-      try {
-        if (window.settings && window.settings.get) {
-          const settings = await window.settings.get()
-          
-          diameterMode.value = settings.diameterMode
-          defaultMetricOnStartup.value = settings.defaultMetricOnStartup
-          selectedThreadingTab.value = settings.selectedThreadingTab || 0
-          selectedTurningTab.value = settings.selectedTurningTab || 0
-          selectedPitchTab.value = settings.selectedPitchTab || [0, 0]
-          pitchX.value = settings.pitchX || 0.0
-          pitchZ.value = settings.pitchZ || 0.0
-          metric.value = settings.defaultMetricOnStartup
-          
-          // Load encoder scale factors
-          if (settings.encoderScaleZ !== undefined) {
-            encoderScaleZ.value = settings.encoderScaleZ
-          }
-          if (settings.encoderScaleX !== undefined) {
-            encoderScaleX.value = settings.encoderScaleX
-          }
-          
-          // Load tool table
-          if (settings.tools && Array.isArray(settings.tools)) {
-            tools.value = settings.tools
-          }
-          
-          // Load current tool
-          if (settings.currentToolIndex !== undefined) {
-            currentToolIndex.value = settings.currentToolIndex
-          }
-          if (settings.currentToolOffsetX !== undefined) {
-            currentToolOffsetX.value = settings.currentToolOffsetX
-          }
-          if (settings.currentToolOffsetZ !== undefined) {
-            currentToolOffsetZ.value = settings.currentToolOffsetZ
-          }
-        } else {
-          console.error('window.settings is not available')
-        }
-      } catch (error) {
-        console.error('Failed to load settings:', error)
-      }
-    }
-  }
-
-  const saveSettings = async () => {
-    const userAgent = navigator.userAgent.toLowerCase()
-    if (userAgent.indexOf(' electron/') > -1) {
-      try {
-        // Convert reactive refs to plain values for serialization
-        const settingsToSave = {
-          diameterMode: diameterMode.value,
-          defaultMetricOnStartup: defaultMetricOnStartup.value,
-          selectedThreadingTab: selectedThreadingTab.value,
-          selectedTurningTab: selectedTurningTab.value,
-          selectedPitchTab: [...selectedPitchTab.value],
-          pitchX: pitchX.value,
-          pitchZ: pitchZ.value,
-          encoderScaleZ: encoderScaleZ.value,
-          encoderScaleX: encoderScaleX.value,
-          tools: tools.value.map(tool => ({
-            id: tool.id,
-            offsetX: tool.offsetX,
-            offsetZ: tool.offsetZ,
-            description: tool.description
-          })),
-          currentToolIndex: currentToolIndex.value,
-          currentToolOffsetX: currentToolOffsetX.value,
-          currentToolOffsetZ: currentToolOffsetZ.value
-        }
-
-        await window.settings.save(settingsToSave)
-      } catch (error) {
-        console.error('Failed to save settings:', error)
-      }
-    }
-  }
-
-  // Auto-save settings when they change (only set up once)
-  if (!isWatcherSetup) {
-    watch([diameterMode, defaultMetricOnStartup, selectedThreadingTab, selectedTurningTab, selectedPitchTab, pitchX, pitchZ, encoderScaleZ, encoderScaleX, tools, currentToolIndex, currentToolOffsetX, currentToolOffsetZ], () => {
-      saveSettings()
-    }, { deep: true })
-    isWatcherSetup = true
-  }
-
   return {
+    ...toRefs(persisted),
     metric,
-    diameterMode,
-    defaultMetricOnStartup,
-    selectedThreadingTab,
-    selectedTurningTab,
-    selectedPitchTab,
-    pitchX,
-    pitchZ,
-    encoderScaleZ,
-    encoderScaleX,
     isQuitting,
     loadSettings,
-    saveSettings,
-    tools,
-    currentToolIndex,
-    currentToolOffsetX,
-    currentToolOffsetZ
+    saveSettings
   }
 }
