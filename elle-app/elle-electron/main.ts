@@ -9,6 +9,7 @@ import type { BrowserWindowConstructorOptions } from 'electron'
 import { app, BrowserWindow, ipcMain, screen, nativeTheme } from 'electron'
 import { isDev } from './config.js'
 import { appConfig } from './electron-store/configuration.js'
+import { SettingsSchema } from './settings-schema.js'
 import type { ChildProcess } from 'node:child_process'
 import { spawn, spawnSync } from 'node:child_process'
 
@@ -73,44 +74,17 @@ async function createWindow() {
   }))
 }
 
-// Settings handlers (global)
-ipcMain.handle('getSettings', () => ({
-  diameterMode: (appConfig as any).get('setting.diameterMode'),
-  defaultMetricOnStartup: (appConfig as any).get('setting.defaultMetricOnStartup'),
-  selectedThreadingTab: (appConfig as any).get('setting.selectedThreadingTab', 0),
-  selectedTurningTab: (appConfig as any).get('setting.selectedTurningTab', 0),
-  selectedPitchTab: (appConfig as any).get('setting.selectedPitchTab', [0, 0]),
-  pitchX: (appConfig as any).get('setting.pitchX', 0.0),
-  pitchZ: (appConfig as any).get('setting.pitchZ', 0.0),
-  encoderScaleZ: (appConfig as any).get('setting.encoderScaleZ', 0.001),
-  encoderScaleX: (appConfig as any).get('setting.encoderScaleX', -0.001),
-  tools: (appConfig as any).get('setting.tools'),
-  currentToolIndex: (appConfig as any).get('setting.currentToolIndex', 0),
-  currentToolOffsetX: (appConfig as any).get('setting.currentToolOffsetX', 0),
-  currentToolOffsetZ: (appConfig as any).get('setting.currentToolOffsetZ', 0)
-}))
+// Settings handlers. The payload shape is defined once, in
+// settings-schema.ts — both handlers parse through the schema, so missing
+// fields get defaults and corrupt/unknown values can never propagate.
+ipcMain.handle('getSettings', () =>
+  SettingsSchema.parse((appConfig as any).get('setting', {}))
+)
 
-// IMPORTANT: This handler should save ALL settings passed from useSettings.ts
-// If you add new settings, make sure they're included both here AND in useSettings.ts
-// Do NOT create duplicate save logic elsewhere - use the useSettings saveSettings function
-ipcMain.handle('saveSettings', (event, settings) => {
-  const currentSettings = (appConfig as any).get('setting', {})
-  ;(appConfig as any).set('setting', {
-    ...currentSettings,
-    diameterMode: settings.diameterMode,
-    defaultMetricOnStartup: settings.defaultMetricOnStartup,
-    selectedThreadingTab: settings.selectedThreadingTab,
-    selectedTurningTab: settings.selectedTurningTab,
-    selectedPitchTab: settings.selectedPitchTab,
-    pitchX: settings.pitchX,
-    pitchZ: settings.pitchZ,
-    encoderScaleZ: settings.encoderScaleZ,
-    encoderScaleX: settings.encoderScaleX,
-    tools: settings.tools,
-    currentToolIndex: settings.currentToolIndex,
-    currentToolOffsetX: settings.currentToolOffsetX,
-    currentToolOffsetZ: settings.currentToolOffsetZ
-  })
+ipcMain.handle('saveSettings', (_event, settings) => {
+  // Spread keeps non-schema keys (e.g. appBounds) stored under 'setting'.
+  const current = (appConfig as any).get('setting', {})
+  ;(appConfig as any).set('setting', { ...current, ...SettingsSchema.parse(settings) })
   return true
 })
 
@@ -119,7 +93,7 @@ app.commandLine.appendSwitch('gtk-version', '3')
 app.whenReady().then(async () => {
   // Force dark mode for the entire application
   nativeTheme.themeSource = 'dark'
-  
+
   if (isDev) {
     try {
       const { installExt } = await import('./installDevTool.js')
