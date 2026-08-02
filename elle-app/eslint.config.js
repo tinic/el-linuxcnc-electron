@@ -1,4 +1,5 @@
 import js from '@eslint/js'
+import stylistic from '@stylistic/eslint-plugin'
 import tsPlugin from '@typescript-eslint/eslint-plugin'
 import tsParser from '@typescript-eslint/parser'
 import vuePlugin from 'eslint-plugin-vue'
@@ -68,6 +69,9 @@ export default [
     },
     rules: {
       ...tsPlugin.configs.recommended.rules,
+      // TypeScript itself validates identifier resolution; core no-undef
+      // false-positives on ambient lib types (Response, RequestInit, ...)
+      'no-undef': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
@@ -98,6 +102,12 @@ export default [
       '@typescript-eslint': tsPlugin
     },
     rules: {
+      'no-undef': 'off',
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_'
+      }],
       'vue/multi-word-component-names': 'off',
       'vue/no-reserved-component-names': 'off',
       'vue/max-attributes-per-line': ['error', {
@@ -117,26 +127,36 @@ export default [
     }
   },
   {
+    files: ['**/*.d.ts'],
+    rules: {
+      'no-undef': 'off',
+      '@typescript-eslint/triple-slash-reference': 'off'
+    }
+  },
+  {
     files: ['**/*.js', '**/*.ts', '**/*.vue'],
+    plugins: {
+      '@stylistic': stylistic
+    },
     rules: {
       'no-console': 'off',
       'no-debugger': 'warn',
-      'semi': ['error', 'never'],
-      'quotes': ['error', 'single', { avoidEscape: true }],
-      'comma-dangle': ['error', 'never'],
-      'indent': ['error', 2, { SwitchCase: 1 }],
-      'no-multiple-empty-lines': ['error', { max: 1 }],
-      'object-curly-spacing': ['error', 'always'],
-      'array-bracket-spacing': ['error', 'never'],
-      'space-before-function-paren': ['error', {
+      '@stylistic/semi': ['error', 'never'],
+      '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
+      '@stylistic/comma-dangle': ['error', 'never'],
+      '@stylistic/indent': ['error', 2, { SwitchCase: 1 }],
+      '@stylistic/no-multiple-empty-lines': ['error', { max: 1 }],
+      '@stylistic/object-curly-spacing': ['error', 'always'],
+      '@stylistic/array-bracket-spacing': ['error', 'never'],
+      '@stylistic/space-before-function-paren': ['error', {
         anonymous: 'always',
         named: 'never',
         asyncArrow: 'always'
       }],
-      'keyword-spacing': ['error', { before: true, after: true }],
-      'space-infix-ops': 'error',
-      'eol-last': ['error', 'always'],
-      'no-trailing-spaces': 'error',
+      '@stylistic/keyword-spacing': ['error', { before: true, after: true }],
+      '@stylistic/space-infix-ops': 'error',
+      '@stylistic/eol-last': ['error', 'always'],
+      '@stylistic/no-trailing-spaces': 'error',
       'no-var': 'error',
       'prefer-const': 'error',
       'prefer-template': 'error',

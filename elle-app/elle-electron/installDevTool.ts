@@ -1,7 +1,9 @@
-import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
+import { installExtension, VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 
 export async function installExt() {
-  await installExtension(VUEJS_DEVTOOLS)
-    .then(() => {})
-    .catch((_err) => {})
+  try {
+    await installExtension(VUEJS_DEVTOOLS)
+  } catch {
+    // devtools are best-effort in development; ignore failures
+  }
 }

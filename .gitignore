@@ -37,3 +37,9 @@ elle-app/node_modules
 elle-app/build
 
 **/.DS_Store
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
