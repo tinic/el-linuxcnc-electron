@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Build and publish .deb
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+          cache-dependency-path: |
+            elle-app/yarn.lock
+            elle-app/elle-frontend/yarn.lock
+
+      - name: Enable yarn
+        run: corepack enable
+
+      - name: Install dependencies (electron)
+        working-directory: elle-app
+        run: yarn install --frozen-lockfile
+
+      - name: Install dependencies (frontend)
+        working-directory: elle-app/elle-frontend
+        run: yarn install --frozen-lockfile
+
+      - name: Set version from tag
+        working-directory: elle-app
+        run: npx json -I -f package.json -e "this.version='${GITHUB_REF_NAME#v}'"
+
+      - name: Build application
+        working-directory: elle-app
+        run: yarn prod:rename && yarn build:front && yarn electron:build
+
+      - name: Package and publish release
+        working-directory: elle-app
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: yarn publish:github
