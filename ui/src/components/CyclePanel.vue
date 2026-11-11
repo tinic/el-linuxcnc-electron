@@ -1,0 +1,280 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+
+import {
+  applyThreadPreset,
+  applyTurningPreset,
+  cycles,
+  resetThreading,
+  resetTurning,
+  setThreading,
+  setTurning,
+  threadingFields,
+  turningFields,
+} from '../cycles'
+import { settle } from '../entry'
+import { clearPlan, panel, send, updatePreferences } from '../machine'
+import { threadSections, turningSections, type ThreadPreset, type TurningPreset } from '../presets'
+import type { ThreadingRequest, TurningRequest } from '../protocol'
+import BackplotCanvas from './BackplotCanvas.vue'
+import ModalDialog from './ModalDialog.vue'
+import ParamGrid from './ParamGrid.vue'
+import PresetPicker from './PresetPicker.vue'
+
+const choosingPreset = ref(false)
+const waitingForPlan = ref(false)
+
+const plan = computed(() => (panel.plan?.kind === cycles.selected ? panel.plan : null))
+const issues = computed(() => plan.value?.issues ?? [])
+const previewing = computed(
+  () =>
+    waitingForPlan.value &&
+    plan.value !== null &&
+    plan.value.issues.length === 0 &&
+    plan.value.error === '' &&
+    plan.value.backplot !== null,
+)
+const running = computed(() => panel.status?.task.program_running ?? false)
+
+const title = computed(() => {
+  if (cycles.selected === 'threading') {
+    return `Threading${cycles.threadingPreset ? ` · ${cycles.threadingPreset.name}` : ''}`
+  }
+  return `Turning${cycles.turningPreset ? ` · ${cycles.turningPreset}` : ''}`
+})
+
+function choose(kind: 'threading' | 'turning'): void {
+  settle()
+  cycles.selected = kind
+  clearPlan()
+  waitingForPlan.value = false
+}
+
+function onThreading(key: keyof ThreadingRequest, value: number | null): void {
+  setThreading(key, value)
+}
+
+function onTurning(key: keyof TurningRequest, value: number | null): void {
+  setTurning(key, value)
+}
+
+function reset(): void {
+  settle()
+  clearPlan()
+  if (cycles.selected === 'threading') {
+    resetThreading()
+  } else {
+    resetTurning()
+  }
+}
+
+function requestPlan(): void {
+  settle()
+  clearPlan()
+  waitingForPlan.value = true
+  if (cycles.selected === 'threading') {
+    send({ type: 'plan_threading', request: { ...cycles.threading } })
+  } else {
+    send({ type: 'plan_turning', request: { ...cycles.turning } })
+  }
+}
+
+function runCycle(): void {
+  waitingForPlan.value = false
+  send({ type: 'start_cycle' })
+  clearPlan()
+}
+
+function cancelPreview(): void {
+  waitingForPlan.value = false
+  clearPlan()
+}
+
+function stop(): void {
+  settle()
+  send({ type: 'abort_cycle' })
+}
+
+function pickThread(preset: ThreadPreset): void {
+  applyThreadPreset(preset)
+  choosingPreset.value = false
+}
+
+function pickTurning(preset: TurningPreset): void {
+  applyTurningPreset(preset)
+  choosingPreset.value = false
+}
+
+const previewRows = computed(() => {
+  const gcode = plan.value?.gcode ?? []
+  return gcode.filter((line) => !line.startsWith('('))
+})
+</script>
+
+<template>
+  <div class="cycles">
+    <section class="list">
+      <h2 class="section-title">Canned Cycles</h2>
+      <button class="option" :class="{ selected: cycles.selected === 'turning' }" @click="choose('turning')">
+        <span class="dot"></span>Turning
+      </button>
+      <button class="option" :class="{ selected: cycles.selected === 'threading' }" @click="choose('threading')">
+        <span class="dot"></span>Threading
+      </button>
+    </section>
+
+    <section class="form">
+      <h2 class="section-title">{{ title }}</h2>
+      <ParamGrid
+        v-if="cycles.selected === 'threading'"
+        prefix="threading"
+        :fields="threadingFields"
+        :values="cycles.threading"
+        :issues="issues"
+        :info="cycles.threadingPreset?.diameter ?? ''"
+        @change="onThreading"
+      />
+      <ParamGrid
+        v-else
+        prefix="turning"
+        :fields="turningFields"
+        :values="cycles.turning"
+        :issues="issues"
+        @change="onTurning"
+      />
+      <p v-if="issues.length > 0 || plan?.error" class="problems">
+        <template v-if="plan?.error">{{ plan.error }}</template>
+        <template v-for="issue in issues" :key="issue.field">{{ issue.field }} {{ issue.problem }}. </template>
+      </p>
+      <div class="actions">
+        <button
+          @click="
+            settle();
+            choosingPreset = true
+          "
+        >
+          Presets…
+        </button>
+        <button @click="reset">Reset</button>
+        <button class="go" :disabled="running" @click="requestPlan">⏵ Start</button>
+        <button class="stop" @click="stop">⏹ Stop</button>
+      </div>
+    </section>
+
+    <ModalDialog
+      v-if="choosingPreset"
+      :title="cycles.selected === 'threading' ? 'Threading presets' : 'Turning presets'"
+      @close="choosingPreset = false"
+    >
+      <PresetPicker
+        v-if="cycles.selected === 'threading'"
+        :sections="threadSections"
+        :tab="panel.settings?.thread_preset_tab ?? 0"
+        @tab="updatePreferences({ thread_preset_tab: $event })"
+        @pick="pickThread"
+      />
+      <PresetPicker
+        v-else
+        :sections="turningSections"
+        :tab="panel.settings?.turning_preset_tab ?? 0"
+        @tab="updatePreferences({ turning_preset_tab: $event })"
+        @pick="pickTurning"
+      />
+    </ModalDialog>
+
+    <ModalDialog v-if="previewing && plan?.backplot" :title="`${title} — preview`" wide @close="cancelPreview">
+      <div class="preview">
+        <BackplotCanvas :plot="plan.backplot" :start="plan.start" />
+        <aside>
+          <ol class="gcode">
+            <li v-for="(line, index) in previewRows" :key="index">{{ line }}</li>
+          </ol>
+          <div class="preview-actions">
+            <button @click="cancelPreview">Cancel</button>
+            <button class="go" @click="runCycle">⏵ Run cycle</button>
+          </div>
+        </aside>
+      </div>
+    </ModalDialog>
+  </div>
+</template>
+
+<style scoped>
+.cycles {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 28px;
+  height: 100%;
+}
+
+.list {
+  display: grid;
+  grid-auto-rows: max-content;
+  gap: var(--gap);
+  align-content: start;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding-left: 28px;
+  border-left: 1px solid var(--line);
+}
+
+.problems {
+  margin: 0;
+  color: var(--warn);
+  font-weight: 400;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(4, 140px);
+  justify-content: end;
+  gap: var(--gap);
+  margin-top: auto;
+}
+
+.actions button {
+  height: 48px;
+}
+
+.preview {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 16px;
+  height: 100%;
+}
+
+aside {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.gcode {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin: 0;
+  padding: 8px 8px 8px 44px;
+  border-radius: var(--radius);
+  background: var(--bg-sunken);
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.preview-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
+}
+
+.preview-actions button {
+  height: 60px;
+}
+</style>

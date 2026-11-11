@@ -1,0 +1,142 @@
+@font-face {
+  font-family: 'Iosevka';
+  font-weight: 400;
+  src: url('./assets/fonts/iosevka-ss11-regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Iosevka';
+  font-weight: 700;
+  src: url('./assets/fonts/iosevka-ss11-bold.ttf') format('truetype');
+}
+
+:root {
+  color-scheme: dark;
+
+  --bg: #1e1e1e;
+  --bg-sunken: #161616;
+  --panel: #232323;
+  --control: #333;
+  --control-hover: #3c3c3c;
+  --control-active: #4a4a4a;
+  --line: rgb(255 255 255 / 10%);
+  --text: #f2f2f2;
+  --text-dim: #9a9a9a;
+  --text-faint: #5c5c5c;
+  --accent: #3b82f6;
+  --accent-soft: rgb(59 130 246 / 22%);
+  --entry: #ef4444;
+  --go: #16a34a;
+  --stop: #dc2626;
+  --warn: #f59e0b;
+
+  --radius: 8px;
+  --gap: 8px;
+  --touch: 56px;
+
+  font-family: 'Iosevka', ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.3;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--control);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active {
+  background: var(--control-active);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}
+
+input {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0 12px;
+  height: 44px;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: var(--touch);
+  padding: 0 16px;
+  text-align: left;
+}
+
+.option .dot {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--text-dim);
+}
+
+.option.selected {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.option.selected .dot {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.section-title {
+  margin: 0 0 6px;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.go {
+  background: var(--go);
+}
+
+.stop {
+  background: var(--stop);
+}
