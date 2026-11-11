@@ -2,11 +2,17 @@
 # LinuxCNC's headers are not warning-clean, so they are included as SYSTEM headers and only from
 # the .cpp files here; nothing outside this directory sees them.
 
-find_path(ELLE_LINUXCNC_INCLUDE_DIR hal.h PATH_SUFFIXES linuxcnc REQUIRED)
-find_library(ELLE_LINUXCNC_HAL linuxcnchal REQUIRED)
-find_library(ELLE_LINUXCNC_NML nml REQUIRED)
-find_library(ELLE_LINUXCNC_EMC NAMES liblinuxcnc.a linuxcnc REQUIRED)
-find_library(ELLE_LINUXCNC_INI linuxcncini REQUIRED)
+find_path(ELLE_LINUXCNC_INCLUDE_DIR hal.h PATH_SUFFIXES linuxcnc)
+find_library(ELLE_LINUXCNC_HAL linuxcnchal)
+find_library(ELLE_LINUXCNC_NML nml)
+find_library(ELLE_LINUXCNC_EMC NAMES liblinuxcnc.a linuxcnc)
+find_library(ELLE_LINUXCNC_INI linuxcncini)
+if(NOT (ELLE_LINUXCNC_INCLUDE_DIR AND ELLE_LINUXCNC_HAL AND ELLE_LINUXCNC_NML AND ELLE_LINUXCNC_EMC
+        AND ELLE_LINUXCNC_INI))
+  message(WARNING "LinuxCNC development files not found (linuxcnc-uspace-dev): the LinuxCNC "
+                  "adapters and the elle executable are not built.")
+  return()
+endif()
 
 add_library(elle_linuxcnc STATIC src/lathe_component.cpp src/task_client.cpp)
 add_library(elle::linuxcnc ALIAS elle_linuxcnc)

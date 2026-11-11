@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  panel:
+    name: Operator panel (type check, lint, tests, build)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
+
+  backend:
+    name: Backend (${{ matrix.preset }})
+    runs-on: ubuntu-24.04
+    # GCC 16 on Debian trixie. LinuxCNC and WebKitGTK are not installed, so the core, app and
+    # their tests are built; the HAL/NML adapters and the window need the real machine's packages.
+    container: gcc:16.2.0-trixie
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [dev, release, tsan]
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install CMake 4 and Ninja
+        working-directory: /tmp
+        run: |
+          curl -fsSLO https://github.com/Kitware/CMake/releases/download/v4.4.5/cmake-4.4.5-linux-x86_64.tar.gz
+          curl -fsSLO https://github.com/Kitware/CMake/releases/download/v4.4.5/cmake-4.4.5-SHA-256.txt
+          grep cmake-4.4.5-linux-x86_64.tar.gz cmake-4.4.5-SHA-256.txt | sha256sum -c -
+          tar -xzf cmake-4.4.5-linux-x86_64.tar.gz -C /opt
+          echo /opt/cmake-4.4.5-linux-x86_64/bin >> "$GITHUB_PATH"
+          apt-get update && apt-get install -y --no-install-recommends ninja-build pkg-config
+      - name: Configure
+        run: >
+          cmake --preset ${{ matrix.preset }}
+          -DCMAKE_CXX_COMPILER=g++ -DCMAKE_MAKE_PROGRAM=ninja
+          -DELLE_ENABLE_CLANG_TIDY=OFF -DELLE_ENABLE_CPPCHECK=OFF
+      - name: Build
+        run: cmake --build --preset ${{ matrix.preset }}
+      - name: Test
+        run: ctest --preset ${{ matrix.preset }}

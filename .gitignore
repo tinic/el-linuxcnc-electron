@@ -31,9 +31,8 @@
 *.out
 *.app
 
-elle-app/dist
-elle-app/dist_electron
-elle-app/node_modules
-elle-app/build
+backend/build/
+ui/node_modules/
+ui/dist/
 
 **/.DS_Store

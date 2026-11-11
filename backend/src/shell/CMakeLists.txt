@@ -1,6 +1,10 @@
 # The elle executable: GTK/WebKit window plus wiring. Built only when WebKitGTK's development files
 # are installed (libwebkit2gtk-4.1-dev); everything else builds and tests without them.
 
+if(NOT TARGET elle_linuxcnc)
+  return()
+endif()
+
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(ELLE_WEBKIT IMPORTED_TARGET webkit2gtk-4.1 gtk+-3.0)
 
