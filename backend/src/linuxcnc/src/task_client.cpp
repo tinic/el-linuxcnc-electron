@@ -1,0 +1,258 @@
+#include <elle/linuxcnc/task_client.hpp>
+
+#include <algorithm>
+#include <chrono>
+#include <cstring>
+#include <expected>
+#include <filesystem>
+#include <format>
+#include <memory>
+#include <optional>
+#include <span>
+#include <string>
+#include <string_view>
+#include <thread>
+#include <utility>
+#include <vector>
+
+#include <cmd_msg.hh>
+#include <emc.hh>
+#include <emc_nml.hh>
+#include <nml.hh>
+#include <rcs.hh>
+#include <stat_msg.hh>
+
+namespace elle::linuxcnc {
+
+namespace {
+
+using Clock = std::chrono::steady_clock;
+
+/// Interval between status polls while waiting, as in LinuxCNC's own Python binding.
+constexpr auto poll_interval = std::chrono::milliseconds{10};
+
+auto to_emc(core::MachineState state) -> EMC_TASK_STATE
+{
+    switch (state) {
+    case core::MachineState::estop:
+        return EMC_TASK_STATE::ESTOP;
+    case core::MachineState::estop_reset:
+        return EMC_TASK_STATE::ESTOP_RESET;
+    case core::MachineState::off:
+        return EMC_TASK_STATE::OFF;
+    case core::MachineState::on:
+    default:
+        return EMC_TASK_STATE::ON;
+    }
+}
+
+auto from_emc(EMC_TASK_STATE state) -> core::MachineState
+{
+    switch (state) {
+    case EMC_TASK_STATE::ESTOP_RESET:
+        return core::MachineState::estop_reset;
+    case EMC_TASK_STATE::OFF:
+        return core::MachineState::off;
+    case EMC_TASK_STATE::ON:
+        return core::MachineState::on;
+    case EMC_TASK_STATE::ESTOP:
+    default:
+        return core::MachineState::estop;
+    }
+}
+
+auto to_emc(core::TaskMode mode) -> EMC_TASK_MODE
+{
+    switch (mode) {
+    case core::TaskMode::manual:
+        return EMC_TASK_MODE::MANUAL;
+    case core::TaskMode::automatic:
+        return EMC_TASK_MODE::AUTO;
+    case core::TaskMode::mdi:
+    default:
+        return EMC_TASK_MODE::MDI;
+    }
+}
+
+auto from_emc(EMC_TASK_MODE mode) -> core::TaskMode
+{
+    switch (mode) {
+    case EMC_TASK_MODE::AUTO:
+        return core::TaskMode::automatic;
+    case EMC_TASK_MODE::MDI:
+        return core::TaskMode::mdi;
+    case EMC_TASK_MODE::MANUAL:
+    default:
+        return core::TaskMode::manual;
+    }
+}
+
+auto waiting_for_motion_or_io(EMC_TASK_EXEC state) -> bool
+{
+    return state == EMC_TASK_EXEC::WAITING_FOR_MOTION ||
+           state == EMC_TASK_EXEC::WAITING_FOR_MOTION_QUEUE ||
+           state == EMC_TASK_EXEC::WAITING_FOR_IO;
+}
+
+/// Text of a fixed-size, NUL-terminated NML string field.
+auto text_of(std::span<const char> field) -> std::string
+{
+    const auto end = std::ranges::find(field, '\0');
+    return {field.begin(), end};
+}
+
+} // namespace
+
+struct TaskClient::Channels {
+    std::unique_ptr<RCS_CMD_CHANNEL> command{};
+    std::unique_ptr<RCS_STAT_CHANNEL> status{};
+    std::unique_ptr<NML> errors{};
+    int serial{};
+
+    /// The status buffer, if the latest message in it is a task status.
+    [[nodiscard]] auto latest_status() -> EMC_STAT*
+    {
+        if (status->peek() != EMC_STAT_TYPE) {
+            return nullptr;
+        }
+        return static_cast<EMC_STAT*>(status->get_address());
+    }
+
+    /// Sends a command and waits until task has received it (echoed its serial number).
+    auto send(RCS_CMD_MSG& message) -> std::expected<void, core::TaskError>
+    {
+        if (command->write(&message) != 0) {
+            return std::unexpected{core::TaskError::write_failed};
+        }
+        serial = message.serial_number;
+        const auto deadline = Clock::now() + core::TaskPort::default_timeout;
+        while (Clock::now() < deadline) {
+            if (const EMC_STAT* stat = latest_status();
+                stat != nullptr && stat->echo_serial_number - serial >= 0) {
+                return {};
+            }
+            std::this_thread::sleep_for(poll_interval);
+        }
+        return std::unexpected{core::TaskError::not_acknowledged};
+    }
+};
+
+auto TaskClient::connect(const std::filesystem::path& nml_file)
+    -> std::expected<TaskClient, std::string>
+{
+    auto channels = std::make_unique<Channels>();
+    channels->command = std::make_unique<RCS_CMD_CHANNEL>(emcFormat, "emcCommand", "xemc",
+                                                          nml_file.c_str());
+    channels->status = std::make_unique<RCS_STAT_CHANNEL>(emcFormat, "emcStatus", "xemc",
+                                                          nml_file.c_str());
+    channels->errors = std::make_unique<NML>(emcFormat, "emcError", "xemc", nml_file.c_str());
+    if (channels->command->valid() == 0 || channels->status->valid() == 0 ||
+        channels->errors->valid() == 0) {
+        return std::unexpected{
+            std::format("cannot open the LinuxCNC NML channels from {}", nml_file.string())};
+    }
+    return TaskClient{std::move(channels)};
+}
+
+TaskClient::TaskClient(std::unique_ptr<Channels> channels) noexcept
+    : channels_{std::move(channels)}
+{
+}
+
+TaskClient::TaskClient(TaskClient&& other) noexcept = default;
+auto TaskClient::operator=(TaskClient&& other) noexcept -> TaskClient& = default;
+TaskClient::~TaskClient() = default;
+
+auto TaskClient::status() -> std::optional<core::TaskStatus>
+{
+    const EMC_STAT* stat = channels_->latest_status();
+    if (stat == nullptr) {
+        return std::nullopt;
+    }
+    return core::TaskStatus{
+        .state = from_emc(stat->task.state),
+        .mode = from_emc(stat->task.mode),
+        .motion_enabled = stat->motion.traj.enabled,
+        .interpreter_idle = stat->task.interpState == EMC_TASK_INTERP::IDLE,
+        .waiting_for_motion_or_io = waiting_for_motion_or_io(stat->task.execState),
+        .execution_error = stat->task.execState == EMC_TASK_EXEC::ERROR,
+        .call_level = stat->task.callLevel,
+    };
+}
+
+auto TaskClient::set_state(core::MachineState state) -> std::expected<void, core::TaskError>
+{
+    EMC_TASK_SET_STATE message{};
+    message.state = to_emc(state);
+    return channels_->send(message);
+}
+
+auto TaskClient::set_mode(core::TaskMode mode) -> std::expected<void, core::TaskError>
+{
+    EMC_TASK_SET_MODE message{};
+    message.mode = to_emc(mode);
+    return channels_->send(message);
+}
+
+auto TaskClient::mdi(std::string_view command) -> std::expected<void, core::TaskError>
+{
+    EMC_TASK_PLAN_EXECUTE message{};
+    const std::span<char> buffer{message.command};
+    if (command.size() >= buffer.size()) {
+        return std::unexpected{core::TaskError::command_too_long};
+    }
+    std::ranges::fill(buffer, '\0');
+    std::ranges::copy(command, buffer.begin());
+    return channels_->send(message);
+}
+
+auto TaskClient::abort() -> std::expected<void, core::TaskError>
+{
+    EMC_TASK_ABORT message{};
+    return channels_->send(message);
+}
+
+auto TaskClient::reset_interpreter() -> std::expected<void, core::TaskError>
+{
+    EMC_TASK_PLAN_INIT message{};
+    return channels_->send(message);
+}
+
+auto TaskClient::wait_complete(std::chrono::milliseconds timeout) -> std::expected<void, core::TaskError>
+{
+    const auto deadline = Clock::now() + timeout;
+    while (Clock::now() < deadline) {
+        if (const EMC_STAT* stat = channels_->latest_status(); stat != nullptr) {
+            const int serial_diff = stat->echo_serial_number - channels_->serial;
+            if (serial_diff > 0) {
+                return {};
+            }
+            if (serial_diff == 0 && stat->status == RCS_STATUS::DONE) {
+                return {};
+            }
+            if (serial_diff == 0 && stat->status == RCS_STATUS::ERROR) {
+                return std::unexpected{core::TaskError::failed};
+            }
+        }
+        std::this_thread::sleep_for(poll_interval);
+    }
+    return std::unexpected{core::TaskError::timed_out};
+}
+
+auto TaskClient::operator_messages() -> std::vector<std::string>
+{
+    std::vector<std::string> messages{};
+    for (NMLTYPE type = channels_->errors->read(); type > 0; type = channels_->errors->read()) {
+        auto* message = channels_->errors->get_address();
+        if (type == EMC_OPERATOR_ERROR_TYPE) {
+            messages.push_back(text_of(static_cast<EMC_OPERATOR_ERROR*>(message)->error));
+        } else if (type == EMC_OPERATOR_TEXT_TYPE) {
+            messages.push_back(text_of(static_cast<EMC_OPERATOR_TEXT*>(message)->text));
+        } else if (type == EMC_OPERATOR_DISPLAY_TYPE) {
+            messages.push_back(text_of(static_cast<EMC_OPERATOR_DISPLAY*>(message)->display));
+        }
+    }
+    return messages;
+}
+
+} // namespace elle::linuxcnc

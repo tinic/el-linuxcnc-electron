@@ -1,0 +1,57 @@
+# Every check is enabled and every finding is an error. Each exclusion below names the reason; only
+# checks that encode another project's conventions or target other platforms are switched off.
+Checks: >
+  *,
+  -abseil-*,
+  -altera-*,
+  -android-*,
+  -fuchsia-*,
+  -llvmlibc-*,
+  -zircon-*,
+  -llvm-header-guard,
+  -llvm-include-order
+# abseil-*      rules for code using the Abseil library; we do not use Abseil.
+# altera-*      tuning rules for Intel FPGA OpenCL kernels.
+# android-*     Android/bionic API rules.
+# fuchsia-*     Fuchsia OS style: bans default arguments, operator overloading and multiple
+#               inheritance, including calls into the standard library that use them.
+# llvmlibc-*    LLVM libc's own layout: every definition inside LIBC_NAMESPACE, every callee
+#               re-implemented there.
+# zircon-*      Fuchsia kernel rules.
+# llvm-header-guard   requires LLVM-style include guards; we use #pragma once.
+# llvm-include-order  LLVM's include order; ordering is owned by .clang-format (IncludeBlocks).
+
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*/(src|test|app)/.*'
+SystemHeaders: false
+FormatStyle: file
+
+CheckOptions:
+  # Aggregates with all-public data are the intended style for plain value types.
+  misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: true
+  cppcoreguidelines-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: true
+  # Machine axes are called x, z and a; anything else must be at least three characters.
+  readability-identifier-length.IgnoredVariableNames: '^[xza]$'
+  readability-identifier-length.IgnoredParameterNames: '^[xza]$'
+  readability-identifier-naming.NamespaceCase: lower_case
+  readability-identifier-naming.ClassCase: CamelCase
+  readability-identifier-naming.StructCase: CamelCase
+  readability-identifier-naming.EnumCase: CamelCase
+  readability-identifier-naming.EnumConstantCase: lower_case
+  readability-identifier-naming.FunctionCase: lower_case
+  readability-identifier-naming.VariableCase: lower_case
+  readability-identifier-naming.ParameterCase: lower_case
+  readability-identifier-naming.MemberCase: lower_case
+  readability-identifier-naming.PrivateMemberSuffix: '_'
+  readability-identifier-naming.ConstexprVariableCase: lower_case
+  readability-identifier-naming.TemplateParameterCase: CamelCase
+  readability-identifier-naming.TypeAliasCase: CamelCase
+  readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+  bugprone-easily-swappable-parameters.MinimumLength: 2
+  readability-function-cognitive-complexity.Threshold: 20
+  readability-function-size.LineThreshold: 60
+  readability-function-size.StatementThreshold: 60
+  readability-function-size.ParameterThreshold: 4
+  cppcoreguidelines-avoid-do-while.IgnoreMacros: true
+  readability-magic-numbers.IgnorePowersOf2IntegerValues: false
+  misc-include-cleaner.IgnoreHeaders: 'glaze/.*;catch2/.*'

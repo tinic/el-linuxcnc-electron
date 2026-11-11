@@ -1,0 +1,38 @@
+BasedOnStyle: LLVM
+Standard: Latest
+ColumnLimit: 100
+IndentWidth: 4
+AccessModifierOffset: -4
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakTemplateDeclarations: Yes
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: true
+  AfterClass: false
+  AfterStruct: false
+  AfterNamespace: false
+  AfterEnum: false
+  AfterControlStatement: Never
+  BeforeElse: false
+  BeforeCatch: false
+BreakConstructorInitializers: BeforeComma
+PackConstructorInitializers: Never
+DerivePointerAlignment: false
+PointerAlignment: Left
+QualifierAlignment: Left
+FixNamespaceComments: true
+InsertBraces: true
+InsertNewlineAtEOF: true
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<elle/'
+    Priority: 1
+  - Regex: '^<(glaze|catch2)/'
+    Priority: 3
+  - Regex: '^<[a-z_]+>$'
+    Priority: 4
+  - Regex: '.*'
+    Priority: 2
+SortIncludes: CaseSensitive

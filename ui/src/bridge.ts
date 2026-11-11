@@ -1,8 +1,8 @@
 // Transport between the panel and the machine.
 //
 // Inside the elle executable the page talks to C++ in-process: commands go out through WebKit's
-// script message handler `elle`, and the executable calls `window.elleReceive(json)` with every
-// message for the page. There is no network socket. In a plain browser (UI development) a built-in
+// script message handler `elle`, and the executable calls `window.elleReceive(message)` with every
+// message for the page (the JSON is evaluated as a JavaScript object literal). There is no network socket. In a plain browser (UI development) a built-in
 // simulator answers instead.
 
 import type { FromMachine, ToMachine } from './protocol'
@@ -23,14 +23,13 @@ interface ScriptMessageHandler {
 declare global {
   interface Window {
     webkit?: { messageHandlers?: { elle?: ScriptMessageHandler } }
-    elleReceive?: (json: string) => void
+    elleReceive?: (message: FromMachine) => void
   }
 }
 
 function webkitTransport(handler: ScriptMessageHandler): Transport {
   const listeners: Listener[] = []
-  window.elleReceive = (json: string): void => {
-    const message = JSON.parse(json) as FromMachine
+  window.elleReceive = (message: FromMachine): void => {
     for (const listener of listeners) {
       listener(message)
     }

@@ -1,0 +1,207 @@
+{
+  "version": 10,
+  "cmakeMinimumRequired": {
+    "major": 4,
+    "minor": 0,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "$env{HOME}/.local/gcc-16/bin/g++-16",
+        "CMAKE_MAKE_PROGRAM": "$env{HOME}/.local/bin/ninja"
+      }
+    },
+    {
+      "name": "dev",
+      "displayName": "Development: debug, checked libstdc++, ASan + UBSan, all analyzers",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "ELLE_ENABLE_LIBSTDCXX_DEBUG": "ON",
+        "ELLE_SANITIZERS": "address;undefined"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release: optimized and hardened",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "ON"
+      }
+    },
+    {
+      "name": "tsan",
+      "displayName": "ThreadSanitizer",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "ELLE_ENABLE_HARDENING": "OFF",
+        "ELLE_SANITIZERS": "thread",
+        "ELLE_ENABLE_CLANG_TIDY": "OFF",
+        "ELLE_ENABLE_CPPCHECK": "OFF"
+      }
+    },
+    {
+      "name": "coverage",
+      "displayName": "Coverage (gcov)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "ELLE_ENABLE_COVERAGE": "ON",
+        "ELLE_ENABLE_CLANG_TIDY": "OFF",
+        "ELLE_ENABLE_CPPCHECK": "OFF"
+      }
+    },
+    {
+      "name": "analyze",
+      "displayName": "Every static analyzer, required: clang-tidy, cppcheck, IWYU, -fanalyzer",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "ELLE_ENABLE_GCC_ANALYZER": "ON",
+        "ELLE_ENABLE_IWYU": "ON",
+        "ELLE_REQUIRE_ANALYZERS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "dev",
+      "configurePreset": "dev"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
+    },
+    {
+      "name": "tsan",
+      "configurePreset": "tsan"
+    },
+    {
+      "name": "coverage",
+      "configurePreset": "coverage"
+    },
+    {
+      "name": "analyze",
+      "configurePreset": "analyze"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": false
+      }
+    },
+    {
+      "name": "dev",
+      "inherits": "base",
+      "configurePreset": "dev"
+    },
+    {
+      "name": "release",
+      "inherits": "base",
+      "configurePreset": "release"
+    },
+    {
+      "name": "tsan",
+      "inherits": "base",
+      "configurePreset": "tsan"
+    },
+    {
+      "name": "coverage",
+      "inherits": "base",
+      "configurePreset": "coverage"
+    },
+    {
+      "name": "analyze",
+      "inherits": "base",
+      "configurePreset": "analyze"
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "check-analyze",
+      "displayName": "Configure, build and test: analyze",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "analyze"
+        },
+        {
+          "type": "build",
+          "name": "analyze"
+        },
+        {
+          "type": "test",
+          "name": "analyze"
+        }
+      ]
+    },
+    {
+      "name": "check-dev",
+      "displayName": "Configure, build and test: dev",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "dev"
+        },
+        {
+          "type": "build",
+          "name": "dev"
+        },
+        {
+          "type": "test",
+          "name": "dev"
+        }
+      ]
+    },
+    {
+      "name": "check-tsan",
+      "displayName": "Configure, build and test: tsan",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "tsan"
+        },
+        {
+          "type": "build",
+          "name": "tsan"
+        },
+        {
+          "type": "test",
+          "name": "tsan"
+        }
+      ]
+    },
+    {
+      "name": "check-release",
+      "displayName": "Configure, build and test: release",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "release"
+        },
+        {
+          "type": "build",
+          "name": "release"
+        },
+        {
+          "type": "test",
+          "name": "release"
+        }
+      ]
+    }
+  ]
+}

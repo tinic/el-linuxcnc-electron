@@ -1,0 +1,29 @@
+# Nets that use the lathe.* pins of the elle display program. LinuxCNC cannot run these from
+# lathe.hal because elle starts after it; elle runs this file (POSTGUI_HALFILE) once its HAL
+# component is ready. Signals named here are partly wired up in lathe.hal already.
+
+net control-source <= lathe.control_source
+net mux-z-stepper-position-fb => lathe.position_z_encoder
+net mux-x-stepper-position-fb => lathe.position_x_encoder
+net mux-z-position-fb => lathe.position_z
+net mux-x-position-fb => lathe.position_x
+net mux-a-position-rv => lathe.position_a
+net mux-z-reset <= lathe.reset_z
+net mux-x-reset <= lathe.reset_x
+net mux-z-encoder-scale <= lathe.scale_encoder_z
+net mux-x-encoder-scale <= lathe.scale_encoder_x
+net z-stepper-enable <= lathe.enable_stepper_z 
+net z-enable <= lathe.enable_z
+net x-stepper-enable <= lathe.enable_stepper_x 
+net x-enable <= lathe.enable_x
+net z-offset-encoder <= lathe.offset_z_encoder
+net z-forward <= lathe.forward_z
+net z-offset-stepper <= lathe.offset_z_stepper
+net z-control-type <= lathe.control_z_type
+net z-velocity-cmd <= lathe.velocity_z_cmd
+net x-offset-encoder <= lathe.offset_x_encoder
+net x-forward <= lathe.forward_x
+net x-offset-stepper <= lathe.offset_x_stepper
+net x-control-type <= lathe.control_x_type
+net x-velocity-cmd <= lathe.velocity_x_cmd
+net spindle-r-rps => lathe.speed_rps
