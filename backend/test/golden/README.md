@@ -20,5 +20,5 @@ python3 -I oracle/expand.py lathe_halcomp.py derived.json golden.json
 python3 -I oracle/reshape.py golden.json cycles.json
 ```
 
-These scripts depend on the original code and exist only to document and reproduce how the data was
-made. They are removed together with `elle-app/`.
+The scripts import the original code, which was removed after the rewrite; run them from a checkout
+of `a587f56` (for example `git worktree add /tmp/elle-original a587f56`).

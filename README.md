@@ -7,7 +7,9 @@ in any feed direction, jogging, and threading and turning cycles with a preview.
 The machine must have stepper drivers with enable inputs wired, linear encoders on X and Z, and a
 spindle encoder.
 
-![Elle](elle-app.png)
+![Manual mode](docs/panel-manual.png)
+![Threading](docs/panel-threading.png)
+![Cycle preview](docs/panel-preview.png)
 
 ## How it fits together
 
@@ -31,7 +33,8 @@ the network.
 
 ## Building
 
-Requirements: GCC 16, CMake 4, Ninja, Node 22, LinuxCNC 2.9+ with `linuxcnc-uspace-dev`, and
+Requirements: GCC 16 (`tools/build-gcc16.sh` builds it into `~/.local/gcc-16`; `bootstrap.sh`
+installs everything else), CMake 4, Ninja, Node 22, LinuxCNC 2.9+ with `linuxcnc-uspace-dev`, and
 `libwebkit2gtk-4.1-dev`. The static analyzers (clang-tidy 19, cppcheck, include-what-you-use)
 are optional for development builds and required by the `analyze` preset.
 
