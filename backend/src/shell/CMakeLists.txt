@@ -23,6 +23,8 @@ set_target_properties(PkgConfig::ELLE_WEBKIT PROPERTIES INTERFACE_SYSTEM_INCLUDE
 elle_enable_analyzers(elle_panel_window)
 
 add_executable(elle main.cpp)
+target_compile_definitions(elle PRIVATE
+                           ELLE_SOURCE_UI_DIRECTORY="${PROJECT_SOURCE_DIR}/../ui/dist")
 target_link_libraries(elle PRIVATE elle::app elle::linuxcnc elle_panel_window
                                    elle::project_options)
 elle_enable_analyzers(elle)

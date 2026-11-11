@@ -57,7 +57,7 @@ public:
     }
 
 private:
-    elle::linuxcnc::LatheComponent component_{};
+    elle::linuxcnc::LatheComponent component_;
 };
 
 /// Runs a program and waits for it, without a shell.
@@ -90,19 +90,17 @@ auto executable_directory() -> std::filesystem::path
     return error ? std::filesystem::current_path() : self.parent_path();
 }
 
-/// Built panel: --ui, else next to the build tree (development), else the installed copy.
+/// Built panel: --ui, else the installed copy, else the source tree's build (development).
 auto ui_directory(const Options& options) -> std::filesystem::path
 {
     if (options.ui_directory.has_value()) {
         return *options.ui_directory;
     }
-    for (const auto& candidate : {executable_directory() / "../../../ui/dist",
-                                  executable_directory() / "../share/elle/ui"}) {
-        if (std::filesystem::exists(candidate / "index.html")) {
-            return std::filesystem::weakly_canonical(candidate);
-        }
+    const std::filesystem::path installed = executable_directory() / "../share/elle/ui";
+    if (std::filesystem::exists(installed / "index.html")) {
+        return std::filesystem::weakly_canonical(installed);
     }
-    return executable_directory() / "../share/elle/ui";
+    return ELLE_SOURCE_UI_DIRECTORY;
 }
 
 /// The machine side: HAL component, post-GUI wiring and NML connection, or the simulation.
