@@ -22,37 +22,49 @@ constexpr double max_cut_mult = 1.0;
 constexpr double max_extra_passes = 10.0;
 constexpr double max_taper_deg = 45.0;
 
+struct Range {
+    double low{};
+    double high{};
+};
+
 class Checker {
 public:
-    auto required(std::string_view field, const std::optional<double>& value) -> bool
+    /// The value if it was entered and is a finite number; records an issue if it is not finite.
+    auto entered(std::string_view field, const std::optional<double>& value)
+        -> std::optional<double>
+    {
+        if (!value.has_value()) {
+            return std::nullopt;
+        }
+        if (!std::isfinite(*value)) {
+            add(field, "must be a number");
+            return std::nullopt;
+        }
+        return value;
+    }
+
+    auto required(std::string_view field, const std::optional<double>& value)
+        -> std::optional<double>
     {
         if (!value.has_value()) {
             add(field, "is required");
-            return false;
+            return std::nullopt;
         }
-        return finite(field, value);
-    }
-
-    auto finite(std::string_view field, const std::optional<double>& value) -> bool
-    {
-        if (value.has_value() && !std::isfinite(*value)) {
-            add(field, "must be a number");
-            return false;
-        }
-        return value.has_value();
+        return entered(field, value);
     }
 
     auto positive(std::string_view field, const std::optional<double>& value) -> void
     {
-        if (finite(field, value) && *value <= 0.0) {
+        if (const auto checked = entered(field, value); checked.has_value() && *checked <= 0.0) {
             add(field, "must be greater than zero");
         }
     }
 
-    auto within(std::string_view field, const std::optional<double>& value, double low, double high,
+    auto within(std::string_view field, const std::optional<double>& value, Range range,
                 std::string_view problem) -> void
     {
-        if (finite(field, value) && (*value < low || *value > high)) {
+        if (const auto checked = entered(field, value);
+            checked.has_value() && (*checked < range.low || *checked > range.high)) {
             add(field, problem);
         }
     }
@@ -73,25 +85,25 @@ private:
 auto validate_threading(const ThreadingRequest& request) -> ParameterIssues
 {
     Checker check{};
-    if (check.required("pitch", request.pitch)) {
-        if (*request.pitch <= 0.0) {
+    if (const auto pitch = check.required("pitch", request.pitch); pitch.has_value()) {
+        if (*pitch <= 0.0) {
             check.add("pitch", "must be greater than zero");
-        } else if (*request.pitch > max_pitch) {
+        } else if (*pitch > max_pitch) {
             check.add("pitch", "must not exceed 10 mm");
         }
     }
-    check.required("z_end", request.z_end);
-    check.within("x_depth", request.x_depth, -max_thread_depth, max_thread_depth,
+    static_cast<void>(check.required("z_end", request.z_end));
+    check.within("x_depth", request.x_depth, {.low = -max_thread_depth, .high = max_thread_depth},
                  "must not exceed 10 mm");
-    check.finite("z_depth", request.z_depth);
-    check.finite("angle_deg", request.angle_deg);
-    check.finite("x_pullout", request.x_pullout);
-    check.finite("z_pullout", request.z_pullout);
+    static_cast<void>(check.entered("z_depth", request.z_depth));
+    static_cast<void>(check.entered("angle_deg", request.angle_deg));
+    static_cast<void>(check.entered("x_pullout", request.x_pullout));
+    static_cast<void>(check.entered("z_pullout", request.z_pullout));
     check.positive("first_cut", request.first_cut);
-    check.within("cut_mult", request.cut_mult, min_cut_mult, max_cut_mult,
+    check.within("cut_mult", request.cut_mult, {.low = min_cut_mult, .high = max_cut_mult},
                  "must be between 0.5 and 1.0");
     check.positive("min_cut", request.min_cut);
-    check.within("spring_cuts", request.spring_cuts, 0.0, max_extra_passes,
+    check.within("spring_cuts", request.spring_cuts, {.low = 0.0, .high = max_extra_passes},
                  "must be between 0 and 10");
     return std::move(check).issues();
 }
@@ -100,18 +112,21 @@ auto validate_turning(const TurningRequest& request, const WorkPosition& positio
     -> ParameterIssues
 {
     Checker check{};
-    if (check.required("target", request.target) && *request.target >= position.x) {
+    if (const auto target = check.required("target", request.target);
+        target.has_value() && *target >= position.x) {
         check.add("target", "must be smaller than the stock at the tool position");
     }
-    if (check.required("z_end", request.z_end) && *request.z_end >= 0.0) {
+    if (const auto z_end = check.required("z_end", request.z_end);
+        z_end.has_value() && *z_end >= 0.0) {
         check.add("z_end", "must be negative (into the work)");
     }
     check.positive("feed_rate", request.feed_rate);
     check.positive("step_down", request.step_down);
     check.positive("final_step_down", request.final_step_down);
-    check.within("taper_angle_deg", request.taper_angle_deg, -max_taper_deg, max_taper_deg,
+    check.within("taper_angle_deg", request.taper_angle_deg,
+                 {.low = -max_taper_deg, .high = max_taper_deg},
                  "must be between -45 and 45 degrees");
-    check.within("spring_passes", request.spring_passes, 0.0, max_extra_passes,
+    check.within("spring_passes", request.spring_passes, {.low = 0.0, .high = max_extra_passes},
                  "must be between 0 and 10");
     return std::move(check).issues();
 }

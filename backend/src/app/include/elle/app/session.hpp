@@ -6,6 +6,7 @@
 #include <elle/core/cycle.hpp>
 #include <elle/core/lathe_controller.hpp>
 
+#include <expected>
 #include <filesystem>
 #include <mutex>
 #include <optional>
@@ -50,10 +51,29 @@ private:
         core::WorkPosition planned_at;
     };
 
-    auto apply(const Command& command, Clock::time_point now, Outcome& outcome) -> void;
-    auto plan(CycleKind kind, const core::ParameterIssues& issues,
-              const std::optional<core::GcodeLines>& machine,
-              const std::optional<core::GcodeLines>& preview, std::string error,
+    /// Programs generated for one cycle: what runs, and what the backplot shows.
+    struct Generated {
+        std::expected<core::GcodeLines, core::CycleError> machine{};
+        std::expected<core::GcodeLines, core::CycleError> preview{};
+    };
+
+    auto on(const Ready& message, Clock::time_point now, Outcome& outcome) -> void;
+    auto on(const SelectMode& message, Clock::time_point now, Outcome& outcome) -> void;
+    auto on(const SetFeed& message, Clock::time_point now, Outcome& outcome) -> void;
+    auto on(const SetDirection& message, Clock::time_point now, Outcome& outcome) -> void;
+    auto on(const SetPitches& message, Clock::time_point now, Outcome& outcome) -> void;
+    auto on(const SetAxis& message, Clock::time_point now, Outcome& outcome) -> void;
+    auto on(const JogCommand& message, Clock::time_point now, Outcome& outcome) -> void;
+    auto on(const JogReleaseAll& message, Clock::time_point now, Outcome& outcome) -> void;
+    auto on(const SelectTool& message, Clock::time_point now, Outcome& outcome) -> void;
+    auto on(const SetTools& message, Clock::time_point now, Outcome& outcome) -> void;
+    auto on(const SetPreferences& message, Clock::time_point now, Outcome& outcome) -> void;
+    auto on(const PlanThreading& message, Clock::time_point now, Outcome& outcome) -> void;
+    auto on(const PlanTurning& message, Clock::time_point now, Outcome& outcome) -> void;
+    auto on(const StartCycle& message, Clock::time_point now, Outcome& outcome) -> void;
+    auto on(const AbortCycle& message, Clock::time_point now, Outcome& outcome) -> void;
+    auto on(const Quit& message, Clock::time_point now, Outcome& outcome) -> void;
+    auto plan(CycleKind kind, core::ParameterIssues issues, const Generated& generated,
               const core::WorkPosition& start) -> CyclePlan;
     auto start_cycle(Outcome& outcome) -> void;
     auto save(Outcome& outcome) -> void;

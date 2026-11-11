@@ -15,11 +15,15 @@
 #include <elle/linuxcnc/lathe_component.hpp>
 #include <elle/linuxcnc/task_client.hpp>
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdio>
 #include <cstdlib>
 #include <exception>
 #include <expected>
 #include <filesystem>
 #include <format>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <print>
@@ -30,11 +34,14 @@
 #include <utility>
 #include <vector>
 
+// glibc defines pid_t and the wait-status macros in private headers that include-cleaner cannot
+// map back to the POSIX headers that declare them; these are the correct includes.
+// NOLINTBEGIN(misc-include-cleaner)
 #include <spawn.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-
-extern char** environ; // NOLINT(readability-redundant-declaration): POSIX declares it nowhere else
+// NOLINTEND(misc-include-cleaner)
 
 namespace {
 
@@ -61,13 +68,13 @@ private:
 };
 
 /// Runs a program and waits for it, without a shell.
+// NOLINTBEGIN(misc-include-cleaner): pid_t and WIFEXITED/WEXITSTATUS, see the includes above.
 auto run_program(std::vector<std::string> arguments) -> std::expected<void, std::string>
 {
     std::vector<char*> argv{};
     argv.reserve(arguments.size() + 1);
-    for (auto& argument : arguments) {
-        argv.push_back(argument.data());
-    }
+    std::ranges::transform(arguments, std::back_inserter(argv),
+                           [](std::string& argument) { return argument.data(); });
     argv.push_back(nullptr);
     pid_t child{};
     if (const int error =
@@ -82,6 +89,8 @@ auto run_program(std::vector<std::string> arguments) -> std::expected<void, std:
     }
     return {};
 }
+
+// NOLINTEND(misc-include-cleaner)
 
 auto executable_directory() -> std::filesystem::path
 {
@@ -118,6 +127,9 @@ auto connect_machine(const Options& options, std::vector<std::string>& log)
         return Machine{.io = std::make_unique<elle::app::SimulatedMachine>(),
                        .task = std::make_unique<elle::app::DemoTask>(),
                        .cycle_directory = std::filesystem::temp_directory_path()};
+    }
+    if (!options.ini.has_value()) {
+        return std::unexpected{std::string{"no INI file given"}};
     }
     const std::filesystem::path ini_file = std::filesystem::absolute(*options.ini);
     const auto ini = elle::app::IniFile::load(ini_file);
@@ -175,7 +187,7 @@ auto run(const Options& options) -> int
 
     elle::app::Session session{std::move(loaded.settings), settings_file};
     elle::app::TaskWorker worker{*machine->task, machine->cycle_directory};
-    elle::app::ControlLoop loop{session, *machine->io, worker};
+    const elle::app::ControlLoop loop{session, *machine->io, worker};
 
     std::unique_ptr<elle::shell::PanelWindow> window{};
     const auto on_message = [&](std::string_view json) {
@@ -215,10 +227,7 @@ auto main(int argc, char** argv) -> int
 {
     try {
         const std::span<char*> raw{argv, static_cast<std::size_t>(argc)};
-        std::vector<std::string_view> arguments;
-        for (const char* argument : raw.subspan(1)) {
-            arguments.emplace_back(argument);
-        }
+        const std::vector<std::string_view> arguments{std::from_range, raw.subspan(1)};
         const auto options = elle::app::parse_options(arguments);
         if (!options.has_value()) {
             std::println(stderr, "elle: {}\n\n{}", options.error(), elle::app::usage());
@@ -230,7 +239,12 @@ auto main(int argc, char** argv) -> int
         }
         return run(*options);
     } catch (const std::exception& error) {
-        std::println(stderr, "elle: {}", error.what());
+        static_cast<void>(std::fputs("elle: ", stderr));
+        static_cast<void>(std::fputs(error.what(), stderr));
+        static_cast<void>(std::fputs("\n", stderr));
+        return EXIT_FAILURE;
+    } catch (...) {
+        static_cast<void>(std::fputs("elle: unexpected error\n", stderr));
         return EXIT_FAILURE;
     }
 }

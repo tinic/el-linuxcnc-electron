@@ -62,7 +62,9 @@ public:
 
 private:
     std::mutex mutex_{};
-    core::MachineSample sample_{.position_z = -3.0, .position_x = 12.5};
+    /// Where the simulated slides start: a 25 mm bar, the tool 3 mm into it.
+    static constexpr core::MachineSample start_position{.position_z = -3.0, .position_x = 12.5};
+    core::MachineSample sample_{start_position};
     std::optional<std::chrono::steady_clock::time_point> last_{};
     core::PinOutputs outputs_{};
 };

@@ -3,10 +3,10 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
-#include <cstddef>
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <ios>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -17,11 +17,15 @@
 #include <gtk/gtk.h>
 #include <webkit2/webkit2.h>
 
+// GLib, GTK and WebKit may only be included through their umbrella headers (their inner headers
+// #error otherwise), so include-cleaner cannot be satisfied for their symbols in this file.
+// NOLINTBEGIN(misc-include-cleaner)
+
 namespace elle::shell {
 
 namespace {
 
-constexpr std::string_view scheme = "elle";
+constexpr const char* scheme = "elle";
 constexpr std::string_view panel_url = "elle://panel/index.html";
 constexpr int default_width = 1366;
 constexpr int default_height = 768;
@@ -45,7 +49,7 @@ constexpr auto mime_types = std::to_array<MimeType>({
 auto mime_type(const std::filesystem::path& file) -> std::string_view
 {
     const std::string extension = file.extension().string();
-    const auto match = std::ranges::find(mime_types, extension, &MimeType::extension);
+    const auto* const match = std::ranges::find(mime_types, extension, &MimeType::extension);
     return match == mime_types.end() ? std::string_view{"application/octet-stream"} : match->type;
 }
 
@@ -104,8 +108,8 @@ struct PanelWindow::Impl {
                                   webkit_uri_scheme_request_get_path(request));
         const auto content = file.has_value() ? read_file(*file) : std::nullopt;
         if (!content.has_value()) {
-            GError* error = g_error_new(G_IO_ERROR, G_IO_ERROR_NOT_FOUND, "%s",
-                                        webkit_uri_scheme_request_get_uri(request));
+            GError* error = g_error_new_literal(G_IO_ERROR, G_IO_ERROR_NOT_FOUND,
+                                                webkit_uri_scheme_request_get_uri(request));
             webkit_uri_scheme_request_finish_error(request, error);
             g_error_free(error);
             return;
@@ -119,6 +123,7 @@ struct PanelWindow::Impl {
         g_bytes_unref(bytes);
     }
 
+    // NOLINTNEXTLINE(readability-function-size): the parameter list is GTK's signal signature.
     static auto on_context_menu(WebKitWebView* /*view*/, WebKitContextMenu* /*menu*/,
                                 GdkEvent* /*event*/, WebKitHitTestResult* /*hit*/,
                                 gpointer /*data*/) -> gboolean
@@ -145,11 +150,11 @@ PanelWindow::PanelWindow(PanelOptions options, PanelCallbacks callbacks)
     impl.callbacks = std::move(callbacks);
 
     WebKitWebContext* context = webkit_web_context_get_default();
-    webkit_web_context_register_uri_scheme(context, scheme.data(), &Impl::on_scheme, &impl,
+    webkit_web_context_register_uri_scheme(context, scheme, &Impl::on_scheme, &impl,
                                            nullptr);
     WebKitSecurityManager* security = webkit_web_context_get_security_manager(context);
-    webkit_security_manager_register_uri_scheme_as_secure(security, scheme.data());
-    webkit_security_manager_register_uri_scheme_as_cors_enabled(security, scheme.data());
+    webkit_security_manager_register_uri_scheme_as_secure(security, scheme);
+    webkit_security_manager_register_uri_scheme_as_cors_enabled(security, scheme);
 
     WebKitUserContentManager* content = webkit_user_content_manager_new();
     g_signal_connect(content, "script-message-received::elle", G_CALLBACK(&Impl::on_message),
@@ -158,7 +163,8 @@ PanelWindow::PanelWindow(PanelOptions options, PanelCallbacks callbacks)
 
     impl.view = WEBKIT_WEB_VIEW(webkit_web_view_new_with_user_content_manager(content));
     WebKitSettings* settings = webkit_web_view_get_settings(impl.view);
-    webkit_settings_set_enable_developer_extras(settings, impl.options.dev_url.has_value());
+    webkit_settings_set_enable_developer_extras(settings,
+                                                impl.options.dev_url.has_value() ? TRUE : FALSE);
     webkit_settings_set_enable_back_forward_navigation_gestures(settings, FALSE);
     g_signal_connect(impl.view, "context-menu", G_CALLBACK(&Impl::on_context_menu), &impl);
 
@@ -174,7 +180,6 @@ PanelWindow::PanelWindow(PanelOptions options, PanelCallbacks callbacks)
 
     const std::string url = impl.options.dev_url.value_or(std::string{panel_url});
     webkit_web_view_load_uri(impl.view, url.c_str());
-    gtk_widget_show_all(impl.window);
 
     impl.refresh_source = g_timeout_add(static_cast<guint>(refresh_interval.count()),
                                         &Impl::on_refresh, &impl);
@@ -198,12 +203,15 @@ auto PanelWindow::post(std::string_view json) -> void
 
 auto PanelWindow::run() -> void
 {
+    gtk_widget_show_all(impl_->window);
     gtk_main();
 }
 
 auto PanelWindow::quit() -> void
 {
-    gtk_main_quit();
+    gtk_widget_destroy(impl_->window); // its "destroy" handler ends the main loop
 }
 
 } // namespace elle::shell
+
+// NOLINTEND(misc-include-cleaner)

@@ -9,6 +9,47 @@
 
 namespace elle::app {
 
+namespace {
+
+auto takes_value(std::string_view argument) -> bool
+{
+    return argument == "-ini" || argument == "--ini" || argument == "--dev-url" ||
+           argument == "--ui";
+}
+
+/// An option that takes a value, e.g. `--ui dist`.
+struct Setting {
+    std::string_view name{};
+    std::string_view value{};
+};
+
+auto set_value(Options& options, const Setting& setting) -> void
+{
+    if (setting.name == "--dev-url") {
+        options.dev_url = std::string{setting.value};
+    } else if (setting.name == "--ui") {
+        options.ui_directory = std::filesystem::path{setting.value};
+    } else {
+        options.ini = std::filesystem::path{setting.value};
+    }
+}
+
+auto set_flag(Options& options, std::string_view argument) -> bool
+{
+    if (argument == "--windowed") {
+        options.windowed = true;
+    } else if (argument == "--demo") {
+        options.demo = true;
+    } else if (argument == "--help" || argument == "-h") {
+        options.help = true;
+    } else if (argument != "--") { // LinuxCNC separates its own arguments with "--"
+        return false;
+    }
+    return true;
+}
+
+} // namespace
+
 auto usage() -> std::string_view
 {
     return "usage: elle -ini <lathe.ini> [--windowed] [--dev-url <url>] [--ui <dir>]\n"
@@ -23,40 +64,13 @@ auto parse_options(std::span<const std::string_view> arguments) -> std::expected
     Options options{};
     for (std::size_t index = 0; index < arguments.size(); ++index) {
         const std::string_view argument = arguments[index];
-        const auto value = [&]() -> std::expected<std::string_view, std::string> {
+        if (takes_value(argument)) {
             if (index + 1 >= arguments.size()) {
                 return std::unexpected{std::format("{} needs a value", argument)};
             }
             ++index;
-            return arguments[index];
-        };
-        if (argument == "-ini" || argument == "--ini") {
-            const auto file = value();
-            if (!file.has_value()) {
-                return std::unexpected{file.error()};
-            }
-            options.ini = std::filesystem::path{*file};
-        } else if (argument == "--dev-url") {
-            const auto url = value();
-            if (!url.has_value()) {
-                return std::unexpected{url.error()};
-            }
-            options.dev_url = std::string{*url};
-        } else if (argument == "--ui") {
-            const auto directory = value();
-            if (!directory.has_value()) {
-                return std::unexpected{directory.error()};
-            }
-            options.ui_directory = std::filesystem::path{*directory};
-        } else if (argument == "--windowed") {
-            options.windowed = true;
-        } else if (argument == "--demo") {
-            options.demo = true;
-        } else if (argument == "--help" || argument == "-h") {
-            options.help = true;
-        } else if (argument == "--") {
-            continue; // LinuxCNC separates its own arguments with "--"
-        } else {
+            set_value(options, {.name = argument, .value = arguments[index]});
+        } else if (!set_flag(options, argument)) {
             return std::unexpected{std::format("unknown argument '{}'", argument)};
         }
     }

@@ -5,11 +5,13 @@
 
 #include <condition_variable>
 #include <deque>
+#include <expected>
 #include <filesystem>
 #include <mutex>
 #include <optional>
 #include <stop_token>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <variant>
 #include <vector>
@@ -65,6 +67,12 @@ private:
     auto abort_task() -> void;
     auto poll() -> void;
     auto log(std::string line) -> void;
+    using Result = std::expected<void, core::TaskError>;
+    /// Logs a failed step; true when it succeeded.
+    auto succeeded(const Result& result, std::string_view step) -> bool;
+    /// Waits for task to finish the last command; logs a failure.
+    auto finished(std::string_view step) -> bool;
+    auto write_cycle(const core::GcodeLines& program) -> bool;
     [[nodiscard]] auto ready_for_mdi() -> bool;
 
     core::TaskPort& port_;

@@ -9,7 +9,8 @@ Checks: >
   -llvmlibc-*,
   -zircon-*,
   -llvm-header-guard,
-  -llvm-include-order
+  -llvm-include-order,
+  -readability-redundant-member-init
 # abseil-*      rules for code using the Abseil library; we do not use Abseil.
 # altera-*      tuning rules for Intel FPGA OpenCL kernels.
 # android-*     Android/bionic API rules.
@@ -20,6 +21,9 @@ Checks: >
 # zircon-*      Fuchsia kernel rules.
 # llvm-header-guard   requires LLVM-style include guards; we use #pragma once.
 # llvm-include-order  LLVM's include order; ordering is owned by .clang-format (IncludeBlocks).
+# readability-redundant-member-init  flags `std::string name{};` as redundant, while GCC's
+#               -Weffc++ (enabled, cppbestpractices) requires exactly that explicit initializer.
+#               The two cannot both hold; the compiler warning wins.
 
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*/(src|test|app)/.*'
@@ -54,4 +58,5 @@ CheckOptions:
   readability-function-size.ParameterThreshold: 4
   cppcoreguidelines-avoid-do-while.IgnoreMacros: true
   readability-magic-numbers.IgnorePowersOf2IntegerValues: false
+  # glaze and Catch2 are used through their entry headers.
   misc-include-cleaner.IgnoreHeaders: 'glaze/.*;catch2/.*'

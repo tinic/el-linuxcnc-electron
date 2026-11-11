@@ -81,33 +81,33 @@ auto LatheComponent::create() -> std::expected<LatheComponent, std::string>
     }
     LatheComponent component{component_id, pins};
 
-    const int id = component_id;
+    const int owner = component_id;
     const bool created =
-        new_pin("control_source", HAL_OUT, &pins->control_source, id) &&
-        new_pin("position_z", HAL_IN, &pins->position_z, id) &&
-        new_pin("position_x", HAL_IN, &pins->position_x, id) &&
-        new_pin("position_a", HAL_IN, &pins->position_a, id) &&
-        new_pin("speed_rps", HAL_IN, &pins->speed_rps, id) &&
-        new_pin("forward_z", HAL_OUT, &pins->forward_z, id) &&
-        new_pin("forward_x", HAL_OUT, &pins->forward_x, id) &&
-        new_pin("enable_z", HAL_OUT, &pins->enable_z, id) &&
-        new_pin("enable_x", HAL_OUT, &pins->enable_x, id) &&
-        new_pin("enable_stepper_z", HAL_OUT, &pins->enable_stepper_z, id) &&
-        new_pin("enable_stepper_x", HAL_OUT, &pins->enable_stepper_x, id) &&
-        new_pin("position_z_encoder", HAL_IN, &pins->position_z_encoder, id) &&
-        new_pin("position_x_encoder", HAL_IN, &pins->position_x_encoder, id) &&
-        new_pin("offset_z_encoder", HAL_OUT, &pins->offset_z_encoder, id) &&
-        new_pin("offset_z_stepper", HAL_OUT, &pins->offset_z_stepper, id) &&
-        new_pin("offset_x_encoder", HAL_OUT, &pins->offset_x_encoder, id) &&
-        new_pin("offset_x_stepper", HAL_OUT, &pins->offset_x_stepper, id) &&
-        new_pin("control_z_type", HAL_OUT, &pins->control_z_type, id) &&
-        new_pin("control_x_type", HAL_OUT, &pins->control_x_type, id) &&
-        new_pin("velocity_z_cmd", HAL_OUT, &pins->velocity_z_cmd, id) &&
-        new_pin("velocity_x_cmd", HAL_OUT, &pins->velocity_x_cmd, id) &&
-        new_pin("reset_z", HAL_OUT, &pins->reset_z, id) &&
-        new_pin("reset_x", HAL_OUT, &pins->reset_x, id) &&
-        new_pin("scale_encoder_z", HAL_OUT, &pins->scale_encoder_z, id) &&
-        new_pin("scale_encoder_x", HAL_OUT, &pins->scale_encoder_x, id);
+        new_pin("control_source", HAL_OUT, &pins->control_source, owner) &&
+        new_pin("position_z", HAL_IN, &pins->position_z, owner) &&
+        new_pin("position_x", HAL_IN, &pins->position_x, owner) &&
+        new_pin("position_a", HAL_IN, &pins->position_a, owner) &&
+        new_pin("speed_rps", HAL_IN, &pins->speed_rps, owner) &&
+        new_pin("forward_z", HAL_OUT, &pins->forward_z, owner) &&
+        new_pin("forward_x", HAL_OUT, &pins->forward_x, owner) &&
+        new_pin("enable_z", HAL_OUT, &pins->enable_z, owner) &&
+        new_pin("enable_x", HAL_OUT, &pins->enable_x, owner) &&
+        new_pin("enable_stepper_z", HAL_OUT, &pins->enable_stepper_z, owner) &&
+        new_pin("enable_stepper_x", HAL_OUT, &pins->enable_stepper_x, owner) &&
+        new_pin("position_z_encoder", HAL_IN, &pins->position_z_encoder, owner) &&
+        new_pin("position_x_encoder", HAL_IN, &pins->position_x_encoder, owner) &&
+        new_pin("offset_z_encoder", HAL_OUT, &pins->offset_z_encoder, owner) &&
+        new_pin("offset_z_stepper", HAL_OUT, &pins->offset_z_stepper, owner) &&
+        new_pin("offset_x_encoder", HAL_OUT, &pins->offset_x_encoder, owner) &&
+        new_pin("offset_x_stepper", HAL_OUT, &pins->offset_x_stepper, owner) &&
+        new_pin("control_z_type", HAL_OUT, &pins->control_z_type, owner) &&
+        new_pin("control_x_type", HAL_OUT, &pins->control_x_type, owner) &&
+        new_pin("velocity_z_cmd", HAL_OUT, &pins->velocity_z_cmd, owner) &&
+        new_pin("velocity_x_cmd", HAL_OUT, &pins->velocity_x_cmd, owner) &&
+        new_pin("reset_z", HAL_OUT, &pins->reset_z, owner) &&
+        new_pin("reset_x", HAL_OUT, &pins->reset_x, owner) &&
+        new_pin("scale_encoder_z", HAL_OUT, &pins->scale_encoder_z, owner) &&
+        new_pin("scale_encoder_x", HAL_OUT, &pins->scale_encoder_x, owner);
     if (!created) {
         return std::unexpected{std::string{"creating the lathe HAL pins failed"}};
     }
@@ -145,7 +145,7 @@ LatheComponent::~LatheComponent()
     }
 }
 
-auto LatheComponent::ready() -> std::expected<void, std::string>
+auto LatheComponent::ready() const -> std::expected<void, std::string>
 {
     const int result = hal_ready(component_id_);
     if (result != 0) {

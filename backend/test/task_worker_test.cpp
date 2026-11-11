@@ -4,6 +4,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <chrono>
+#include <cstddef>
 #include <expected>
 #include <filesystem>
 #include <fstream>
@@ -13,6 +14,7 @@
 #include <string>
 #include <string_view>
 #include <thread>
+#include <utility>
 #include <vector>
 
 using elle::core::MachineState;
@@ -22,6 +24,20 @@ using elle::core::TaskStatus;
 
 namespace {
 
+auto state_name(MachineState state) -> std::string
+{
+    switch (state) {
+    case MachineState::on:
+        return "on";
+    case MachineState::off:
+        return "off";
+    case MachineState::estop:
+    case MachineState::estop_reset:
+    default:
+        return "state";
+    }
+}
+
 /// Records every command and answers like an idle, enabled LinuxCNC in MDI mode.
 class FakeTask final : public elle::core::TaskPort {
 public:
@@ -29,18 +45,18 @@ public:
 
     [[nodiscard]] auto status() -> std::optional<TaskStatus> override
     {
-        const std::scoped_lock lock{mutex_};
+        const std::scoped_lock<std::mutex> lock{mutex_};
         return status_;
     }
     auto set_state(MachineState state) -> Result override
     {
-        record(state == MachineState::on ? "on" : state == MachineState::off ? "off" : "state");
+        record(state_name(state));
         return {};
     }
     auto set_mode(TaskMode /*mode*/) -> Result override
     {
         record("mdi mode");
-        const std::scoped_lock lock{mutex_};
+        const std::scoped_lock<std::mutex> lock{mutex_};
         status_.mode = TaskMode::mdi;
         return {};
     }
@@ -62,30 +78,30 @@ public:
     auto wait_complete(std::chrono::milliseconds /*timeout*/) -> Result override { return {}; }
     [[nodiscard]] auto operator_messages() -> std::vector<std::string> override
     {
-        const std::scoped_lock lock{mutex_};
+        const std::scoped_lock<std::mutex> lock{mutex_};
         return std::exchange(messages_, {});
     }
 
     auto set_status(const TaskStatus& status) -> void
     {
-        const std::scoped_lock lock{mutex_};
+        const std::scoped_lock<std::mutex> lock{mutex_};
         status_ = status;
     }
     auto report(std::string message) -> void
     {
-        const std::scoped_lock lock{mutex_};
+        const std::scoped_lock<std::mutex> lock{mutex_};
         messages_.push_back(std::move(message));
     }
     [[nodiscard]] auto calls() const -> std::vector<std::string>
     {
-        const std::scoped_lock lock{mutex_};
+        const std::scoped_lock<std::mutex> lock{mutex_};
         return calls_;
     }
 
 private:
     auto record(std::string call) -> void
     {
-        const std::scoped_lock lock{mutex_};
+        const std::scoped_lock<std::mutex> lock{mutex_};
         calls_.push_back(std::move(call));
     }
 
@@ -134,12 +150,10 @@ TEST_CASE("a cycle is written as a subroutine and called through MDI", "[task]")
     const std::string text{std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{}};
     CHECK(text == "o<canned-cycle> sub\nG8\nG0 X1 Z2\no<canned-cycle> endsub\n");
 
-    const auto calls = task.calls();
-    REQUIRE(!calls.empty());
-    CHECK(calls.front() == "on");
-    CHECK(calls.back() == "mdi o<canned-cycle> call");
-    // The interpreter is reset right before the call so it reads this cycle's file.
-    CHECK(calls.at(calls.size() - 2) == "reset");
+    // Machine on, MDI mode, then the interpreter is reset right before the call so it reads this
+    // cycle's file.
+    const std::vector<std::string> expected{"on", "mdi mode", "reset", "mdi o<canned-cycle> call"};
+    CHECK(task.calls() == expected);
 }
 
 TEST_CASE("a cycle is not started while LinuxCNC is in E-stop", "[task][safety]")
@@ -185,7 +199,7 @@ TEST_CASE("the snapshot follows task status", "[task]")
                      .mode = TaskMode::mdi,
                      .motion_enabled = true,
                      .interpreter_idle = false});
-    elle::app::TaskWorker worker{task, scratch()};
+    const elle::app::TaskWorker worker{task, scratch()};
     std::this_thread::sleep_for(std::chrono::milliseconds{150});
     const auto snapshot = worker.snapshot();
     CHECK(snapshot.connected);

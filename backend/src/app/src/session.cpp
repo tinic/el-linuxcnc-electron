@@ -17,7 +17,6 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -28,25 +27,6 @@ namespace {
 
 /// How far the tool may have moved between preview and start before the preview is stale, mm.
 constexpr double max_drift = 0.01;
-
-template <class... Handlers>
-struct Overloaded : Handlers... {
-    using Handlers::operator()...;
-};
-
-template <class... Handlers>
-Overloaded(Handlers...) -> Overloaded<Handlers...>;
-
-auto generated(const std::expected<core::GcodeLines, core::CycleError>& program)
-    -> std::optional<core::GcodeLines>
-{
-    return program.has_value() ? std::optional{*program} : std::nullopt;
-}
-
-auto error_of(const std::expected<core::GcodeLines, core::CycleError>& program) -> std::string
-{
-    return program.has_value() ? std::string{} : std::string{core::describe(program.error())};
-}
 
 } // namespace
 
@@ -66,127 +46,164 @@ auto Session::handle(std::string_view json, Clock::time_point now) -> Outcome
             notice_message(NoticeLevel::error, std::format("Bad message: {}", command.error())));
         return outcome;
     }
-    const std::scoped_lock lock{mutex_};
-    apply(*command, now, outcome);
+    const std::scoped_lock<std::mutex> lock{mutex_};
+    std::visit([&](const auto& message) { on(message, now, outcome); }, *command);
     return outcome;
 }
 
-auto Session::apply(const Command& command, Clock::time_point now, Outcome& outcome) -> void
+auto Session::on(const Ready& /*message*/, Clock::time_point /*now*/, Outcome& outcome) -> void
 {
-    std::visit(
-        Overloaded{
-            [&](const Ready&) {
-                outcome.replies.push_back(settings_message(settings_));
-            },
-            [&](const SelectMode& message) {
-                controller_.select_mode(message.mode);
-                pending_.reset();
-            },
-            [&](const SetFeed& message) { controller_.set_feed(message.feed); },
-            [&](const SetDirection& message) { controller_.set_direction(message.direction); },
-            [&](const SetPitches& message) {
-                controller_.set_pitches(message.pitches);
-                save(outcome);
-            },
-            [&](const SetAxis& message) {
-                controller_.set_axis(message.axis, message.value);
-                pending_.reset();
-            },
-            [&](const JogCommand& message) {
-                if (message.held) {
-                    controller_.jog_hold(message.button, now);
-                } else {
-                    controller_.jog_release(message.button);
-                }
-            },
-            [&](const JogReleaseAll&) { controller_.jog_release_all(); },
-            [&](const SelectTool& message) {
-                controller_.select_tool(message.id);
-                pending_.reset();
-                save(outcome);
-            },
-            [&](const SetTools& message) {
-                controller_.set_tools(message.tools);
-                pending_.reset();
-                save(outcome);
-            },
-            [&](const SetPreferences& message) {
-                const Preferences& preferences = message.preferences;
-                settings_.diameter_mode = preferences.diameter_mode;
-                settings_.metric_on_startup = preferences.metric_on_startup;
-                settings_.thread_preset_tab = preferences.thread_preset_tab;
-                settings_.turning_preset_tab = preferences.turning_preset_tab;
-                settings_.pitch_preset_tabs = preferences.pitch_preset_tabs;
-                controller_.set_encoder_scales(preferences.encoder_scale_z,
-                                               preferences.encoder_scale_x);
-                save(outcome);
-            },
-            [&](const PlanThreading& message) {
-                const auto position = controller_.work_position();
-                const auto issues = core::validate_threading(message.request);
-                if (!issues.empty()) {
-                    outcome.replies.push_back(plan_message(
-                        plan(CycleKind::threading, issues, {}, {}, {}, position)));
-                    return;
-                }
-                const auto program = core::plan_threading(message.request, position);
-                const auto machine = core::threading_gcode(program, core::Destination::machine);
-                const auto preview = core::threading_gcode(program, core::Destination::preview);
-                outcome.replies.push_back(plan_message(
-                    plan(CycleKind::threading, {}, generated(machine), generated(preview),
-                         error_of(machine), position)));
-            },
-            [&](const PlanTurning& message) {
-                const auto position = controller_.work_position();
-                const auto issues = core::validate_turning(message.request, position);
-                if (!issues.empty()) {
-                    outcome.replies.push_back(
-                        plan_message(plan(CycleKind::turning, issues, {}, {}, {}, position)));
-                    return;
-                }
-                const auto program = core::plan_turning(message.request, position);
-                const auto machine = core::turning_gcode(program, core::Destination::machine);
-                const auto preview = core::turning_gcode(program, core::Destination::preview);
-                outcome.replies.push_back(plan_message(
-                    plan(CycleKind::turning, {}, generated(machine), generated(preview),
-                         error_of(machine), position)));
-            },
-            [&](const StartCycle&) { start_cycle(outcome); },
-            [&](const AbortCycle&) {
-                pending_.reset();
-                outcome.jobs.emplace_back(AbortTask{});
-            },
-            [&](const Quit&) {
-                controller_.jog_release_all();
-                outcome.quit = true;
-            },
-        },
-        command);
+    outcome.replies.push_back(settings_message(settings_));
 }
 
-auto Session::plan(CycleKind kind, const core::ParameterIssues& issues,
-                   const std::optional<core::GcodeLines>& machine,
-                   const std::optional<core::GcodeLines>& preview, std::string error,
+auto Session::on(const SelectMode& message, Clock::time_point /*now*/, Outcome& /*outcome*/)
+    -> void
+{
+    controller_.select_mode(message.mode);
+    pending_.reset();
+}
+
+auto Session::on(const SetFeed& message, Clock::time_point /*now*/, Outcome& /*outcome*/) -> void
+{
+    controller_.set_feed(message.feed);
+}
+
+auto Session::on(const SetDirection& message, Clock::time_point /*now*/, Outcome& /*outcome*/)
+    -> void
+{
+    controller_.set_direction(message.direction);
+}
+
+auto Session::on(const SetPitches& message, Clock::time_point /*now*/, Outcome& outcome) -> void
+{
+    controller_.set_pitches(message.pitches);
+    save(outcome);
+}
+
+auto Session::on(const SetAxis& message, Clock::time_point /*now*/, Outcome& /*outcome*/) -> void
+{
+    controller_.set_axis(message.axis, message.value);
+    pending_.reset();
+}
+
+auto Session::on(const JogCommand& message, Clock::time_point now, Outcome& /*outcome*/) -> void
+{
+    if (message.held) {
+        controller_.jog_hold(message.button, now);
+    } else {
+        controller_.jog_release(message.button);
+    }
+}
+
+auto Session::on(const JogReleaseAll& /*message*/, Clock::time_point /*now*/,
+                 Outcome& /*outcome*/) -> void
+{
+    controller_.jog_release_all();
+}
+
+auto Session::on(const SelectTool& message, Clock::time_point /*now*/, Outcome& outcome) -> void
+{
+    controller_.select_tool(message.id);
+    pending_.reset();
+    save(outcome);
+}
+
+auto Session::on(const SetTools& message, Clock::time_point /*now*/, Outcome& outcome) -> void
+{
+    controller_.set_tools(message.tools);
+    pending_.reset();
+    save(outcome);
+}
+
+auto Session::on(const SetPreferences& message, Clock::time_point /*now*/, Outcome& outcome)
+    -> void
+{
+    const Preferences& preferences = message.preferences;
+    settings_.diameter_mode = preferences.diameter_mode;
+    settings_.metric_on_startup = preferences.metric_on_startup;
+    settings_.thread_preset_tab = preferences.thread_preset_tab;
+    settings_.turning_preset_tab = preferences.turning_preset_tab;
+    settings_.pitch_preset_tabs = preferences.pitch_preset_tabs;
+    controller_.set_encoder_scales(preferences.encoder_scale_z, preferences.encoder_scale_x);
+    save(outcome);
+}
+
+auto Session::on(const PlanThreading& message, Clock::time_point /*now*/, Outcome& outcome)
+    -> void
+{
+    const auto position = controller_.work_position();
+    auto issues = core::validate_threading(message.request);
+    Generated generated{};
+    if (issues.empty()) {
+        const auto program = core::plan_threading(message.request, position);
+        generated = {.machine = core::threading_gcode(program, core::Destination::machine),
+                     .preview = core::threading_gcode(program, core::Destination::preview)};
+    }
+    outcome.replies.push_back(
+        plan_message(plan(CycleKind::threading, std::move(issues), generated, position)));
+}
+
+auto Session::on(const PlanTurning& message, Clock::time_point /*now*/, Outcome& outcome) -> void
+{
+    const auto position = controller_.work_position();
+    auto issues = core::validate_turning(message.request, position);
+    Generated generated{};
+    if (issues.empty()) {
+        const auto program = core::plan_turning(message.request, position);
+        generated = {.machine = core::turning_gcode(program, core::Destination::machine),
+                     .preview = core::turning_gcode(program, core::Destination::preview)};
+    }
+    outcome.replies.push_back(
+        plan_message(plan(CycleKind::turning, std::move(issues), generated, position)));
+}
+
+auto Session::on(const StartCycle& /*message*/, Clock::time_point /*now*/, Outcome& outcome)
+    -> void
+{
+    start_cycle(outcome);
+}
+
+auto Session::on(const AbortCycle& /*message*/, Clock::time_point /*now*/, Outcome& outcome)
+    -> void
+{
+    pending_.reset();
+    outcome.jobs.emplace_back(AbortTask{});
+}
+
+auto Session::on(const Quit& /*message*/, Clock::time_point /*now*/, Outcome& outcome) -> void
+{
+    controller_.jog_release_all();
+    outcome.quit = true;
+}
+
+auto Session::plan(CycleKind kind, core::ParameterIssues issues, const Generated& generated,
                    const core::WorkPosition& start) -> CyclePlan
 {
     CyclePlan result{.kind = kind,
-                     .issues = issues,
-                     .error = std::move(error),
+                     .issues = std::move(issues),
+                     .error = {},
                      .gcode = {},
                      .backplot = std::nullopt,
                      .start = {.x = start.x, .z = start.z}};
     pending_.reset();
-    if (!issues.empty() || !machine.has_value() || !preview.has_value()) {
+    if (!result.issues.empty()) {
         return result;
     }
-    auto plot = core::backplot(*preview, result.start);
+    if (!generated.machine.has_value() || !generated.preview.has_value()) {
+        const auto error = generated.machine.has_value() ? generated.preview.error()
+                                                         : generated.machine.error();
+        result.error = std::string{core::describe(error)};
+        return result;
+    }
+    auto plot = core::backplot(*generated.preview, result.start);
     if (!plot.has_value()) {
-        result.error = std::format("preview line {}: {}", plot.error().line + 1, plot.error().message);
+        result.error =
+            std::format("preview line {}: {}", plot.error().line + 1, plot.error().message);
         return result;
     }
-    result.gcode = *machine;
+    result.gcode = *generated.machine;
     result.backplot = std::move(*plot);
-    pending_ = Pending{.program = *machine, .planned_at = start};
+    pending_ = Pending{.program = *generated.machine, .planned_at = start};
     return result;
 }
 
@@ -230,7 +247,7 @@ auto Session::save(Outcome& outcome) -> void
 
 auto Session::tick(const core::MachineSample& sample, Clock::time_point now) -> Tick
 {
-    const std::scoped_lock lock{mutex_};
+    const std::scoped_lock<std::mutex> lock{mutex_};
     const auto result = controller_.tick(sample, now);
     Tick tick{.outputs = result.outputs, .job = std::nullopt};
     if (result.resync_motion) {
@@ -241,13 +258,13 @@ auto Session::tick(const core::MachineSample& sample, Clock::time_point now) -> 
 
 auto Session::observe(const TaskSnapshot& task) -> void
 {
-    const std::scoped_lock lock{mutex_};
+    const std::scoped_lock<std::mutex> lock{mutex_};
     task_ = task;
 }
 
 auto Session::status() const -> std::string
 {
-    const std::scoped_lock lock{mutex_};
+    const std::scoped_lock<std::mutex> lock{mutex_};
     return status_message(MachineStatus{
         .readout = controller_.readout(),
         .mode = controller_.mode(),

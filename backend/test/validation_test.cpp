@@ -17,7 +17,7 @@ auto flags(const ParameterIssues& issues, std::string_view field) -> bool
     return std::ranges::any_of(issues, [field](const auto& issue) { return issue.field == field; });
 }
 
-constexpr elle::core::ThreadingRequest m6{.pitch = 1.0, .x_depth = -0.613435, .z_end = -6.0};
+constexpr elle::core::ThreadingRequest metric_m6{.pitch = 1.0, .x_depth = -0.613435, .z_end = -6.0};
 constexpr elle::core::TurningRequest to_8mm{.target = 4.0, .z_end = -20.0};
 constexpr elle::core::WorkPosition stock_10mm{.x = 5.0, .z = 0.0, .a = 0.0};
 
@@ -25,7 +25,7 @@ constexpr elle::core::WorkPosition stock_10mm{.x = 5.0, .z = 0.0, .a = 0.0};
 
 TEST_CASE("a complete thread passes validation", "[validation][threading]")
 {
-    CHECK(elle::core::validate_threading(m6).empty());
+    CHECK(elle::core::validate_threading(metric_m6).empty());
 }
 
 TEST_CASE("threading requires pitch and Z end", "[validation][threading]")
@@ -37,7 +37,7 @@ TEST_CASE("threading requires pitch and Z end", "[validation][threading]")
 
 TEST_CASE("threading rejects out-of-range parameters", "[validation][threading]")
 {
-    auto request = m6;
+    auto request = metric_m6;
     request.pitch = 0.0;
     request.cut_mult = 1.5;
     request.min_cut = 0.0;
@@ -53,7 +53,7 @@ TEST_CASE("threading rejects out-of-range parameters", "[validation][threading]"
 
 TEST_CASE("zero spring cuts is a valid entry", "[validation][threading]")
 {
-    auto request = m6;
+    auto request = metric_m6;
     request.spring_cuts = 0.0;
     CHECK(elle::core::validate_threading(request).empty());
     CHECK(elle::core::plan_threading(request, {}).spring_cuts == 0);

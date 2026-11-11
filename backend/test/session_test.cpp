@@ -157,8 +157,7 @@ TEST_CASE("changing mode asks LinuxCNC to re-sync motion", "[session]")
     Fixture fixture{};
     static_cast<void>(fixture.send(R"({"type":"select_mode","mode":"cycle"})"));
     const auto tick = fixture.tick(10.0, 0.0);
-    REQUIRE(tick.job.has_value());
-    CHECK(std::holds_alternative<elle::app::ResyncMotion>(*tick.job));
+    CHECK((tick.job.has_value() && std::holds_alternative<elle::app::ResyncMotion>(*tick.job)));
 }
 
 TEST_CASE("tool and preference changes are saved", "[session]")

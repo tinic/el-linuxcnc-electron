@@ -1,8 +1,9 @@
 #include <elle/linuxcnc/task_client.hpp>
 
+#include <elle/core/task.hpp>
+
 #include <algorithm>
 #include <chrono>
-#include <cstring>
 #include <expected>
 #include <filesystem>
 #include <format>
@@ -19,6 +20,7 @@
 #include <emc.hh>
 #include <emc_nml.hh>
 #include <nml.hh>
+#include <nml_type.hh>
 #include <rcs.hh>
 #include <stat_msg.hh>
 
@@ -110,11 +112,13 @@ struct TaskClient::Channels {
     int serial{};
 
     /// The status buffer, if the latest message in it is a task status.
-    [[nodiscard]] auto latest_status() -> EMC_STAT*
+    [[nodiscard]] auto latest_status() const -> EMC_STAT*
     {
         if (status->peek() != EMC_STAT_TYPE) {
             return nullptr;
         }
+        // NML hands out the base class; the type tag (EMC_STAT_TYPE) was checked above.
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
         return static_cast<EMC_STAT*>(status->get_address());
     }
 
@@ -227,10 +231,12 @@ auto TaskClient::wait_complete(std::chrono::milliseconds timeout) -> std::expect
             if (serial_diff > 0) {
                 return {};
             }
-            if (serial_diff == 0 && stat->status == RCS_STATUS::DONE) {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access): RCS_STAT_MSG's own union.
+            const RCS_STATUS state = stat->status;
+            if (serial_diff == 0 && state == RCS_STATUS::DONE) {
                 return {};
             }
-            if (serial_diff == 0 && stat->status == RCS_STATUS::ERROR) {
+            if (serial_diff == 0 && state == RCS_STATUS::ERROR) {
                 return std::unexpected{core::TaskError::failed};
             }
         }
@@ -243,12 +249,16 @@ auto TaskClient::operator_messages() -> std::vector<std::string>
 {
     std::vector<std::string> messages{};
     for (NMLTYPE type = channels_->errors->read(); type > 0; type = channels_->errors->read()) {
-        auto* message = channels_->errors->get_address();
+        // NML hands out the base class; each downcast below follows its own type tag.
+        NMLmsg* message = channels_->errors->get_address();
         if (type == EMC_OPERATOR_ERROR_TYPE) {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast): tag checked
             messages.push_back(text_of(static_cast<EMC_OPERATOR_ERROR*>(message)->error));
         } else if (type == EMC_OPERATOR_TEXT_TYPE) {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast): tag checked
             messages.push_back(text_of(static_cast<EMC_OPERATOR_TEXT*>(message)->text));
         } else if (type == EMC_OPERATOR_DISPLAY_TYPE) {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast): tag checked
             messages.push_back(text_of(static_cast<EMC_OPERATOR_DISPLAY*>(message)->display));
         }
     }

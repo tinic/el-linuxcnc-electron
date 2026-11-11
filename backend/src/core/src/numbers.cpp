@@ -6,6 +6,7 @@
 #include <memory>
 #include <numbers>
 #include <string>
+#include <system_error>
 
 namespace elle::core {
 

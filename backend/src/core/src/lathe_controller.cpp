@@ -1,5 +1,6 @@
 #include <elle/core/lathe_controller.hpp>
 
+#include <elle/core/cycle.hpp>
 #include <elle/core/jog.hpp>
 #include <elle/core/leadscrew.hpp>
 
@@ -105,9 +106,9 @@ auto LatheController::set_tools(std::vector<Tool> tools) -> void
     settings_.tools = std::move(tools);
 }
 
-auto LatheController::select_tool(int id) -> void
+auto LatheController::select_tool(int tool_id) -> void
 {
-    settings_.current_tool = id;
+    settings_.current_tool = tool_id;
 }
 
 auto LatheController::jog_hold(JogButton button, Clock::time_point now) -> void

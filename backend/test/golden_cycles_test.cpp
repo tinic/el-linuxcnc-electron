@@ -17,7 +17,7 @@
 #include <string>
 #include <vector>
 
-namespace {
+namespace golden {
 
 using elle::core::Destination;
 using elle::core::GcodeLines;
@@ -49,6 +49,17 @@ struct StrictJson : glz::opts {
     bool error_on_missing_keys = true;
 };
 
+} // namespace golden
+
+namespace {
+
+using golden::Destination;
+using golden::GcodeLines;
+using golden::GoldenCycles;
+using golden::StrictJson;
+using golden::ThreadingCase;
+using golden::TurningCase;
+
 auto load_golden_cycles() -> GoldenCycles
 {
     std::ifstream file{ELLE_GOLDEN_CYCLES_PATH};
@@ -62,7 +73,7 @@ auto load_golden_cycles() -> GoldenCycles
     return cycles;
 }
 
-const GoldenCycles& golden_cycles()
+auto golden_cycles() -> const GoldenCycles&
 {
     static const GoldenCycles cycles = load_golden_cycles();
     return cycles;

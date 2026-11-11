@@ -1,0 +1,9 @@
+# Tests run every check of ../.clang-tidy. One option differs: the literal values a test asserts
+# are its specification, so floating-point literals and these small counts/durations are not
+# "magic numbers" here.
+InheritParentConfig: true
+CheckOptions:
+  readability-magic-numbers.IgnoreAllFloatingPointValues: true
+  readability-magic-numbers.IgnoredIntegerValues: '1;2;3;4;5;6;10;20;30;50;100;150;200;500;1000;3000;5000'
+  cppcoreguidelines-avoid-magic-numbers.IgnoreAllFloatingPointValues: true
+  cppcoreguidelines-avoid-magic-numbers.IgnoredIntegerValues: '1;2;3;4;5;6;10;20;30;50;100;150;200;500;1000;3000;5000'

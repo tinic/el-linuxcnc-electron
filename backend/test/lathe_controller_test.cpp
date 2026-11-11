@@ -32,21 +32,27 @@ auto settings_with_tools() -> elle::core::MachineSettings
             .current_tool = cutoff_tool};
 }
 
+/// Where the slides' encoders read, mm.
+struct Slides {
+    double x{};
+    double z{};
+};
+
 /// Drives a controller tick by tick, simulating the encoder component honouring resets.
 class Bench {
 public:
-    explicit Bench(LatheController& controller) : controller_{controller} {}
+    explicit Bench(LatheController& controller) : controller_{&controller} {}
 
-    auto move_to(double x, double z) -> void
+    auto move_to(Slides slides) -> void
     {
-        sample_.position_x = x;
-        sample_.position_z = z;
+        sample_.position_x = slides.x;
+        sample_.position_z = slides.z;
     }
 
     auto tick() -> TickResult
     {
         now_ += milliseconds{10};
-        const TickResult result = controller_.tick(sample_, now_);
+        const TickResult result = controller_->tick(sample_, now_);
         if (result.outputs.reset_x != reset_x_) {
             reset_x_ = result.outputs.reset_x;
             sample_.position_x = 0.0;
@@ -69,12 +75,28 @@ public:
     auto sample() -> MachineSample& { return sample_; }
 
 private:
-    LatheController& controller_;
+    LatheController* controller_;
     MachineSample sample_{};
     LatheController::Clock::time_point now_{};
     std::uint32_t reset_x_{};
     std::uint32_t reset_z_{};
 };
+
+/// Switches mode and checks over the following ticks that the readout holds still while the
+/// encoders are zeroed and LinuxCNC is asked to re-sync.
+auto check_mode_change(LatheController& controller, Bench& bench, OperatingMode mode) -> void
+{
+    const auto before = controller.readout();
+    controller.select_mode(mode);
+    bool resynced = false;
+    for (int step = 0; step < 5; ++step) {
+        resynced = bench.tick().resync_motion || resynced;
+        CHECK(controller.readout().x == Approx(before.x));
+        CHECK(controller.readout().z == Approx(before.z));
+    }
+    CHECK(resynced);
+    CHECK(bench.sample().position_x == Approx(0.0));
+}
 
 } // namespace
 
@@ -83,7 +105,7 @@ TEST_CASE("touch-off makes the current tool read the entered value", "[controlle
     LatheController controller{settings_with_tools()};
     Bench bench{controller};
     controller.select_mode(OperatingMode::manual);
-    bench.move_to(12.0, -30.0);
+    bench.move_to({.x = 12.0, .z = -30.0});
     bench.settle();
 
     controller.set_axis(Axis::x, 5.0);
@@ -98,25 +120,16 @@ TEST_CASE("changing modes zeroes the encoders without moving the readout", "[con
     Bench bench{controller};
     controller.select_mode(OperatingMode::manual);
     bench.settle();
-    bench.move_to(12.0, -30.0);
+    bench.move_to({.x = 12.0, .z = -30.0});
     bench.settle();
     controller.set_axis(Axis::x, 5.0);
     controller.set_axis(Axis::z, -1.0);
 
     for (const OperatingMode mode :
          {OperatingMode::cycle, OperatingMode::manual, OperatingMode::other, OperatingMode::manual}) {
-        bench.move_to(bench.sample().position_x + 0.5, bench.sample().position_z - 2.0);
+        bench.move_to({.x = bench.sample().position_x + 0.5, .z = bench.sample().position_z - 2.0});
         bench.settle();
-        const auto before = controller.readout();
-        controller.select_mode(mode);
-        bool resynced = false;
-        for (int step = 0; step < 5; ++step) {
-            resynced = bench.tick().resync_motion || resynced;
-            CHECK(controller.readout().x == Approx(before.x));
-            CHECK(controller.readout().z == Approx(before.z));
-        }
-        CHECK(resynced);
-        CHECK(bench.sample().position_x == Approx(0.0));
+        check_mode_change(controller, bench, mode);
     }
 }
 
@@ -124,7 +137,7 @@ TEST_CASE("editing the current tool's offsets takes effect immediately", "[contr
 {
     LatheController controller{settings_with_tools()};
     Bench bench{controller};
-    bench.move_to(10.0, 0.0);
+    bench.move_to({.x = 10.0, .z = 0.0});
     bench.settle();
     const double before = controller.readout().x;
 
@@ -141,7 +154,7 @@ TEST_CASE("cycles use the tool-tip position the operator sees", "[controller]")
 {
     LatheController controller{settings_with_tools()};
     Bench bench{controller};
-    bench.move_to(20.0, 3.0);
+    bench.move_to({.x = 20.0, .z = 3.0});
     bench.settle();
     controller.set_axis(Axis::x, 6.0);
     CHECK(controller.work_position().x == Approx(controller.readout().x));

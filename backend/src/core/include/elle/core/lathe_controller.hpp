@@ -65,11 +65,16 @@ struct Tool {
     std::string description{};
 };
 
+/// Linear encoder resolution of the original machine, mm per count (X counts the other way).
+inline constexpr double default_encoder_scale = 0.001;
+/// Leadscrew feed until the operator picks one, mm per spindle revolution.
+inline constexpr double default_pitch = 0.1;
+
 /// Persistent machine configuration the controller needs.
 struct MachineSettings {
-    double encoder_scale_z{0.001};
-    double encoder_scale_x{-0.001};
-    Pitches pitches{.x = 0.1, .z = 0.1};
+    double encoder_scale_z{default_encoder_scale};
+    double encoder_scale_x{-default_encoder_scale};
+    Pitches pitches{.x = default_pitch, .z = default_pitch};
     std::vector<Tool> tools{};
     int current_tool{};
 };
@@ -111,7 +116,7 @@ public:
     auto set_axis(Axis axis, double value) -> void;
 
     auto set_tools(std::vector<Tool> tools) -> void;
-    auto select_tool(int id) -> void;
+    auto select_tool(int tool_id) -> void;
 
     auto jog_hold(JogButton button, Clock::time_point now) -> void;
     auto jog_release(JogButton button) -> void;

@@ -84,10 +84,18 @@ auto advance_cut(CutState& state, const Schedule& schedule, const Infeed& infeed
     }
 }
 
-auto append_pass(GcodeLines& lines, int pass_number, const CutState& state,
-                 const ThreadingProgram& program, const Schedule& schedule,
-                 Destination destination) -> void
+/// Everything constant over one cycle's passes.
+struct Cycle {
+    ThreadingProgram program{};
+    Schedule schedule{};
+    Destination destination{};
+};
+
+auto append_pass(GcodeLines& lines, int pass_number, const CutState& state, const Cycle& cycle)
+    -> void
 {
+    const ThreadingProgram& program = cycle.program;
+    const Schedule& schedule = cycle.schedule;
     const double cut_end_z = program.z_end + state.z_cut;
     const double pullout_z = cut_end_z + program.z_pullout;
     const auto x_end = format_coordinate(program.x_end);
@@ -96,7 +104,7 @@ auto append_pass(GcodeLines& lines, int pass_number, const CutState& state,
     lines.push_back(std::format("(Pass {} - Cut size: {:.4f})", pass_number, state.cut_size));
     lines.push_back(std::format("G1 X{} Z{}", format_coordinate(program.x_start + state.x_cut),
                                 format_coordinate(program.z_start + state.z_cut)));
-    if (destination == Destination::machine) {
+    if (cycle.destination == Destination::machine) {
         lines.emplace_back("G4 P0.01");
     }
     lines.push_back(std::format("G33 X{} Z{} K{}", format_coordinate(program.x_end + state.x_cut),
@@ -167,6 +175,7 @@ auto threading_gcode(const ThreadingProgram& program, Destination destination)
                                                           .k_z = program.z_depth / compound_depth}
                                                  : Infeed{};
 
+    const Cycle cycle{.program = program, .schedule = schedule, .destination = destination};
     GcodeLines lines{};
     detail::append_preamble(lines);
     if (destination == Destination::machine) {
@@ -182,7 +191,7 @@ auto threading_gcode(const ThreadingProgram& program, Destination destination)
             return std::unexpected{CycleError::too_many_passes};
         }
         advance_cut(state, schedule, infeed, program);
-        append_pass(lines, pass_number, state, program, schedule, destination);
+        append_pass(lines, pass_number, state, cycle);
         if (exactly_equal(std::abs(state.x_cut), std::abs(program.x_depth))) {
             if (spring_cuts_remaining > 0) {
                 // Back off one cut so the spring pass re-cuts the last increment at full depth.

@@ -2,7 +2,6 @@
 
 #include <elle/app/settings.hpp>
 #include <elle/core/backplot.hpp>
-#include <elle/core/cycle.hpp>
 #include <elle/core/jog.hpp>
 #include <elle/core/lathe_controller.hpp>
 #include <elle/core/leadscrew.hpp>
@@ -67,7 +66,8 @@ struct glz::meta<elle::app::NoticeLevel> {
 
 namespace elle::app {
 
-namespace {
+// Not an anonymous namespace: glaze's reflection needs these types to have external linkage.
+namespace wire {
 
 struct Envelope {
     std::string type{};
@@ -80,27 +80,6 @@ struct Lenient : glz::opts {
 struct Strict : glz::opts {
     bool error_on_missing_keys = true;
 };
-
-template <class T>
-auto read_as(std::string_view json) -> std::expected<Command, std::string>
-{
-    T command{};
-    if (const auto error = glz::read<Strict{}>(command, json); error) {
-        return std::unexpected{glz::format_error(error, json)};
-    }
-    return Command{std::move(command)};
-}
-
-template <class Message>
-auto write(const Message& message) -> std::string
-{
-    std::string json{};
-    // Absent optionals are sent as null: the panel's types say "value or null", never "missing".
-    if (glz::write<glz::opts{.skip_null_members = false}>(message, json)) {
-        json.clear();
-    }
-    return json;
-}
 
 struct StatusEnvelope {
     std::string_view type{"status"};
@@ -128,11 +107,39 @@ struct NoticeEnvelope {
     std::string_view text{};
 };
 
+} // namespace wire
+
+namespace {
+
+using wire::Lenient;
+using wire::Strict;
+
+template <class T>
+auto read_as(std::string_view json) -> std::expected<Command, std::string>
+{
+    T command{};
+    if (const auto error = glz::read<Strict{}>(command, json); error) {
+        return std::unexpected{glz::format_error(error, json)};
+    }
+    return Command{std::move(command)};
+}
+
+template <class Message>
+auto write(const Message& message) -> std::string
+{
+    std::string json{};
+    // Absent optionals are sent as null: the panel's types say "value or null", never "missing".
+    if (glz::write<glz::opts{.skip_null_members = false}>(message, json)) {
+        json.clear();
+    }
+    return json;
+}
+
 } // namespace
 
 auto parse_command(std::string_view json) -> std::expected<Command, std::string>
 {
-    Envelope envelope{};
+    wire::Envelope envelope{};
     if (const auto error = glz::read<Lenient{}>(envelope, json); error) {
         return std::unexpected{glz::format_error(error, json)};
     }
@@ -158,27 +165,27 @@ auto parse_command(std::string_view json) -> std::expected<Command, std::string>
 
 auto status_message(const MachineStatus& status) -> std::string
 {
-    return write(StatusEnvelope{.status = status});
+    return write(wire::StatusEnvelope{.status = status});
 }
 
 auto settings_message(const Settings& settings) -> std::string
 {
-    return write(SettingsEnvelope{.settings = settings});
+    return write(wire::SettingsEnvelope{.settings = settings});
 }
 
 auto log_message(const std::vector<std::string>& lines) -> std::string
 {
-    return write(LogEnvelope{.lines = lines});
+    return write(wire::LogEnvelope{.lines = lines});
 }
 
 auto plan_message(const CyclePlan& plan) -> std::string
 {
-    return write(PlanEnvelope{.plan = plan});
+    return write(wire::PlanEnvelope{.plan = plan});
 }
 
 auto notice_message(NoticeLevel level, std::string_view text) -> std::string
 {
-    return write(NoticeEnvelope{.level = level, .text = text});
+    return write(wire::NoticeEnvelope{.level = level, .text = text});
 }
 
 } // namespace elle::app

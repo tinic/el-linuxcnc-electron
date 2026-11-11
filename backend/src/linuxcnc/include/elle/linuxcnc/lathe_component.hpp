@@ -22,7 +22,7 @@ public:
     ~LatheComponent();
 
     /// Tells HAL that all pins exist, so `net` commands referencing them can run.
-    [[nodiscard]] auto ready() -> std::expected<void, std::string>;
+    [[nodiscard]] auto ready() const -> std::expected<void, std::string>;
 
     [[nodiscard]] auto read() const -> core::MachineSample;
     auto write(const core::PinOutputs& outputs) -> void;

@@ -29,10 +29,18 @@ struct Words {
     std::optional<double> z{};
 };
 
+/// A parsed motion line: its kind is always known.
+struct Motion {
+    MoveKind kind{};
+    std::optional<double> x{};
+    std::optional<double> z{};
+};
+
 auto parse_number(std::string_view text) -> std::optional<double>
 {
     double value{};
-    const auto result = std::from_chars(text.data(), std::to_address(text.end()), value);
+    const auto result =
+        std::from_chars(std::to_address(text.begin()), std::to_address(text.end()), value);
     if (result.ec != std::errc{} || result.ptr != std::to_address(text.end())) {
         return std::nullopt;
     }
@@ -54,7 +62,7 @@ auto motion_for(std::string_view word) -> std::optional<MoveKind>
 }
 
 /// Splits one motion line into words. Returns an error message for anything not understood.
-auto parse_motion(std::string_view line) -> std::expected<Words, std::string>
+auto parse_motion(std::string_view line) -> std::expected<Motion, std::string>
 {
     Words words{};
     std::size_t position = 0;
@@ -89,7 +97,7 @@ auto parse_motion(std::string_view line) -> std::expected<Words, std::string>
     if (!words.motion.has_value()) {
         return std::unexpected{std::format("no motion in '{}'", line)};
     }
-    return words;
+    return Motion{.kind = *words.motion, .x = words.x, .z = words.z};
 }
 
 auto skipped(std::string_view line) -> bool
@@ -121,7 +129,7 @@ auto backplot(const GcodeLines& lines, PlotPoint start) -> std::expected<Backplo
         }
         const PlotPoint target{.x = words->x.value_or(tool.x), .z = words->z.value_or(tool.z)};
         plot.segments.push_back(
-            {.kind = *words->motion, .from = tool, .to = target, .line = index});
+            {.kind = words->kind, .from = tool, .to = target, .line = index});
         include(plot.bounds, target);
         tool = target;
     }

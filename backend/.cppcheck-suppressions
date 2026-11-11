@@ -1,2 +1,9 @@
-# One suppression per line, each with its reason above it. Keep this file empty unless a finding is
-# a demonstrated false positive.
+# One suppression per line, each with its reason above it. Only demonstrated false positives.
+
+# Members of these structs are read and written by glaze's compile-time reflection, which cppcheck
+# cannot see.
+unusedStructMember:*/src/app/src/protocol.cpp
+unusedStructMember:*/test/golden_cycles_test.cpp
+
+# MimeType::type is read through the std::ranges::find projection result (match->type).
+unusedStructMember:*/src/shell/panel_window.cpp

@@ -3,13 +3,13 @@
 #include <elle/core/cycle.hpp>
 #include <elle/core/task.hpp>
 
-#include <array>
+#include <algorithm>
 #include <chrono>
-#include <expected>
 #include <filesystem>
 #include <format>
 #include <fstream>
-#include <functional>
+#include <ios>
+#include <iterator>
 #include <mutex>
 #include <optional>
 #include <stop_token>
@@ -31,17 +31,6 @@ constexpr auto mode_change_pause = std::chrono::milliseconds{100};
 constexpr int mode_change_attempts = 50;
 constexpr std::string_view subroutine = "canned-cycle";
 
-using Result = std::expected<void, core::TaskError>;
-
-/// Joins the failure of a task step into one log line, or nothing when it succeeded.
-auto failed(const Result& result, std::string_view step)
-    -> std::optional<std::string>
-{
-    if (result.has_value()) {
-        return std::nullopt;
-    }
-    return std::format("{}: {}", step, core::describe(result.error()));
-}
 
 } // namespace
 
@@ -61,7 +50,7 @@ TaskWorker::~TaskWorker()
 auto TaskWorker::submit(TaskJob job) -> void
 {
     {
-        const std::scoped_lock lock{mutex_};
+        const std::scoped_lock<std::mutex> lock{mutex_};
         jobs_.push_back(std::move(job));
     }
     wake_.notify_all();
@@ -69,13 +58,13 @@ auto TaskWorker::submit(TaskJob job) -> void
 
 auto TaskWorker::snapshot() const -> TaskSnapshot
 {
-    const std::scoped_lock lock{mutex_};
+    const std::scoped_lock<std::mutex> lock{mutex_};
     return snapshot_;
 }
 
 auto TaskWorker::take_log() -> std::vector<std::string>
 {
-    const std::scoped_lock lock{mutex_};
+    const std::scoped_lock<std::mutex> lock{mutex_};
     return std::exchange(log_, {});
 }
 
@@ -89,7 +78,7 @@ auto TaskWorker::run(const std::stop_token& stop) -> void
     while (!stop.stop_requested()) {
         std::optional<TaskJob> job;
         {
-            std::unique_lock lock{mutex_};
+            std::unique_lock<std::mutex> lock{mutex_};
             wake_.wait_for(lock, stop, poll_interval, [this] { return !jobs_.empty(); });
             if (!jobs_.empty()) {
                 job = std::move(jobs_.front());
@@ -123,18 +112,18 @@ auto TaskWorker::poll() -> void
 {
     const auto status = port_.status();
     auto messages = port_.operator_messages();
-    const std::scoped_lock lock{mutex_};
+    const std::scoped_lock<std::mutex> lock{mutex_};
     snapshot_ = {.connected = status.has_value(),
                  .program_running = status.has_value() && status->program_running(),
                  .error = status.has_value() && status->in_error()};
-    for (auto& message : messages) {
-        log_.push_back(std::format("LinuxCNC: {}", message));
-    }
+    std::ranges::transform(messages, std::back_inserter(log_), [](const std::string& message) {
+        return std::format("LinuxCNC: {}", message);
+    });
 }
 
 auto TaskWorker::log(std::string line) -> void
 {
-    const std::scoped_lock lock{mutex_};
+    const std::scoped_lock<std::mutex> lock{mutex_};
     log_.push_back(std::move(line));
 }
 
@@ -163,8 +152,7 @@ auto TaskWorker::ready_for_mdi() -> bool
         if (status->mode == core::TaskMode::mdi) {
             return true;
         }
-        if (const auto error = failed(port_.set_mode(core::TaskMode::mdi), "switching to MDI")) {
-            log(*error);
+        if (!succeeded(port_.set_mode(core::TaskMode::mdi), "switching to MDI")) {
             return false;
         }
         std::this_thread::sleep_for(mode_change_pause);
@@ -173,78 +161,69 @@ auto TaskWorker::ready_for_mdi() -> bool
     return false;
 }
 
+auto TaskWorker::succeeded(const Result& result, std::string_view step) -> bool
+{
+    if (result.has_value()) {
+        return true;
+    }
+    log(std::format("{}: {}", step, core::describe(result.error())));
+    return false;
+}
+
+auto TaskWorker::finished(std::string_view step) -> bool
+{
+    return succeeded(port_.wait_complete(core::TaskPort::default_timeout), step);
+}
+
 auto TaskWorker::resync() -> void
 {
-    if (const auto error = failed(port_.set_mode(core::TaskMode::mdi), "switching to MDI")) {
-        log(*error);
-        return;
-    }
-    static_cast<void>(port_.wait_complete(core::TaskPort::default_timeout));
-    if (!ready_for_mdi()) {
+    if (!succeeded(port_.set_mode(core::TaskMode::mdi), "switching to MDI") ||
+        !finished("waiting for MDI") || !ready_for_mdi()) {
         return;
     }
     // Machine off and on again makes motion take the zeroed encoder positions as its commanded
-    // position; then start the interpreter from a clean state. Each step runs only if the
-    // previous one succeeded.
-    const auto wait = [this] { return port_.wait_complete(core::TaskPort::default_timeout); };
-    const std::array<std::pair<std::string_view, std::function<Result()>>, 6> steps{{
-        {"machine off", [this] { return port_.set_state(core::MachineState::off); }},
-        {"waiting for machine off", wait},
-        {"machine on", [this] { return port_.set_state(core::MachineState::on); }},
-        {"waiting for machine on", wait},
-        {"interpreter reset", [this] { return port_.reset_interpreter(); }},
-        {"waiting for interpreter reset", wait},
-    }};
-    for (const auto& [step, action] : steps) {
-        if (const auto error = failed(action(), step)) {
-            log(*error);
-            return;
-        }
+    // position; then the interpreter starts from a clean state. Each step needs the previous one.
+    static_cast<void>(succeeded(port_.set_state(core::MachineState::off), "machine off") &&
+                      finished("waiting for machine off") &&
+                      succeeded(port_.set_state(core::MachineState::on), "machine on") &&
+                      finished("waiting for machine on") &&
+                      succeeded(port_.reset_interpreter(), "interpreter reset") &&
+                      finished("waiting for interpreter reset"));
+}
+
+auto TaskWorker::write_cycle(const core::GcodeLines& program) -> bool
+{
+    std::ofstream file{cycle_file(), std::ios::trunc};
+    file << std::format("o<{}> sub\n", subroutine);
+    for (const auto& line : program) {
+        file << line << '\n';
     }
+    file << std::format("o<{}> endsub\n", subroutine);
+    if (!file.flush()) {
+        log(std::format("writing {} failed", cycle_file().string()));
+        return false;
+    }
+    return true;
 }
 
 auto TaskWorker::run_cycle(const core::GcodeLines& program) -> void
 {
-    if (const auto error = failed(port_.set_state(core::MachineState::on), "machine on")) {
-        log(*error);
-        return;
+    // The interpreter caches subroutine files; it is reset after writing so this cycle's file is
+    // read fresh.
+    const bool started = succeeded(port_.set_state(core::MachineState::on), "machine on") &&
+                         finished("waiting for machine on") && ready_for_mdi() &&
+                         write_cycle(program) &&
+                         succeeded(port_.reset_interpreter(), "interpreter reset") &&
+                         finished("waiting for interpreter reset") &&
+                         succeeded(port_.mdi(std::format("o<{}> call", subroutine)), "starting");
+    if (started) {
+        log(std::format("Cycle started ({} lines)", program.size()));
     }
-    static_cast<void>(port_.wait_complete(core::TaskPort::default_timeout));
-    if (!ready_for_mdi()) {
-        return;
-    }
-    static_cast<void>(port_.wait_complete(core::TaskPort::default_timeout));
-
-    {
-        std::ofstream file{cycle_file(), std::ios::trunc};
-        file << std::format("o<{}> sub\n", subroutine);
-        for (const auto& line : program) {
-            file << line << '\n';
-        }
-        file << std::format("o<{}> endsub\n", subroutine);
-        if (!file.flush()) {
-            log(std::format("writing {} failed", cycle_file().string()));
-            return;
-        }
-    }
-    // The interpreter caches subroutine files; reset it so this cycle's file is read fresh.
-    if (const auto error = failed(port_.reset_interpreter(), "interpreter reset")) {
-        log(*error);
-        return;
-    }
-    static_cast<void>(port_.wait_complete(core::TaskPort::default_timeout));
-    if (const auto error = failed(port_.mdi(std::format("o<{}> call", subroutine)), "starting")) {
-        log(*error);
-        return;
-    }
-    log(std::format("Cycle started ({} lines)", program.size()));
 }
 
 auto TaskWorker::abort_task() -> void
 {
-    if (const auto error = failed(port_.abort(), "abort")) {
-        log(*error);
-    }
+    static_cast<void>(succeeded(port_.abort(), "abort"));
     std::error_code ignored{};
     std::filesystem::remove(cycle_file(), ignored);
     log("Cycle stopped");

@@ -12,7 +12,7 @@ using std::chrono::milliseconds;
 
 namespace {
 
-const Jog::Clock::time_point start{};
+constexpr Jog::Clock::time_point start{};
 
 } // namespace
 
@@ -24,13 +24,11 @@ TEST_CASE("jog speed ramps with hold time up to the axis limit", "[jog]")
         jog.hold(JogButton::z_minus, start + milliseconds{100 * step});
     }
     const auto ramping = jog.velocities(start + milliseconds{500});
-    REQUIRE(ramping.z.has_value());
-    CHECK(exactly_equal(*ramping.z, -1.5));
+    CHECK(exactly_equal(ramping.z.value_or(0.0), -1.5));
     CHECK(!ramping.x.has_value());
 
     const auto capped = jog.velocities(start + milliseconds{3000});
-    REQUIRE(capped.z.has_value());
-    CHECK(exactly_equal(*capped.z, -6.0));
+    CHECK(exactly_equal(capped.z.value_or(0.0), -6.0));
 }
 
 TEST_CASE("the cross slide jogs slower than the carriage", "[jog]")
@@ -39,8 +37,7 @@ TEST_CASE("the cross slide jogs slower than the carriage", "[jog]")
     jog.hold(JogButton::x_plus, start);
     jog.hold(JogButton::x_plus, start + milliseconds{5000});
     const auto result = jog.velocities(start + milliseconds{5000});
-    REQUIRE(result.x.has_value());
-    CHECK(exactly_equal(*result.x, 3.0));
+    CHECK(exactly_equal(result.x.value_or(0.0), 3.0));
 }
 
 TEST_CASE("a button that is no longer refreshed stops by itself", "[jog][safety]")

@@ -4,11 +4,13 @@
 
 #include <glaze/glaze.hpp>
 
+#include <array>
 #include <cstdlib>
 #include <expected>
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <ios>
 #include <iterator>
 #include <optional>
 #include <string>
@@ -18,9 +20,8 @@
 
 namespace elle::app {
 
-namespace {
-
-constexpr int default_tool_count = 10;
+// Not an anonymous namespace: glaze's reflection needs these types to have external linkage.
+namespace legacy {
 
 /// A tool in the Electron app's settings (camelCase keys).
 struct LegacyTool {
@@ -52,6 +53,17 @@ struct LegacyConfig {
 struct LenientJson : glz::opts {
     bool error_on_unknown_keys = false;
 };
+
+} // namespace legacy
+
+namespace {
+
+using legacy::LegacyConfig;
+using legacy::LegacySetting;
+using legacy::LegacyTool;
+using legacy::LenientJson;
+
+constexpr int default_tool_count = 10;
 
 auto read_file(const std::filesystem::path& file) -> std::optional<std::string>
 {
@@ -106,8 +118,8 @@ auto import_legacy(const LegacySetting& legacy) -> Settings
 } // namespace elle::app
 
 template <>
-struct glz::meta<elle::app::LegacySetting> {
-    using T = elle::app::LegacySetting;
+struct glz::meta<elle::app::legacy::LegacySetting> {
+    using T = elle::app::legacy::LegacySetting;
     static constexpr auto value =
         glz::object("diameterMode", &T::diameter_mode, "defaultMetricOnStartup",
                     &T::metric_on_startup, "selectedThreadingTab", &T::threading_tab,
@@ -118,8 +130,8 @@ struct glz::meta<elle::app::LegacySetting> {
 };
 
 template <>
-struct glz::meta<elle::app::LegacyTool> {
-    using T = elle::app::LegacyTool;
+struct glz::meta<elle::app::legacy::LegacyTool> {
+    using T = elle::app::legacy::LegacyTool;
     static constexpr auto value = glz::object("id", &T::id, "offsetX", &T::offset_x, "offsetZ",
                                               &T::offset_z, "description", &T::description);
 };

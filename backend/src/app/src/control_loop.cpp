@@ -59,7 +59,7 @@ auto ControlLoop::run(const std::stop_token& stop) -> void
 
 auto SimulatedMachine::read() -> core::MachineSample
 {
-    const std::scoped_lock lock{mutex_};
+    const std::scoped_lock<std::mutex> lock{mutex_};
     const auto now = std::chrono::steady_clock::now();
     if (last_.has_value()) {
         const double seconds = std::chrono::duration<double>(now - *last_).count();
@@ -85,7 +85,7 @@ auto SimulatedMachine::read() -> core::MachineSample
 
 auto SimulatedMachine::write(const core::PinOutputs& outputs) -> void
 {
-    const std::scoped_lock lock{mutex_};
+    const std::scoped_lock<std::mutex> lock{mutex_};
     if (outputs.reset_x != outputs_.reset_x) {
         sample_.position_x = 0.0;
     }
@@ -115,7 +115,7 @@ auto DemoTask::set_mode(core::TaskMode /*mode*/) -> std::expected<void, core::Ta
 
 auto DemoTask::mdi(std::string_view command) -> std::expected<void, core::TaskError>
 {
-    const std::scoped_lock lock{mutex_};
+    const std::scoped_lock<std::mutex> lock{mutex_};
     messages_.push_back(std::format("demo mode, not run: {}", command));
     return {};
 }
@@ -138,7 +138,7 @@ auto DemoTask::wait_complete(std::chrono::milliseconds /*timeout*/)
 
 auto DemoTask::operator_messages() -> std::vector<std::string>
 {
-    const std::scoped_lock lock{mutex_};
+    const std::scoped_lock<std::mutex> lock{mutex_};
     return std::exchange(messages_, {});
 }
 

@@ -8,49 +8,72 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <string>
+#include <expected>
+#include <utility>
 
 using Catch::Approx;
 using elle::core::Destination;
 using elle::core::MoveKind;
 
-TEST_CASE("a turning preview plots every pass", "[backplot]")
+namespace {
+
+/// Plots a program, or an empty plot (with the reason logged) if it cannot be generated.
+auto plot_of(const std::expected<elle::core::GcodeLines, elle::core::CycleError>& gcode,
+             elle::core::PlotPoint start) -> elle::core::Backplot
+{
+    if (!gcode.has_value()) {
+        FAIL_CHECK(elle::core::describe(gcode.error()));
+        return {};
+    }
+    auto plot = elle::core::backplot(*gcode, start);
+    if (!plot.has_value()) {
+        FAIL_CHECK(plot.error().message);
+        return {};
+    }
+    return std::move(*plot);
+}
+
+auto turning_plot() -> elle::core::Backplot
 {
     const auto program =
         elle::core::plan_turning({.target = 4.0, .z_end = -20.0}, {.x = 5.3, .z = 0.0, .a = 0.0});
-    const auto gcode = elle::core::turning_gcode(program, Destination::preview);
-    REQUIRE(gcode.has_value());
-    const auto plot = elle::core::backplot(*gcode, {.x = 5.3, .z = 0.0});
-    INFO((plot.has_value() ? std::string{} : plot.error().message));
-    REQUIRE(plot.has_value());
+    return plot_of(elle::core::turning_gcode(program, Destination::preview), {.x = 5.3, .z = 0.0});
+}
 
-    const auto threads = std::ranges::count(plot->segments, MoveKind::thread,
-                                            &elle::core::Segment::kind);
-    CHECK(threads == 4); // three roughing passes and the final pass
-    CHECK(plot->bounds.min.z == Approx(-20.0));
-    CHECK(plot->bounds.max.z == Approx(2.0));
-    CHECK(plot->bounds.min.x == Approx(4.0));
-    CHECK(plot->segments.back().to.x == Approx(4.0));
+auto thread_plot(Destination destination) -> elle::core::Backplot
+{
+    const auto program = elle::core::plan_threading(
+        {.pitch = 1.0, .x_depth = -0.613435, .z_end = -6.0}, {.x = 3.0, .z = 0.0, .a = 0.0});
+    return plot_of(elle::core::threading_gcode(program, destination), {.x = 3.0, .z = 0.0});
+}
+
+} // namespace
+
+TEST_CASE("a turning preview plots every pass", "[backplot]")
+{
+    const auto plot = turning_plot();
+    // three roughing passes and the final pass
+    CHECK(std::ranges::count(plot.segments, MoveKind::thread, &elle::core::Segment::kind) == 4);
+}
+
+TEST_CASE("a turning preview spans the cut", "[backplot]")
+{
+    const auto plot = turning_plot();
+    CHECK(plot.bounds.min.z == Approx(-20.0));
+    CHECK(plot.bounds.max.z == Approx(2.0));
+    CHECK(plot.bounds.min.x == Approx(4.0));
+    REQUIRE(!plot.segments.empty());
+    CHECK(plot.segments.back().to.x == Approx(4.0));
 }
 
 TEST_CASE("the machine variant of a thread plots the same path as the preview", "[backplot]")
 {
-    const auto program = elle::core::plan_threading(
-        {.pitch = 1.0, .x_depth = -0.613435, .z_end = -6.0}, {.x = 3.0, .z = 0.0, .a = 0.0});
-    const auto preview = elle::core::threading_gcode(program, Destination::preview);
-    const auto machine = elle::core::threading_gcode(program, Destination::machine);
-    REQUIRE(preview.has_value());
-    REQUIRE(machine.has_value());
-    const auto preview_plot = elle::core::backplot(*preview, {.x = 3.0, .z = 0.0});
-    const auto machine_plot = elle::core::backplot(*machine, {.x = 3.0, .z = 0.0});
-    REQUIRE(preview_plot.has_value());
-    REQUIRE(machine_plot.has_value());
-    REQUIRE(preview_plot->segments.size() == machine_plot->segments.size());
-    for (std::size_t index = 0; index < preview_plot->segments.size(); ++index) {
-        CHECK(preview_plot->segments.at(index).to.x ==
-              Approx(machine_plot->segments.at(index).to.x));
-        CHECK(preview_plot->segments.at(index).to.z ==
-              Approx(machine_plot->segments.at(index).to.z));
+    const auto preview = thread_plot(Destination::preview);
+    const auto machine = thread_plot(Destination::machine);
+    REQUIRE(preview.segments.size() == machine.segments.size());
+    for (std::size_t index = 0; index < preview.segments.size(); ++index) {
+        CHECK(preview.segments.at(index).to.x == Approx(machine.segments.at(index).to.x));
+        CHECK(preview.segments.at(index).to.z == Approx(machine.segments.at(index).to.z));
     }
 }
 
