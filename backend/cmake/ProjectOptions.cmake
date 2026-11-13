@@ -155,5 +155,7 @@ target_compile_options(elle_project_options INTERFACE ${ELLE_GCC_WARNINGS}
                                                       $<$<BOOL:${ELLE_WARNINGS_AS_ERRORS}>:-Werror>)
 
 if(ELLE_ENABLE_GCC_ANALYZER)
+  # Opt-in only (gcc-analyzer preset). Never part of the routine checks: on the lathe PC it
+  # exhausted memory and froze the machine. Do not raise its exploration --params.
   target_compile_options(elle_project_options INTERFACE -fanalyzer -Wanalyzer-too-complex)
 endif()

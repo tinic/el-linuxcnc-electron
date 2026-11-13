@@ -35,7 +35,7 @@ the network.
 
 Requirements: GCC 16 (`tools/build-gcc16.sh` builds it into `~/.local/gcc-16`; `bootstrap.sh`
 installs everything else), CMake 4, Ninja, Node 22, LinuxCNC 2.9+ with `linuxcnc-uspace-dev`, and
-`libwebkit2gtk-4.1-dev`. The static analyzers (clang-tidy 19, cppcheck, include-what-you-use)
+`libwebkit2gtk-4.1-dev`. The static analyzers (clang-tidy 19 and cppcheck)
 are optional for development builds and required by the `analyze` preset.
 
 ```sh

@@ -34,7 +34,7 @@ architecture and build commands.
 
 ```sh
 cd backend && for p in dev tsan release; do cmake --workflow --preset check-$p; done
-cmake --workflow --preset check-analyze     # needs clang-tidy-19, cppcheck, iwyu
+cmake --workflow --preset check-analyze     # needs clang-tidy-19 and cppcheck
 cd ../ui && npm run check
 ```
 

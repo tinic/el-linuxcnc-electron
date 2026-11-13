@@ -6,6 +6,8 @@ include_guard(GLOBAL)
 
 option(ELLE_ENABLE_CLANG_TIDY "Run clang-tidy on every translation unit" ON)
 option(ELLE_ENABLE_CPPCHECK "Run cppcheck on every translation unit" ON)
+# Off by default: include usage is enforced by clang-tidy's misc-include-cleaner. Debian 12's IWYU
+# (built on clang 14) cannot parse C++23; enable this with an IWYU built on clang 19 or newer.
 option(ELLE_ENABLE_IWYU "Run include-what-you-use on every translation unit" OFF)
 option(ELLE_REQUIRE_ANALYZERS "Fail configuration when an enabled analyzer is not installed" OFF)
 
