@@ -34,67 +34,67 @@ using Clock = std::chrono::steady_clock;
 /// Interval between status polls while waiting, as in LinuxCNC's own Python binding.
 constexpr auto poll_interval = std::chrono::milliseconds{10};
 
-auto to_emc(core::MachineState state) -> EMC_TASK_STATE
+auto to_emc(core::MachineState state) -> EMC_TASK_STATE_ENUM
 {
     switch (state) {
     case core::MachineState::estop:
-        return EMC_TASK_STATE::ESTOP;
+        return EMC_TASK_STATE_ESTOP;
     case core::MachineState::estop_reset:
-        return EMC_TASK_STATE::ESTOP_RESET;
+        return EMC_TASK_STATE_ESTOP_RESET;
     case core::MachineState::off:
-        return EMC_TASK_STATE::OFF;
+        return EMC_TASK_STATE_OFF;
     case core::MachineState::on:
     default:
-        return EMC_TASK_STATE::ON;
+        return EMC_TASK_STATE_ON;
     }
 }
 
-auto from_emc(EMC_TASK_STATE state) -> core::MachineState
+auto from_emc(EMC_TASK_STATE_ENUM state) -> core::MachineState
 {
     switch (state) {
-    case EMC_TASK_STATE::ESTOP_RESET:
+    case EMC_TASK_STATE_ESTOP_RESET:
         return core::MachineState::estop_reset;
-    case EMC_TASK_STATE::OFF:
+    case EMC_TASK_STATE_OFF:
         return core::MachineState::off;
-    case EMC_TASK_STATE::ON:
+    case EMC_TASK_STATE_ON:
         return core::MachineState::on;
-    case EMC_TASK_STATE::ESTOP:
+    case EMC_TASK_STATE_ESTOP:
     default:
         return core::MachineState::estop;
     }
 }
 
-auto to_emc(core::TaskMode mode) -> EMC_TASK_MODE
+auto to_emc(core::TaskMode mode) -> EMC_TASK_MODE_ENUM
 {
     switch (mode) {
     case core::TaskMode::manual:
-        return EMC_TASK_MODE::MANUAL;
+        return EMC_TASK_MODE_MANUAL;
     case core::TaskMode::automatic:
-        return EMC_TASK_MODE::AUTO;
+        return EMC_TASK_MODE_AUTO;
     case core::TaskMode::mdi:
     default:
-        return EMC_TASK_MODE::MDI;
+        return EMC_TASK_MODE_MDI;
     }
 }
 
-auto from_emc(EMC_TASK_MODE mode) -> core::TaskMode
+auto from_emc(EMC_TASK_MODE_ENUM mode) -> core::TaskMode
 {
     switch (mode) {
-    case EMC_TASK_MODE::AUTO:
+    case EMC_TASK_MODE_AUTO:
         return core::TaskMode::automatic;
-    case EMC_TASK_MODE::MDI:
+    case EMC_TASK_MODE_MDI:
         return core::TaskMode::mdi;
-    case EMC_TASK_MODE::MANUAL:
+    case EMC_TASK_MODE_MANUAL:
     default:
         return core::TaskMode::manual;
     }
 }
 
-auto waiting_for_motion_or_io(EMC_TASK_EXEC state) -> bool
+auto waiting_for_motion_or_io(EMC_TASK_EXEC_ENUM state) -> bool
 {
-    return state == EMC_TASK_EXEC::WAITING_FOR_MOTION ||
-           state == EMC_TASK_EXEC::WAITING_FOR_MOTION_QUEUE ||
-           state == EMC_TASK_EXEC::WAITING_FOR_IO;
+    return state == EMC_TASK_EXEC_WAITING_FOR_MOTION ||
+           state == EMC_TASK_EXEC_WAITING_FOR_MOTION_QUEUE ||
+           state == EMC_TASK_EXEC_WAITING_FOR_IO;
 }
 
 /// Text of a fixed-size, NUL-terminated NML string field.
@@ -193,9 +193,9 @@ auto TaskClient::status() -> std::optional<core::TaskStatus>
         .state = from_emc(stat->task.state),
         .mode = from_emc(stat->task.mode),
         .motion_enabled = stat->motion.traj.enabled,
-        .interpreter_idle = stat->task.interpState == EMC_TASK_INTERP::IDLE,
+        .interpreter_idle = stat->task.interpState == EMC_TASK_INTERP_IDLE,
         .waiting_for_motion_or_io = waiting_for_motion_or_io(stat->task.execState),
-        .execution_error = stat->task.execState == EMC_TASK_EXEC::ERROR,
+        .execution_error = stat->task.execState == EMC_TASK_EXEC_ERROR,
         .call_level = stat->task.callLevel,
     };
 }
@@ -248,11 +248,11 @@ auto TaskClient::wait_complete(std::chrono::milliseconds timeout) -> std::expect
                 return {};
             }
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access): RCS_STAT_MSG's own union.
-            const RCS_STATUS state = stat->status;
-            if (serial_diff == 0 && state == RCS_STATUS::DONE) {
+            const int state = stat->status; // an int in LinuxCNC 2.9
+            if (serial_diff == 0 && state == RCS_DONE) {
                 return {};
             }
-            if (serial_diff == 0 && state == RCS_STATUS::ERROR) {
+            if (serial_diff == 0 && state == RCS_ERROR) {
                 return std::unexpected{core::TaskError::failed};
             }
         }
