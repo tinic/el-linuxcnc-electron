@@ -207,7 +207,9 @@ function units(): void {
 }
 
 .reading .label {
-  text-align: left;
+  /* Right-aligned against the value, as in the original DRO (" Z|", "PX|", "⌽X|"). */
+  text-align: right;
+  padding-right: 10px;
   color: var(--text-dim);
 }
 
