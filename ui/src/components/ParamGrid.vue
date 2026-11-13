@@ -135,8 +135,8 @@ function showHelp(field: ParamField<Key>, event: MouseEvent): void {
         </button>
       </template>
       <template v-else-if="index === 1 && info !== undefined">
-        <span class="label">Ø</span>
-        <span class="value readonly">{{ info || 'Major Ø / Drill' }}</span>
+        <span class="label">⌽</span>
+        <span class="value readonly">{{ info || 'Major ⌽ / Drill' }}</span>
       </template>
       <template v-else>
         <span></span>
@@ -156,7 +156,7 @@ function showHelp(field: ParamField<Key>, event: MouseEvent): void {
 }
 
 .label {
-  /* Labels are buttons (with help) or, for Ø, plain text: centre both the same way. */
+  /* Labels are buttons (with help) or, for ⌽, plain text: centre both the same way. */
   display: flex;
   align-items: center;
   justify-content: flex-end;

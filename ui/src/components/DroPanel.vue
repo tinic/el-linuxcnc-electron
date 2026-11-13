@@ -79,7 +79,7 @@ const rows = computed<Row[]>(() => {
   return [
     {
       key: 'x',
-      label: diameter.value ? '⌀X' : 'X',
+      label: diameter.value ? '⌽X' : 'X',
       value: xToDisplay(readout.value.x, metric.value, diameter.value),
       decimals,
       unit: length,
@@ -193,7 +193,7 @@ function units(): void {
 
 .reading {
   display: grid;
-  grid-template-columns: 64px 1fr 92px;
+  grid-template-columns: 64px 1fr 112px;
   align-items: baseline;
   padding: 0 12px;
   background: transparent;
@@ -214,9 +214,9 @@ function units(): void {
 }
 
 .reading .unit {
-  padding-left: 10px;
+  /* Same size as the number, as in the original DRO, so ° and the units sit on its baseline. */
+  padding-left: 8px;
   text-align: left;
-  font-size: 1.05rem;
   color: var(--text-dim);
 }
 

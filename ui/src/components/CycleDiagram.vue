@@ -100,7 +100,7 @@ const threadOutline = outline()
     <g :class="{ on: highlight === 'target' }">
       <line x1="330" y1="170" x2="398" y2="170" class="ext" />
       <line x1="392" y1="300" x2="392" y2="172" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)" />
-      <text x="400" y="240" class="label" text-anchor="middle" transform="rotate(-90 400 240)">Target ⌀</text>
+      <text x="400" y="240" class="label" text-anchor="middle" transform="rotate(-90 400 240)">Target ⌽</text>
     </g>
 
     <!-- Length: from the face (Z0) into the work -->

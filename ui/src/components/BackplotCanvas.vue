@@ -207,7 +207,7 @@ function drawGrid(context: CanvasRenderingContext2D, view: View, colors: Palette
     context.stroke()
     context.fillText(xToDisplay(x, metric, diameter).toFixed(decimals(xStep * (diameter ? 2 : 1))), left - 8, y + 4)
   }
-  context.fillText(diameter ? 'Ø' : 'X', left - 8, top - 12)
+  context.fillText(diameter ? '⌽' : 'X', left - 8, top - 12)
   context.fillText('Z', left - 8, bottom + 18)
 }
 

@@ -50,7 +50,7 @@ const title = computed(() => (cycles.selected === 'threading' ? 'Threading' : 'T
 const presetName = computed(() => {
   if (cycles.selected === 'threading') {
     const preset = cycles.threadingPreset
-    return preset ? `${preset.name} · Ø ${preset.diameter}` : ''
+    return preset ? `${preset.name} · ⌽ ${preset.diameter}` : ''
   }
   return cycles.turningPreset ?? ''
 })

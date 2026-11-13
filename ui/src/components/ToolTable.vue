@@ -71,7 +71,7 @@ function rename(tool: Tool, event: Event): void {
       <thead>
         <tr>
           <th>Tool</th>
-          <th>{{ diameter ? '⌀X' : 'X' }} ({{ metric ? 'mm' : 'in' }})</th>
+          <th>{{ diameter ? '⌽X' : 'X' }} ({{ metric ? 'mm' : 'in' }})</th>
           <th>Z ({{ metric ? 'mm' : 'in' }})</th>
           <th>Description</th>
         </tr>
