@@ -52,10 +52,17 @@ auto LatheController::select_mode(OperatingMode mode) -> void
         jog_.release_all();
     }
     if (mode_ == OperatingMode::cycle) {
-        // Leave the panel in a safe state for when the operator returns to manual: both slides
-        // powered and holding, nothing following the spindle.
+        // Motion drives the slides during a cycle: both powered and holding, nothing following
+        // the spindle.
         feed_ = FeedMode::back_compound;
         direction_ = DirectionMode::hold;
+        back_from_cycle_ = true;
+    } else if (mode_ == OperatingMode::manual && back_from_cycle_) {
+        // Back from canned cycles (directly or via another page): the start-up state,
+        // longitudinal feed with the drivers off.
+        feed_ = FeedMode::longitudinal;
+        direction_ = DirectionMode::idle;
+        back_from_cycle_ = false;
     }
     update_leadscrew();
 }

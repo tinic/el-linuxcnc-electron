@@ -207,13 +207,37 @@ TEST_CASE("entering canned cycles hands the axes to motion and leaves manual saf
     CHECK(controller.feed() == FeedMode::back_compound);
     CHECK(controller.direction() == DirectionMode::hold);
 
+    // Back to manual: longitudinal and idle, as at start-up; nothing powered or following.
     controller.select_mode(OperatingMode::manual);
     const auto manual = bench.tick().outputs;
+    CHECK(controller.feed() == FeedMode::longitudinal);
+    CHECK(controller.direction() == DirectionMode::idle);
     CHECK(!manual.control_source);
     CHECK(!manual.enable_stepper_z);
     CHECK(!manual.enable_stepper_x);
-    CHECK(manual.enable_z);
-    CHECK(manual.enable_x);
+    CHECK(!manual.enable_z);
+    CHECK(!manual.enable_x);
+}
+
+TEST_CASE("visiting another page keeps the manual feed and direction", "[controller]")
+{
+    LatheController controller{settings_with_tools()};
+    Bench bench{controller};
+    controller.select_mode(OperatingMode::manual);
+    controller.set_feed(FeedMode::cross);
+    controller.set_direction(DirectionMode::forward);
+    controller.select_mode(OperatingMode::other);
+    controller.select_mode(OperatingMode::manual);
+    static_cast<void>(bench.tick());
+    CHECK(controller.feed() == FeedMode::cross);
+    CHECK(controller.direction() == DirectionMode::forward);
+
+    // Canned cycles, then another page, then manual: still back to the start-up state.
+    controller.select_mode(OperatingMode::cycle);
+    controller.select_mode(OperatingMode::other);
+    controller.select_mode(OperatingMode::manual);
+    CHECK(controller.feed() == FeedMode::longitudinal);
+    CHECK(controller.direction() == DirectionMode::idle);
 }
 
 TEST_CASE("changing the gearing re-latches it to the current spindle and stepper positions",

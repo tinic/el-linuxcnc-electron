@@ -155,6 +155,8 @@ private:
 
     MachineSettings settings_{};
     OperatingMode mode_{OperatingMode::other};
+    /// Canned cycles were entered since manual was last left; manual then starts idle again.
+    bool back_from_cycle_{};
     FeedMode feed_{FeedMode::longitudinal};
     /// Idle at start-up: stepper drivers unpowered, nothing follows the spindle until the operator
     /// chooses a direction.
