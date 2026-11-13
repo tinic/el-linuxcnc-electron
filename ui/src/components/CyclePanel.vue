@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, shallowRef, watch, type DeepReadonly } from 'vue'
 
 import {
   applyThreadPreset,
@@ -18,6 +18,8 @@ import {
 import { activeField, settle } from '../entry'
 import { clearPlan, panel, send, updatePreferences } from '../machine'
 import { threadSections, turningSections, type ThreadPreset, type TurningPreset } from '../presets'
+import type { LiveTool } from '../backplot'
+import type { Backplot, PlotPoint } from '../protocol'
 import BackplotCanvas from './BackplotCanvas.vue'
 import CycleDiagram from './CycleDiagram.vue'
 import ModalDialog from './ModalDialog.vue'
@@ -106,7 +108,78 @@ function requestPlan(): void {
   }
 }
 
+// Live view: while a started cycle runs, the diagram gives way to its backplot with the tool's
+// actual position and track. The trail is a plain array (thousands of points); `trailVersion`
+// tells the canvas it changed.
+interface LiveRun {
+  plot: DeepReadonly<Backplot>
+  start: PlotPoint
+  seenRunning: boolean
+}
+const liveRun = shallowRef<LiveRun | null>(null)
+let trail: PlotPoint[] = []
+const trailVersion = ref(0)
+let liveTimer = 0
+const startGraceMs = 5000
+const finishedHoldMs = 3000
+const maxTrailPoints = 20000
+
+function endLiveView(afterMs: number): void {
+  window.clearTimeout(liveTimer)
+  liveTimer = window.setTimeout(() => {
+    liveRun.value = null
+    trail = []
+  }, afterMs)
+}
+
+watch(
+  () => panel.status,
+  (status) => {
+    const run = liveRun.value
+    if (!run || !status) {
+      return
+    }
+    const position = { x: status.readout.x, z: status.readout.z }
+    const last = trail.at(-1)
+    if (!last || Math.hypot(last.x - position.x, last.z - position.z) > 0.002) {
+      trail.push(position)
+      if (trail.length > maxTrailPoints) {
+        trail.splice(0, trail.length - maxTrailPoints)
+      }
+      trailVersion.value += 1
+    }
+    if (status.task.program_running) {
+      if (!run.seenRunning) {
+        run.seenRunning = true
+        window.clearTimeout(liveTimer)
+      }
+    } else if (run.seenRunning) {
+      run.seenRunning = false
+      endLiveView(finishedHoldMs)
+    }
+  },
+)
+
+const liveTool = computed<LiveTool | null>(() => {
+  const status = panel.status
+  if (!liveRun.value || !status) {
+    return null
+  }
+  return { position: { x: status.readout.x, z: status.readout.z }, trail, revision: trailVersion.value }
+})
+
+onBeforeUnmount(() => {
+  window.clearTimeout(liveTimer)
+})
+
 function runCycle(): void {
+  const current = plan.value
+  if (current?.backplot) {
+    trail = []
+    liveRun.value = { plot: current.backplot, start: { ...current.start }, seenRunning: false }
+    // A cycle that does not start (refused, with an error notice) gives the diagram back.
+    endLiveView(startGraceMs)
+  }
   waitingForPlan.value = false
   send({ type: 'start_cycle' })
   clearPlan()
@@ -192,7 +265,8 @@ const previewRows = computed(() => {
     </section>
 
     <section class="figure">
-      <CycleDiagram :kind="cycles.selected" :highlight="highlight" />
+      <BackplotCanvas v-if="liveRun" :plot="liveRun.plot" :start="liveRun.start" :live="liveTool" />
+      <CycleDiagram v-else :kind="cycles.selected" :highlight="highlight" />
     </section>
 
     <ModalDialog
