@@ -72,7 +72,10 @@ h2 {
 }
 
 .body {
-  flex: 1;
+  /* Content-sized, growing to fill a fixed-height (wide) dialog and scrolling within max-height.
+     Not `flex: 1`: its 0% basis collapses the body to nothing in WebKit when the dialog has no
+     fixed height (Chromium sizes it to content instead). */
+  flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
   padding: 16px 20px 20px;

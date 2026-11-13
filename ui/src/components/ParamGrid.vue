@@ -155,6 +155,10 @@ function showHelp(field: ParamField<Key>, event: MouseEvent): void {
 }
 
 .label {
+  /* Labels are buttons (with help) or, for Ø, plain text: centre both the same way. */
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
   background: transparent;
   text-align: right;
   padding-right: 6px;

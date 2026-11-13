@@ -36,12 +36,12 @@ const previewing = computed(
 )
 const running = computed(() => panel.status?.task.program_running ?? false)
 
-const title = computed(() => {
-  if (cycles.selected === 'threading') {
-    return `Threading${cycles.threadingPreset ? ` · ${cycles.threadingPreset.name}` : ''}`
-  }
-  return `Turning${cycles.turningPreset ? ` · ${cycles.turningPreset}` : ''}`
-})
+const title = computed(() => (cycles.selected === 'threading' ? 'Threading' : 'Turning'))
+
+/** The picked preset, shown exactly as written: "6g" and "6G" are different thread tolerances. */
+const presetName = computed(() =>
+  cycles.selected === 'threading' ? (cycles.threadingPreset?.name ?? '') : (cycles.turningPreset ?? ''),
+)
 
 function choose(kind: 'threading' | 'turning'): void {
   settle()
@@ -124,7 +124,9 @@ const previewRows = computed(() => {
     </section>
 
     <section class="form">
-      <h2 class="section-title">{{ title }}</h2>
+      <h2 class="section-title">
+        {{ title }}<span v-if="presetName" class="preset-name"> · {{ presetName }}</span>
+      </h2>
       <ParamGrid
         v-if="cycles.selected === 'threading'"
         prefix="threading"
@@ -182,7 +184,7 @@ const previewRows = computed(() => {
       />
     </ModalDialog>
 
-    <ModalDialog v-if="previewing && plan?.backplot" :title="`${title} — preview`" wide @close="cancelPreview">
+    <ModalDialog v-if="previewing && plan?.backplot" :title="`${title}${presetName ? ` · ${presetName}` : ''} — preview`" wide @close="cancelPreview">
       <div class="preview">
         <BackplotCanvas :plot="plan.backplot" :start="plan.start" />
         <aside>
@@ -276,5 +278,9 @@ aside {
 
 .preview-actions button {
   height: 60px;
+}
+.preset-name {
+  text-transform: none;
+  letter-spacing: 0.02em;
 }
 </style>
