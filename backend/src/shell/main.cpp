@@ -41,6 +41,8 @@
 #include <spawn.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+// POSIX setenv; <cstdlib> does not declare it.
+#include <stdlib.h> // NOLINT(modernize-deprecated-headers,hicpp-deprecated-headers)
 #include <unistd.h>
 // NOLINTEND(misc-include-cleaner)
 
@@ -248,7 +250,15 @@ auto run(const Options& options) -> int
 
 auto main(int argc, char** argv) -> int
 {
+    // WebKit's DMA-BUF renderer hands the page to the screen as GPU buffers that GNOME's screen
+    // capture (Mutter ScreenCast, used by gnome-remote-desktop) leaves out: remote desktop showed
+    // a black window. The older path costs no measurable CPU on the lathe. Set before WebKit or any
+    // thread starts; an explicit setting in the environment wins.
     try {
+        // NOLINTNEXTLINE(concurrency-mt-unsafe): single-threaded at this point
+        if (::setenv("WEBKIT_DISABLE_DMABUF_RENDERER", "1", 0) != 0) {
+            std::println(stderr, "elle: could not configure WebKit's renderer");
+        }
         const std::span<char*> raw{argv, static_cast<std::size_t>(argc)};
         const std::vector<std::string_view> arguments{std::from_range, raw.subspan(1)};
         const auto options = elle::app::parse_options(arguments);

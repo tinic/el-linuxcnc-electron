@@ -79,11 +79,14 @@ function choose(kind: 'threading' | 'turning'): void {
   waitingForPlan.value = false
 }
 
+// Any change to the entries makes the last plan (and its issues) stale.
 function onThreading(key: ThreadingKey, value: number | null): void {
+  clearPlan()
   setThreading(key, value)
 }
 
 function onTurning(key: TurningKey, value: number | null): void {
+  clearPlan()
   setTurning(key, value)
 }
 
@@ -196,11 +199,13 @@ function stop(): void {
 }
 
 function pickThread(preset: ThreadPreset): void {
+  clearPlan()
   applyThreadPreset(preset)
   choosingPreset.value = false
 }
 
 function pickTurning(preset: TurningPreset): void {
+  clearPlan()
   applyTurningPreset(preset)
   choosingPreset.value = false
 }
