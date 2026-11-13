@@ -156,7 +156,9 @@ private:
     MachineSettings settings_{};
     OperatingMode mode_{OperatingMode::other};
     FeedMode feed_{FeedMode::longitudinal};
-    DirectionMode direction_{DirectionMode::forward};
+    /// Idle at start-up: stepper drivers unpowered, nothing follows the spindle until the operator
+    /// chooses a direction.
+    DirectionMode direction_{DirectionMode::idle};
     LeadscrewOutputs leadscrew_{};
     Jog jog_{};
     PinOutputs outputs_{};

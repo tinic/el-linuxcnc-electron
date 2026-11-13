@@ -85,9 +85,9 @@ export function createSimulator(): Transport {
     readout: { x: 0, z: 0, a_degrees: 0, rpm: 0 },
     mode: 'manual',
     feed: 'longitudinal',
-    direction: 'forward',
+    direction: 'idle',
     pitches: { ...settings.machine.pitches },
-    leadscrew: engagement('longitudinal', 'forward'),
+    leadscrew: engagement('longitudinal', 'idle'),
     task: { connected: true, program_running: false, error: false },
   }
 

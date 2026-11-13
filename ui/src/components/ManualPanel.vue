@@ -8,7 +8,7 @@ import { JogHold, Touches, capturedPress } from '../jogHold'
 import AppIcon from './AppIcon.vue'
 
 const feed = computed(() => panel.status?.feed ?? 'longitudinal')
-const direction = computed(() => panel.status?.direction ?? 'forward')
+const direction = computed(() => panel.status?.direction ?? 'idle')
 
 const feeds: { value: Feed; label: string; glyph: string }[] = [
   { value: 'longitudinal', label: 'Longitudinal', glyph: '⬌' },

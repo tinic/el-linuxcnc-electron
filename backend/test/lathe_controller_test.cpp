@@ -175,6 +175,23 @@ TEST_CASE("spindle angle wraps into 0..360 for either direction of rotation", "[
     CHECK(controller.readout().a_degrees == Approx(0.0).margin(1e-9));
 }
 
+TEST_CASE("the controller starts idle: steppers unpowered, nothing follows the spindle",
+          "[controller][leadscrew]")
+{
+    LatheController controller{settings_with_tools()};
+    Bench bench{controller};
+    CHECK(controller.direction() == DirectionMode::idle);
+    bench.sample().spindle_rps = 5.0;
+    bench.settle();
+    const auto outputs = bench.tick().outputs;
+    CHECK(!outputs.enable_stepper_z);
+    CHECK(!outputs.enable_stepper_x);
+    CHECK(!outputs.enable_z);
+    CHECK(!outputs.enable_x);
+    CHECK(outputs.forward_z == Approx(0.0).margin(1e-12));
+    CHECK(outputs.forward_x == Approx(0.0).margin(1e-12));
+}
+
 TEST_CASE("entering canned cycles hands the axes to motion and leaves manual safe",
           "[controller][leadscrew]")
 {
