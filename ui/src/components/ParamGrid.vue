@@ -16,7 +16,7 @@ const props = defineProps<{
   /** Shown in the first empty slot, e.g. the thread's major diameter. */
   info?: string
 }>()
-const emit = defineEmits<{ change: [key: Key, value: number | null] }>()
+const emit = defineEmits<{ change: [key: Key, value: number | null]; inspect: [key: Key] }>()
 
 const metric = computed(() => panel.metric)
 const diameterMode = computed(() => panel.settings?.diameter_mode ?? false)
@@ -109,6 +109,7 @@ function showHelp(field: ParamField<Key>, event: MouseEvent): void {
   }
   helpField = field.key
   helpText.value = field.help
+  emit('inspect', field.key)
   popover.style.left = `${String(Math.min(event.clientX, window.innerWidth - 340))}px`
   popover.style.top = `${String(event.clientY + 16)}px`
   popover.showPopover()

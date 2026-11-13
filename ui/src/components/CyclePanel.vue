@@ -12,11 +12,12 @@ import {
   threadingFields,
   turningFields,
 } from '../cycles'
-import { settle } from '../entry'
+import { activeField, settle } from '../entry'
 import { clearPlan, panel, send, updatePreferences } from '../machine'
 import { threadSections, turningSections, type ThreadPreset, type TurningPreset } from '../presets'
 import type { ThreadingRequest, TurningRequest } from '../protocol'
 import BackplotCanvas from './BackplotCanvas.vue'
+import CycleDiagram from './CycleDiagram.vue'
 import ModalDialog from './ModalDialog.vue'
 import ParamGrid from './ParamGrid.vue'
 import PresetPicker from './PresetPicker.vue'
@@ -43,9 +44,20 @@ const presetName = computed(() =>
   cycles.selected === 'threading' ? (cycles.threadingPreset?.name ?? '') : (cycles.turningPreset ?? ''),
 )
 
+/** Field whose label was tapped last (help), for the diagram. */
+const inspected = ref<string | null>(null)
+
+/** The diagram highlights the field being edited, else the one whose label was tapped. */
+const highlight = computed(() => {
+  const editing = activeField.value
+  const prefix = `${cycles.selected}.`
+  return editing?.startsWith(prefix) === true ? editing.slice(prefix.length) : inspected.value
+})
+
 function choose(kind: 'threading' | 'turning'): void {
   settle()
   cycles.selected = kind
+  inspected.value = null
   clearPlan()
   waitingForPlan.value = false
 }
@@ -113,20 +125,16 @@ const previewRows = computed(() => {
 
 <template>
   <div class="cycles">
-    <section class="list">
-      <h2 class="section-title">Canned Cycles</h2>
-      <button class="option" :class="{ selected: cycles.selected === 'turning' }" @click="choose('turning')">
-        <span class="dot"></span>Turning
-      </button>
-      <button class="option" :class="{ selected: cycles.selected === 'threading' }" @click="choose('threading')">
-        <span class="dot"></span>Threading
-      </button>
-    </section>
-
     <section class="form">
-      <h2 class="section-title">
-        {{ title }}<span v-if="presetName" class="preset-name"> · {{ presetName }}</span>
-      </h2>
+      <header class="form-head">
+        <nav class="kinds">
+          <button :class="{ active: cycles.selected === 'turning' }" @click="choose('turning')">Turning</button>
+          <button :class="{ active: cycles.selected === 'threading' }" @click="choose('threading')">
+            Threading
+          </button>
+        </nav>
+        <span v-if="presetName" class="preset-name">{{ presetName }}</span>
+      </header>
       <ParamGrid
         v-if="cycles.selected === 'threading'"
         prefix="threading"
@@ -135,6 +143,7 @@ const previewRows = computed(() => {
         :issues="issues"
         :info="cycles.threadingPreset?.diameter ?? ''"
         @change="onThreading"
+        @inspect="inspected = $event"
       />
       <ParamGrid
         v-else
@@ -143,6 +152,7 @@ const previewRows = computed(() => {
         :values="cycles.turning"
         :issues="issues"
         @change="onTurning"
+        @inspect="inspected = $event"
       />
       <p v-if="issues.length > 0 || plan?.error" class="problems">
         <template v-if="plan?.error">{{ plan.error }}</template>
@@ -161,6 +171,10 @@ const previewRows = computed(() => {
         <button class="go" :disabled="running" @click="requestPlan">⏵ Start</button>
         <button class="stop" @click="stop">⏹ Stop</button>
       </div>
+    </section>
+
+    <section class="figure">
+      <CycleDiagram :kind="cycles.selected" :highlight="highlight" />
     </section>
 
     <ModalDialog
@@ -204,16 +218,9 @@ const previewRows = computed(() => {
 <style scoped>
 .cycles {
   display: grid;
-  grid-template-columns: 250px 1fr;
-  gap: 28px;
+  grid-template-columns: 1fr 480px;
+  gap: 20px;
   height: 100%;
-}
-
-.list {
-  display: grid;
-  grid-auto-rows: max-content;
-  gap: var(--gap);
-  align-content: start;
 }
 
 .form {
@@ -221,7 +228,37 @@ const previewRows = computed(() => {
   flex-direction: column;
   gap: 8px;
   min-height: 0;
-  padding-left: 28px;
+}
+
+.form-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+}
+
+.kinds {
+  display: flex;
+  gap: 4px;
+}
+
+.kinds button {
+  height: 34px;
+  padding: 0 18px;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: inset 0 -2px 0 var(--line);
+  color: var(--text-dim);
+}
+
+.kinds button.active {
+  color: var(--accent);
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+
+.figure {
+  min-height: 0;
+  padding-left: 20px;
   border-left: 1px solid var(--line);
 }
 
@@ -280,7 +317,7 @@ aside {
   height: 60px;
 }
 .preset-name {
-  text-transform: none;
+  color: var(--text-dim);
   letter-spacing: 0.02em;
 }
 </style>
