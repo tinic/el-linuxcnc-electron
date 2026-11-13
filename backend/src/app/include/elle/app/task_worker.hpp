@@ -55,6 +55,9 @@ public:
     [[nodiscard]] auto snapshot() const -> TaskSnapshot;
     /// Log lines produced since the last call.
     [[nodiscard]] auto take_log() -> std::vector<std::string>;
+    /// Failures the operator must see (a cycle that did not start, a failed resync), since the
+    /// last call. Each carries the reason; the details are in the log as well.
+    [[nodiscard]] auto take_alerts() -> std::vector<std::string>;
 
     /// The subroutine file a cycle is written to.
     [[nodiscard]] auto cycle_file() const -> std::filesystem::path;
@@ -62,11 +65,14 @@ public:
 private:
     auto run(const std::stop_token& stop) -> void;
     auto execute(const TaskJob& job) -> void;
-    auto resync() -> void;
+    auto resync() -> bool;
     auto run_cycle(const core::GcodeLines& program) -> void;
     auto abort_task() -> void;
     auto poll() -> void;
     auto log(std::string line) -> void;
+    /// Logs a reason a step failed and remembers it for the alert that follows.
+    auto problem(std::string line) -> void;
+    auto alert(std::string text) -> void;
     using Result = std::expected<void, core::TaskError>;
     /// Logs a failed step; true when it succeeded.
     auto succeeded(const Result& result, std::string_view step) -> bool;
@@ -82,6 +88,8 @@ private:
     std::deque<TaskJob> jobs_{};
     TaskSnapshot snapshot_{};
     std::vector<std::string> log_{};
+    std::vector<std::string> alerts_{};
+    std::string last_problem_{}; ///< worker thread only
     std::jthread thread_{};
 };
 

@@ -112,14 +112,25 @@ struct TaskClient::Channels {
     std::unique_ptr<NML> errors{};
     core::TaskHeartbeat heartbeat{};
     int serial{};
+    bool have_status{}; ///< the channel's buffer holds a task status from an earlier peek
 
-    /// The status buffer, if the latest message in it is a task status.
-    [[nodiscard]] auto latest_status() const -> EMC_STAT*
+    /// The latest task status. peek() returns 0 when task has written nothing since the last
+    /// peek (it does so every cycle, so a caller asking twice within one cycle sees 0); the
+    /// channel's buffer then still holds the previous status, which is current. As LinuxCNC's
+    /// own Python module does, that status is used rather than reported as missing. Whether
+    /// task is still alive is the heartbeat's job (the write counter stops advancing).
+    [[nodiscard]] auto latest_status() -> EMC_STAT*
     {
-        if (status->peek() != EMC_STAT_TYPE) {
+        const NMLTYPE type = status->peek();
+        if (type == EMC_STAT_TYPE) {
+            have_status = true;
+        } else if (type != 0) {
+            return nullptr; // an error, or a message that is not a task status
+        }
+        if (!have_status) {
             return nullptr;
         }
-        // NML hands out the base class; the type tag (EMC_STAT_TYPE) was checked above.
+        // NML hands out the base class; a task status was seen in this buffer (type tag above).
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
         return static_cast<EMC_STAT*>(status->get_address());
     }

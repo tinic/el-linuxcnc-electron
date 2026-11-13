@@ -68,6 +68,12 @@ auto TaskWorker::take_log() -> std::vector<std::string>
     return std::exchange(log_, {});
 }
 
+auto TaskWorker::take_alerts() -> std::vector<std::string>
+{
+    const std::scoped_lock<std::mutex> lock{mutex_};
+    return std::exchange(alerts_, {});
+}
+
 auto TaskWorker::cycle_file() const -> std::filesystem::path
 {
     return cycle_directory_ / std::format("{}.ngc", subroutine);
@@ -98,7 +104,10 @@ auto TaskWorker::execute(const TaskJob& job) -> void
         [this](const auto& step) {
             using Step = std::remove_cvref_t<decltype(step)>;
             if constexpr (std::is_same_v<Step, ResyncMotion>) {
-                resync();
+                if (!resync()) {
+                    alert(std::format("LinuxCNC did not take over the new positions: {}",
+                                      last_problem_));
+                }
             } else if constexpr (std::is_same_v<Step, RunCycle>) {
                 run_cycle(step.program);
             } else {
@@ -127,6 +136,18 @@ auto TaskWorker::log(std::string line) -> void
     log_.push_back(std::move(line));
 }
 
+auto TaskWorker::problem(std::string line) -> void
+{
+    last_problem_ = line;
+    log(std::move(line));
+}
+
+auto TaskWorker::alert(std::string text) -> void
+{
+    const std::scoped_lock<std::mutex> lock{mutex_};
+    alerts_.push_back(std::move(text));
+}
+
 /// Switches task to MDI and checks it can take commands, as the original backend did before every
 /// cycle and resync: not in E-stop, motion enabled, interpreter idle.
 auto TaskWorker::ready_for_mdi() -> bool
@@ -134,19 +155,19 @@ auto TaskWorker::ready_for_mdi() -> bool
     for (int attempt = 0; attempt < mode_change_attempts; ++attempt) {
         const auto status = port_.status();
         if (!status.has_value()) {
-            log("LinuxCNC is not reporting status");
+            problem("LinuxCNC is not reporting status");
             return false;
         }
         if (status->state == core::MachineState::estop) {
-            log("LinuxCNC is in E-stop");
+            problem("LinuxCNC is in E-stop");
             return false;
         }
         if (!status->motion_enabled) {
-            log("LinuxCNC motion is not enabled");
+            problem("LinuxCNC motion is not enabled");
             return false;
         }
         if (!status->interpreter_idle) {
-            log("LinuxCNC's interpreter is busy");
+            problem("LinuxCNC's interpreter is busy");
             return false;
         }
         if (status->mode == core::TaskMode::mdi) {
@@ -157,7 +178,7 @@ auto TaskWorker::ready_for_mdi() -> bool
         }
         std::this_thread::sleep_for(mode_change_pause);
     }
-    log("LinuxCNC did not switch to MDI");
+    problem("LinuxCNC did not switch to MDI");
     return false;
 }
 
@@ -166,7 +187,7 @@ auto TaskWorker::succeeded(const Result& result, std::string_view step) -> bool
     if (result.has_value()) {
         return true;
     }
-    log(std::format("{}: {}", step, core::describe(result.error())));
+    problem(std::format("{}: {}", step, core::describe(result.error())));
     return false;
 }
 
@@ -175,20 +196,20 @@ auto TaskWorker::finished(std::string_view step) -> bool
     return succeeded(port_.wait_complete(core::TaskPort::default_timeout), step);
 }
 
-auto TaskWorker::resync() -> void
+auto TaskWorker::resync() -> bool
 {
     if (!succeeded(port_.set_mode(core::TaskMode::mdi), "switching to MDI") ||
         !finished("waiting for MDI") || !ready_for_mdi()) {
-        return;
+        return false;
     }
     // Machine off and on again makes motion take the zeroed encoder positions as its commanded
     // position; then the interpreter starts from a clean state. Each step needs the previous one.
-    static_cast<void>(succeeded(port_.set_state(core::MachineState::off), "machine off") &&
-                      finished("waiting for machine off") &&
-                      succeeded(port_.set_state(core::MachineState::on), "machine on") &&
-                      finished("waiting for machine on") &&
-                      succeeded(port_.reset_interpreter(), "interpreter reset") &&
-                      finished("waiting for interpreter reset"));
+    return succeeded(port_.set_state(core::MachineState::off), "machine off") &&
+           finished("waiting for machine off") &&
+           succeeded(port_.set_state(core::MachineState::on), "machine on") &&
+           finished("waiting for machine on") &&
+           succeeded(port_.reset_interpreter(), "interpreter reset") &&
+           finished("waiting for interpreter reset");
 }
 
 auto TaskWorker::write_cycle(const core::GcodeLines& program) -> bool
@@ -200,7 +221,7 @@ auto TaskWorker::write_cycle(const core::GcodeLines& program) -> bool
     }
     file << std::format("o<{}> endsub\n", subroutine);
     if (!file.flush()) {
-        log(std::format("writing {} failed", cycle_file().string()));
+        problem(std::format("writing {} failed", cycle_file().string()));
         return false;
     }
     return true;
@@ -218,6 +239,8 @@ auto TaskWorker::run_cycle(const core::GcodeLines& program) -> void
                          succeeded(port_.mdi(std::format("o<{}> call", subroutine)), "starting");
     if (started) {
         log(std::format("Cycle started ({} lines)", program.size()));
+    } else {
+        alert(std::format("Cycle not started: {}", last_problem_));
     }
 }
 

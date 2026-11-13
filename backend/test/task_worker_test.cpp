@@ -168,6 +168,22 @@ TEST_CASE("a cycle is not started while LinuxCNC is in E-stop", "[task][safety]"
     for (const auto& call : task.calls()) {
         CHECK(!call.starts_with("mdi o<"));
     }
+    // The operator is told, with the reason, not just the log.
+    const auto alerts = worker.take_alerts();
+    REQUIRE(alerts.size() == 1);
+    CHECK(alerts.front() == "Cycle not started: LinuxCNC is in E-stop");
+}
+
+TEST_CASE("a failed resync is reported to the operator", "[task][safety]")
+{
+    FakeTask task{};
+    task.set_status({.state = MachineState::estop, .motion_enabled = true, .interpreter_idle = true});
+    elle::app::TaskWorker worker{task, scratch()};
+    worker.submit(elle::app::ResyncMotion{});
+    static_cast<void>(wait_for_log(worker, 1));
+    const auto alerts = worker.take_alerts();
+    REQUIRE(alerts.size() == 1);
+    CHECK(alerts.front() == "LinuxCNC did not take over the new positions: LinuxCNC is in E-stop");
 }
 
 TEST_CASE("resync turns the machine off and on, then resets the interpreter", "[task]")

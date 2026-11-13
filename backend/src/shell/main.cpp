@@ -228,6 +228,9 @@ auto run(const Options& options) -> int
         if (!lines.empty()) {
             window->post(elle::app::log_message(lines));
         }
+        for (const auto& alert : worker.take_alerts()) {
+            window->post(elle::app::notice_message(elle::app::NoticeLevel::error, alert));
+        }
     };
     window = std::make_unique<elle::shell::PanelWindow>(
         elle::shell::PanelOptions{.ui_directory = ui_directory(options),
