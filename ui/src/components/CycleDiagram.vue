@@ -180,7 +180,7 @@ const threadOutline = outline()
       <line x1="230" y1="119" x2="250" y2="119" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
       <text x="240" y="112" class="label" text-anchor="middle">Pitch</text>
     </g>
-    <g :class="{ on: highlight === 'depth' }">
+    <g :class="{ on: highlight === 'depth' || highlight === 'allowance' }">
       <line x1="300" y1="165" x2="330" y2="165" class="ext" />
       <line x1="300" y1="130" x2="330" y2="130" class="ext" />
       <line x1="324" y1="132" x2="324" y2="163" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />

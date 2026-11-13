@@ -32,7 +32,7 @@ export const threadingFields: (ParamField<ThreadingKey> | null)[] = [
   { key: 'first_cut', label: 'First cut', placeholder: '0.1', kind: 'length', help: 'Depth of the first pass.' },
   { key: 'min_cut', label: 'Min cut', placeholder: '0.05', kind: 'length', help: 'Passes never get shallower than this.' },
   { key: 'cut_factor', label: 'Factor', placeholder: '0.8', kind: 'ratio', help: 'Cut factor: each pass is the previous one times this (0.5 to 1.0).' },
-  null,
+  { key: 'allowance', label: 'Allowance', placeholder: '6g / 6H', kind: 'length', help: 'Extra depth for the fit (radius), added to Depth. Empty: the middle of the 6g (external) or 6H (internal) tolerance per ISO 965-1, about 0.04 to 0.06 mm for M6 to M12. 0: the basic profile, no clearance.' },
   { key: 'run_out', label: 'Run-out', placeholder: '1 pitch', kind: 'length', help: 'The tool pulls out at an angle over this distance, finishing at the thread end. Empty: one pitch.' },
   { key: 'retract', label: 'Retract', placeholder: '0.5', kind: 'length', help: 'Clearance from the thread for the rapid return.' },
 ]
@@ -53,6 +53,7 @@ function emptyThreading(): ThreadingForm {
     pitch: null,
     internal: false,
     depth: null,
+    allowance: null,
     infeed_deg: null,
     length: null,
     taper_deg: null,
@@ -136,6 +137,7 @@ export function applyThreadPreset(preset: ThreadPreset): void {
     pitch: preset.Pitch,
     internal: preset.XDepth > 0,
     depth: Math.abs(preset.XDepth),
+    allowance: cycles.threading.allowance, // presets are basic depths; keep the operator's fit
     infeed_deg: infeedAngle(preset.XDepth, preset.ZDepth),
     length: Math.abs(preset.ZEnd),
     taper_deg: preset.Angle,

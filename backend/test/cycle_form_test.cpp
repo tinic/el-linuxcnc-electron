@@ -58,8 +58,8 @@ auto synchronized_moves(const std::vector<std::string>& lines) -> std::vector<Mo
 
 auto m6_external() -> ThreadingForm
 {
-    return {.pitch = 1.0, .length = 6.0, .run_out = 1.0, .retract = 0.5, .first_cut = 0.1,
-            .cut_factor = 0.8, .min_cut = 0.025, .spring_cuts = 1.0};
+    return {.pitch = 1.0, .allowance = 0.0, .length = 6.0, .run_out = 1.0, .retract = 0.5,
+            .first_cut = 0.1, .cut_factor = 0.8, .min_cut = 0.025, .spring_cuts = 1.0};
 }
 
 auto program_lines(const ThreadingForm& form, const WorkPosition& position) -> std::vector<std::string>
@@ -252,4 +252,33 @@ TEST_CASE("a chamfer must fit the finished part", "[form][turning][chamfer]")
 
     const TurningForm negative{.target = 2.0, .length = 10.0, .chamfer = -0.5};
     CHECK(elle::core::turning_request(negative, {.x = 3.0, .z = 0.0}).issues.front().field == "chamfer");
+}
+
+TEST_CASE("the fit allowance follows ISO 965-1 for 6g and 6H", "[form][threading][fit]")
+{
+    // Radial: half of (|es| + Td2/2) for 6g, half of TD2/2 for 6H. Table values (ISO 965-1):
+    // M6x1 6g es -26 Td2 112, M12x1.75 6g es -34 Td2 150, M12x1.75 6H TD2 200 (µm).
+    CHECK(elle::core::iso_fit_allowance(1.0, 6.0, false) == Approx((0.026 + 0.056) / 2.0).margin(0.003));
+    CHECK(elle::core::iso_fit_allowance(1.75, 12.0, false) == Approx((0.034 + 0.075) / 2.0).margin(0.003));
+    CHECK(elle::core::iso_fit_allowance(1.75, 12.0, true) == Approx(0.100 / 2.0).margin(0.003));
+    CHECK(elle::core::iso_fit_allowance(0.0, 12.0, false) == Approx(0.0));
+}
+
+TEST_CASE("an empty allowance cuts to 6g; 0 cuts the basic profile", "[form][threading][fit]")
+{
+    ThreadingForm form{.pitch = 1.75, .depth = 1.073535, .length = 13.5};
+    const WorkPosition tool{.x = 6.0, .z = 0.0}; // touching an Ø12 blank
+    const auto fitted = elle::core::threading_request(form, tool);
+    REQUIRE(fitted.issues.empty());
+    CHECK(-fitted.request.x_depth.value_or(0.0) ==
+          Approx(1.073535 + elle::core::iso_fit_allowance(1.75, 12.0, false)));
+
+    form.allowance = 0.0;
+    const auto basic = elle::core::threading_request(form, tool);
+    CHECK(-basic.request.x_depth.value_or(0.0) == Approx(1.073535));
+
+    form.allowance = -0.01;
+    const auto negative = elle::core::threading_request(form, tool);
+    REQUIRE(!negative.issues.empty());
+    CHECK(negative.issues.front().field == "allowance");
 }

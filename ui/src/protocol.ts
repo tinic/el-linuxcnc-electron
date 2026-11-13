@@ -80,6 +80,7 @@ export interface ThreadingForm {
   pitch: number | null
   internal: boolean
   depth: number | null
+  allowance: number | null
   infeed_deg: number | null
   length: number | null
   taper_deg: number | null

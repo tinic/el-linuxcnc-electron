@@ -64,7 +64,9 @@ auto add_planner_issues(ParameterIssues& issues, const ParameterIssues& planner,
 /// The threading inputs after defaults, with the form's own checks.
 struct ThreadingInputs {
     bool internal{};
+    double pitch{};
     std::optional<double> depth{};
+    std::optional<double> allowance{};
     std::optional<double> length{};
     double infeed{};
     double run_out{};
@@ -82,7 +84,9 @@ auto threading_inputs(const ThreadingForm& form) -> ThreadingInputs
 {
     const double pitch = form.pitch.value_or(0.0);
     ThreadingInputs inputs{.internal = form.internal,
+                           .pitch = pitch,
                            .depth = form.depth,
+                           .allowance = form.allowance,
                            .length = form.length,
                            .infeed = form.infeed_deg.value_or(0.0),
                            .run_out = form.run_out.value_or(pitch),
@@ -93,6 +97,9 @@ auto threading_inputs(const ThreadingForm& form) -> ThreadingInputs
     }
     if (inputs.depth.has_value() && *inputs.depth <= 0.0) {
         inputs.issues.push_back({.field = "depth", .problem = "must be greater than zero"});
+    }
+    if (inputs.allowance.has_value() && *inputs.allowance < 0.0) {
+        inputs.issues.push_back({.field = "allowance", .problem = "must not be negative"});
     }
     if (inputs.infeed < 0.0 || inputs.infeed > max_infeed_deg) {
         inputs.issues.push_back({.field = "infeed_deg", .problem = "must be between 0 and 45 degrees"});
@@ -116,7 +123,13 @@ auto threading_geometry(const ThreadingInputs& inputs, const WorkPosition& posit
                         FormConversion<ThreadingRequest>& result) -> void
 {
     ThreadingRequest& request = result.request;
-    const double depth = inputs.depth.value_or(0.0);
+    const double basic_depth = inputs.depth.value_or(0.0);
+    // The tool starts on the work's surface: the major diameter outside, the bore inside.
+    const double major_diameter =
+        2.0 * (inputs.internal ? position.x + basic_depth : position.x);
+    const double depth =
+        basic_depth + inputs.allowance.value_or(
+                          iso_fit_allowance(inputs.pitch, major_diameter, inputs.internal));
     const double length = inputs.length.value_or(0.0);
     // External threads cut inward (-X) and retract outward, internal ones the other way.
     const double inward = inputs.internal ? 1.0 : -1.0;
@@ -142,6 +155,30 @@ auto threading_geometry(const ThreadingInputs& inputs, const WorkPosition& posit
 }
 
 } // namespace
+
+auto iso_fit_allowance(double pitch, double major_diameter, bool internal) -> double
+{
+    // ISO 965-1, in µm: grade-6 pitch-diameter tolerance Td2 = 90 P^0.4 d^0.1 (external),
+    // TD2 = 1.32 Td2 (internal); fundamental deviation of g: es = -(15 + 11 P).
+    constexpr double td2_coefficient = 90.0;
+    constexpr double pitch_exponent = 0.4;
+    constexpr double diameter_exponent = 0.1;
+    constexpr double internal_tolerance_factor = 1.32;
+    constexpr double g_deviation_base = 15.0;
+    constexpr double g_deviation_per_pitch = 11.0;
+    constexpr double half = 0.5;
+    constexpr double mm_per_micrometre = 1e-3;
+    if (!(pitch > 0.0) || !(major_diameter > 0.0)) {
+        return 0.0;
+    }
+    const double td2 = td2_coefficient * std::pow(pitch, pitch_exponent) *
+                       std::pow(major_diameter, diameter_exponent);
+    // Middle of the tolerance zone, on the diameter.
+    const double diametral = internal ? internal_tolerance_factor * td2 * half
+                                      : g_deviation_base + (g_deviation_per_pitch * pitch) +
+                                            (td2 * half);
+    return diametral * mm_per_micrometre * half; // the depth is a radius
+}
 
 auto threading_request(const ThreadingForm& form, const WorkPosition& position)
     -> FormConversion<ThreadingRequest>

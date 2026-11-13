@@ -14,7 +14,8 @@ namespace elle::core {
 struct ThreadingForm {
     std::optional<double> pitch{};
     bool internal{};                     ///< internal thread (bore) instead of external
-    std::optional<double> depth{};       ///< radial thread depth; empty: from the pitch
+    std::optional<double> depth{};       ///< radial basic thread depth; empty: from the pitch
+    std::optional<double> allowance{};   ///< extra radial depth for the fit; empty: 6g / 6H
     std::optional<double> infeed_deg{};  ///< 0 straight in; 29.5 flank infeed (60° threads)
     std::optional<double> length{};      ///< thread ends this far from the face (Z0), positive
     std::optional<double> taper_deg{};   ///< 0 for straight threads; NPT 1.7899
@@ -42,6 +43,12 @@ struct TurningForm {
 /// Radial depth of a 60° thread (ISO metric and Unified) per unit of pitch.
 inline constexpr double external_depth_per_pitch = 0.61343;
 inline constexpr double internal_depth_per_pitch = 0.54127;
+
+/// Extra radial depth (mm) that puts a thread cut to the basic depth in the middle of the ISO 965-1
+/// tolerance zone for 6g (external: fundamental deviation es = -(15 + 11P) µm plus half the
+/// grade-6 pitch-diameter tolerance Td2 = 90 P^0.4 d^0.1 µm) or 6H (internal: EI = 0, half of
+/// TD2 = 1.32 Td2). Halved, as the depth is a radius. `pitch` and `major_diameter` in mm.
+[[nodiscard]] auto iso_fit_allowance(double pitch, double major_diameter, bool internal) -> double;
 
 template <typename Request>
 struct FormConversion {
