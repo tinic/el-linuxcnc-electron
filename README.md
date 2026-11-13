@@ -56,8 +56,9 @@ Debug builds use the checked libstdc++ with AddressSanitizer and UndefinedBehavi
 
 ## Running
 
-- **On the lathe:** install the package, copy `/usr/share/elle/machine` to your configuration
-  directory, adapt `lathe.hal` to your hardware and start `linuxcnc lathe.ini`.
+- **On the lathe:** `sudo apt install ./elle_<version>_amd64.deb` (this replaces the Electron
+  `elle-app` package), copy `/usr/share/elle/machine` to your configuration directory, adapt
+  `lathe.hal` to your hardware and start `linuxcnc lathe.ini`.
 - **Anywhere, without a machine:** `elle --demo --windowed` runs the real C++ stack against a
   simulated lathe.
 - **Panel development:** `cd ui && npm run dev` serves the panel with hot reload. Open it in a
