@@ -17,6 +17,7 @@
 #include <vector>
 
 #include <cmd_msg.hh>
+#include <cms.hh>
 #include <emc.hh>
 #include <emc_nml.hh>
 #include <nml.hh>
@@ -172,7 +173,9 @@ auto TaskClient::status() -> std::optional<core::TaskStatus>
 {
     const EMC_STAT* stat = channels_->latest_status();
     // linuxcncsvr keeps serving the last status after task has died; that is not a connection.
-    if (stat == nullptr || !channels_->heartbeat.alive(stat->task.heartbeat, Clock::now())) {
+    // The buffer's write counter advances with every status task writes (once per task cycle).
+    if (stat == nullptr ||
+        !channels_->heartbeat.alive(channels_->status->cms->header.write_id, Clock::now())) {
         return std::nullopt;
     }
     return core::TaskStatus{

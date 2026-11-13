@@ -3,6 +3,8 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <chrono>
+#include <cstdint>
+#include <limits>
 
 using elle::core::TaskHeartbeat;
 using std::chrono::milliseconds;
@@ -48,6 +50,6 @@ TEST_CASE("a status buffer left behind by a dead task never counts as alive", "[
 TEST_CASE("the heartbeat counter may wrap around", "[task]")
 {
     TaskHeartbeat heartbeat{};
-    CHECK(!heartbeat.alive(0xFFFF'FFFFU, start));
-    CHECK(heartbeat.alive(0, start + milliseconds{10}));
+    CHECK(!heartbeat.alive(std::numeric_limits<std::int64_t>::max(), start));
+    CHECK(heartbeat.alive(std::numeric_limits<std::int64_t>::min(), start + milliseconds{10}));
 }

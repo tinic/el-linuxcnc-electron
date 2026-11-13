@@ -45,20 +45,23 @@ struct TaskStatus {
     }
 };
 
-/// Tells a live LinuxCNC task from a stale status buffer. Task increments its heartbeat every
-/// cycle; when task has died but linuxcncsvr still serves the shared memory, the last status
-/// stays readable forever. Task counts as alive only while its heartbeat keeps advancing.
+/// Tells a live LinuxCNC task from a stale status buffer. Task writes its status every cycle, and
+/// each write advances the status buffer's NML write counter; when task has died but linuxcncsvr
+/// still serves the shared memory, the last status stays readable forever. (EMC_STAT's own
+/// task.heartbeat is not maintained by LinuxCNC 2.9 and stays 0.) Task counts as alive only while
+/// that counter keeps advancing.
 class TaskHeartbeat {
 public:
     using Clock = std::chrono::steady_clock;
     /// Task cycles every few milliseconds; a second without a beat means it is gone or hung.
     static constexpr auto stale_after = std::chrono::milliseconds{1000};
 
-    /// Records a heartbeat reading. The first reading proves nothing, so it is not alive.
-    [[nodiscard]] auto alive(std::uint32_t heartbeat, Clock::time_point now) noexcept -> bool;
+    /// Records a reading of the write counter. The first reading proves nothing, so it is not
+    /// alive.
+    [[nodiscard]] auto alive(std::int64_t writes, Clock::time_point now) noexcept -> bool;
 
 private:
-    std::optional<std::uint32_t> last_{};
+    std::optional<std::int64_t> last_{};
     Clock::time_point last_change_{};
     bool advanced_{};
 };

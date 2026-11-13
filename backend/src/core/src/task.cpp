@@ -25,11 +25,11 @@ auto describe(TaskError error) noexcept -> std::string_view
     }
 }
 
-auto TaskHeartbeat::alive(std::uint32_t heartbeat, Clock::time_point now) noexcept -> bool
+auto TaskHeartbeat::alive(std::int64_t writes, Clock::time_point now) noexcept -> bool
 {
-    if (last_ != heartbeat) {
+    if (last_ != writes) {
         advanced_ = last_.has_value();
-        last_ = heartbeat;
+        last_ = writes;
         last_change_ = now;
         return advanced_;
     }

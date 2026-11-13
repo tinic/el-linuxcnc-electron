@@ -28,11 +28,12 @@
     },
     {
       "name": "release",
-      "displayName": "Release: optimized and hardened",
+      "displayName": "Optimized, hardened (-fhardened) build; clang-tidy runs in the analyze preset (clang does not know -fhardened)",
       "inherits": "base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "ON"
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "ON",
+        "ELLE_ENABLE_CLANG_TIDY": "OFF"
       }
     },
     {
