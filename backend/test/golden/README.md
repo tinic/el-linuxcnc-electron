@@ -35,3 +35,9 @@ the presets have since been fixed (`ui/src/presets/turningpresets.json`, checked
   They are now mm (0.1524 mm/rev, 0.508 mm).
 - **Imperial turning targets:** 3/4", 1" and 1-1/4" turned to the radius of the next size up
   (12.7, 15.88, 19.05 mm); now 9.525, 12.7 and 15.875 mm.
+- **NPT turning presets:** the 2A targets were undersized (⅛-27: Ø8.61, below the thread's major
+  diameter, leaving almost no thread) and shorter than the matching thread (½-14: turned 14.2 mm,
+  threaded 19.05 mm, so the thread ran into unturned stock). Targets are now the small-end major
+  diameter E0 + 0.8p (ASME B1.20.1), lengths match the threading presets, taper 1.7899° as the
+  threads. The 2B (internal) presets were removed: the turning cycle only turns outside diameters
+  (validation rejects a target above the tool's radius), so they could never run.

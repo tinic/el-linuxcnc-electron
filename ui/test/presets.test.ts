@@ -46,6 +46,30 @@ describe('turning presets', () => {
   })
 })
 
+describe('NPT turning presets', () => {
+  const threads = new Map(threadData.special.map((preset) => [preset.name, preset]))
+
+  it('turn the blank for the matching NPT thread: small-end major diameter, same taper and length', () => {
+    for (const preset of turningData.npt) {
+      const thread = threads.get(preset.name)
+      expect(thread, preset.name).toBeDefined()
+      if (thread === undefined) {
+        continue
+      }
+      const outside = Number(thread.Diameter.split('/')[0])
+      // Small-end major diameter: under the pipe OD, but no more than ~1.5 thread heights below it.
+      expect(preset.target * 2, preset.name).toBeLessThan(outside)
+      expect(preset.target * 2, preset.name).toBeGreaterThan(outside - 2 * Math.abs(thread.XDepth))
+      expect(preset.taperAngle, preset.name).toBe(thread.Angle)
+      expect(Math.abs(preset.zEnd), preset.name).toBeGreaterThanOrEqual(Math.abs(thread.ZEnd))
+    }
+  })
+
+  it('only external (2A): the turning cycle turns outside diameters and cannot bore', () => {
+    expect(turningData.npt.every((preset) => preset.name.endsWith('-2A'))).toBe(true)
+  })
+})
+
 describe('thread presets', () => {
   it('use the pitch in the name of metric threads', () => {
     for (const preset of threadData.metric) {
