@@ -96,13 +96,23 @@ export function niceStep(raw: number): number {
   return 10 * power
 }
 
-function distanceToSegment(point: PlotPoint, from: PlotPoint, to: PlotPoint): number {
+/** The closest point on a segment, its position along it (0..1) and its distance from `point`. */
+export function projectOnSegment(
+  point: PlotPoint,
+  from: PlotPoint,
+  to: PlotPoint,
+): { point: PlotPoint; t: number; distance: number } {
   const dz = to.z - from.z
   const dx = to.x - from.x
   const lengthSquared = dz * dz + dx * dx
   const t =
     lengthSquared === 0 ? 0 : Math.max(0, Math.min(1, ((point.z - from.z) * dz + (point.x - from.x) * dx) / lengthSquared))
-  return Math.hypot(point.z - (from.z + dz * t), point.x - (from.x + dx * t))
+  const closest = { x: from.x + dx * t, z: from.z + dz * t }
+  return { point: closest, t, distance: Math.hypot(point.z - closest.z, point.x - closest.x) }
+}
+
+function distanceToSegment(point: PlotPoint, from: PlotPoint, to: PlotPoint): number {
+  return projectOnSegment(point, from, to).distance
 }
 
 /**

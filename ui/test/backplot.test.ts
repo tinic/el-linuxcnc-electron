@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { cuttingSide, envelope, niceStep, passNumbers, segmentAt } from '../src/backplot'
+import { cuttingSide, envelope, niceStep, passNumbers, projectOnSegment, segmentAt } from '../src/backplot'
 import type { Segment } from '../src/protocol'
 
 function segment(kind: Segment['kind'], from: [number, number], to: [number, number]): Segment {
@@ -50,5 +50,13 @@ describe('backplot geometry', () => {
     // On the second pass the tool is on the second feed even though the first one is as close.
     expect(segmentAt(turning, { x: 4, z: -3 }, 4)).toBe(5)
     expect(segmentAt(turning, { x: 4.5, z: -3 }, 0)).toBe(1)
+  })
+
+  it('projects a point onto a segment, clamped to its ends', () => {
+    const along = projectOnSegment({ x: 4.1, z: -3 }, { x: 4, z: 2 }, { x: 4, z: -10 })
+    expect(along.point).toEqual({ x: 4, z: -3 })
+    expect(along.t).toBeCloseTo(5 / 12, 9)
+    expect(along.distance).toBeCloseTo(0.1, 9)
+    expect(projectOnSegment({ x: 4, z: 5 }, { x: 4, z: 2 }, { x: 4, z: -10 }).t).toBe(0)
   })
 })

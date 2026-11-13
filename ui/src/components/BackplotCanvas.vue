@@ -14,7 +14,7 @@
 // tool marker.
 import { computed, onBeforeUnmount, onMounted, useTemplateRef, watch, type DeepReadonly } from 'vue'
 
-import { cuttingSide, envelope, niceStep, passNumbers, segmentAt, type LiveTool } from '../backplot'
+import { cuttingSide, envelope, niceStep, passNumbers, projectOnSegment, segmentAt, type LiveTool } from '../backplot'
 import { panel } from '../machine'
 import type { Backplot, PlotPoint, Segment } from '../protocol'
 import { lengthToDisplay, xToDisplay } from '../units'
@@ -30,6 +30,9 @@ const margin = { left: 56, right: 16, top: 34, bottom: 30 }
 const lapSeconds = 6
 const minDepthShare = 0.6
 const profileSamples = 300
+/** The live marker sits on the planned path while the tool is this close to it (mm): encoder noise
+ *  then does not make it jump; the white track still shows the measured position. */
+const snapDistance = 0.5
 
 interface Palette {
   background: string
@@ -42,6 +45,7 @@ interface Palette {
   thread: string
   rapid: string
   tool: string
+  done: string
 }
 
 interface Bounds {
@@ -98,6 +102,7 @@ function palette(): Palette {
     thread: value('--warn', '#f59e0b'),
     rapid: '#7a7a7a',
     tool: value('--entry', '#ef4444'),
+    done: '#22c55e',
   }
 }
 
@@ -343,6 +348,7 @@ function drawLegend(context: CanvasRenderingContext2D, view: View, colors: Palet
   const legend: [string, string, boolean][] = [
     ['rapid', colors.rapid, true],
     ['cut', segments.some((segment) => segment.kind === 'thread') ? colors.thread : colors.feed, false],
+    ['done', colors.done, false],
   ]
   let legendX = margin.left + 6
   for (const [name, color, dashed] of legend) {
@@ -418,20 +424,44 @@ function extendTrail(view: View, trail: DeepReadonly<PlotPoint[]>): void {
   trailDrawn = trail.length
 }
 
-/** Where the preview marker is after `seconds`: it laps the path every `lapSeconds`. */
-function previewMarker(seconds: number): PlotPoint {
+/** Where the preview marker is after `seconds` (it laps the path every `lapSeconds`): the point
+ *  and the segment it is on. */
+function previewMarker(seconds: number): { point: PlotPoint; index: number } {
   const lengths = cumulative.value
   const total = lengths.at(-1) ?? 0
   const travelled = ((seconds % lapSeconds) / lapSeconds) * total
   const index = lengths.findIndex((end) => end >= travelled)
   const segment = props.plot.segments[index]
   if (!segment) {
-    return props.start
+    return { point: props.start, index: 0 }
   }
   const startsAt = index > 0 ? (lengths[index - 1] ?? 0) : 0
   const length = lengthOf(segment)
   const t = length > 0 ? (travelled - startsAt) / length : 1
-  return { x: segment.from.x + (segment.to.x - segment.from.x) * t, z: segment.from.z + (segment.to.z - segment.from.z) * t }
+  return {
+    point: { x: segment.from.x + (segment.to.x - segment.from.x) * t, z: segment.from.z + (segment.to.z - segment.from.z) * t },
+    index,
+  }
+}
+
+/** The cutting moves made so far in green: all before segment `index`, and that one up to `upTo`. */
+function drawDone(context: CanvasRenderingContext2D, view: View, theme: Palette, index: number, upTo: PlotPoint): void {
+  const segments = props.plot.segments
+  context.strokeStyle = theme.done
+  context.lineWidth = 3
+  context.setLineDash([])
+  context.beginPath()
+  for (let at = 0; at <= index && at < segments.length; at += 1) {
+    const segment = segments[at]
+    if (!segment || segment.kind === 'rapid') {
+      continue
+    }
+    const [x1, y1] = screen(view, segment.from)
+    const [x2, y2] = screen(view, at === index ? upTo : segment.to)
+    context.moveTo(x1, y1)
+    context.lineTo(x2, y2)
+  }
+  context.stroke()
 }
 
 function draw(now: number): void {
@@ -481,16 +511,26 @@ function draw(now: number): void {
     context.drawImage(staticLayer, 0, 0)
   }
   let marker: PlotPoint
+  let doneIndex: number
+  let doneUpTo: PlotPoint
   if (live) {
     extendTrail(view, live.trail)
     if (trailLayer) {
       context.drawImage(trailLayer, 0, 0)
     }
-    marker = live.position
+    const segment = props.plot.segments[liveSegment]
+    const along = segment ? projectOnSegment(live.position, segment.from, segment.to) : null
+    marker = along && along.distance <= snapDistance ? along.point : live.position
+    doneIndex = liveSegment
+    doneUpTo = along?.point ?? live.position
   } else {
-    marker = previewMarker((now - startedAt) / 1000)
+    const preview = previewMarker((now - startedAt) / 1000)
+    marker = preview.point
+    doneIndex = preview.index
+    doneUpTo = preview.point
   }
   context.setTransform(ratio, 0, 0, ratio, 0, 0)
+  drawDone(context, view, colors ?? palette(), doneIndex, doneUpTo)
   const [mx, my] = screen(view, marker)
   context.fillStyle = (colors ?? palette()).tool
   context.beginPath()
