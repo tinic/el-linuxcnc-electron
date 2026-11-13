@@ -4,6 +4,7 @@ import { computed, onBeforeUnmount } from 'vue'
 import { settle } from '../entry'
 import { panel, send } from '../machine'
 import type { Direction, Feed, JogButton } from '../protocol'
+import { JogHold } from '../jogHold'
 import AppIcon from './AppIcon.vue'
 
 const feed = computed(() => panel.status?.feed ?? 'longitudinal')
@@ -47,37 +48,36 @@ function chooseDirection(value: Direction): void {
   send({ type: 'set_direction', direction: value })
 }
 
-// Jog: while a button is held the panel re-sends "held" every 50 ms. The machine stops the slide
-// by itself if those refreshes stop for 150 ms (frozen panel, lost touch release).
-const refreshMs = 50
-const timers = new Map<JogButton, number>()
+// Jog: press-and-hold with a machine-side deadman; see jogHold.ts for why the panel side checks
+// the press on every refresh.
+const jogHold = new JogHold(
+  {
+    send: (button: JogButton, held: boolean): void => {
+      send({ type: 'jog', button, held })
+    },
+  },
+  {
+    setInterval: (callback: () => void, ms: number): number => window.setInterval(callback, ms),
+    clearInterval: (handle: number): void => {
+      window.clearInterval(handle)
+    },
+  },
+)
 
 function jogStart(button: JogButton, event: PointerEvent): void {
   settle()
-  ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
-  jogStop(button)
-  send({ type: 'jog', button, held: true })
-  timers.set(
-    button,
-    window.setInterval(() => {
-      send({ type: 'jog', button, held: true })
-    }, refreshMs),
-  )
+  if (event.pointerType === 'mouse' && event.button !== 0) {
+    return
+  }
+  jogHold.press(button, event.currentTarget as HTMLElement, event.pointerId)
 }
 
 function jogStop(button: JogButton): void {
-  const timer = timers.get(button)
-  if (timer !== undefined) {
-    window.clearInterval(timer)
-    timers.delete(button)
-    send({ type: 'jog', button, held: false })
-  }
+  jogHold.release(button)
 }
 
 function stopAll(): void {
-  for (const button of [...timers.keys()]) {
-    jogStop(button)
-  }
+  jogHold.releaseAll()
   send({ type: 'jog_release_all' })
 }
 
@@ -167,6 +167,9 @@ section {
 .jog button {
   display: grid;
   place-items: center;
+  /* No gestures on the jog buttons: WebKit then delivers a touch as a press at once instead of
+     holding it back until the finger lifts to decide whether it was a pan. */
+  touch-action: none;
 }
 
 .stop-jog {
