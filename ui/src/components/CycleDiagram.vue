@@ -3,6 +3,41 @@
 // face on the right, centreline at the bottom; proportions exaggerated for legibility). The field
 // being edited or whose label was tapped is highlighted.
 defineProps<{ kind: 'turning' | 'threading'; highlight: string | null }>()
+
+// Threading sketch: the work's surface and thread depth, the face (Z0), the thread end (Length)
+// and where the run-out starts, in viewBox units.
+const surfaceY = 130
+const rootY = 165
+const faceX = 300
+const endX = 110
+const runOutX = 150
+const pitchPx = 24
+
+/** Outline of the threaded work: crests every pitch, roots at full depth, rising to the surface
+ *  over the run-out (where the tool pulls out) so the groove ends at the thread end. */
+function outline(): string {
+  const points: [number, number][] = [
+    [40, surfaceY],
+    [endX, surfaceY],
+  ]
+  const crests: number[] = []
+  for (let x = faceX; x > endX; x -= pitchPx) {
+    crests.push(x)
+  }
+  crests.reverse()
+  for (const crest of crests) {
+    const root = crest - pitchPx / 2
+    if (root > endX) {
+      const share = root >= runOutX ? 1 : (root - endX) / (runOutX - endX)
+      points.push([root, surfaceY + (rootY - surfaceY) * share])
+    }
+    points.push([crest, surfaceY])
+  }
+  points.push([faceX, 300], [40, 300])
+  return points.map(([x, y]) => `${String(x)},${String(y)}`).join(' ')
+}
+
+const threadOutline = outline()
 </script>
 
 <template>
@@ -98,72 +133,71 @@ defineProps<{ kind: 'turning' | 'threading'; highlight: string | null }>()
       </marker>
     </defs>
 
-    <!-- chuck, work with the thread cut into it -->
-    <rect x="14" y="98" width="26" height="202" class="chuck" />
-    <polygon
-      points="40,110 120,110 135,150 150,110 165,150 180,110 195,150 210,110 225,150 240,110 255,150 270,110 285,150 300,110 300,300 40,300"
-      class="part"
-    />
-    <line x1="10" y1="300" x2="410" y2="300" class="centre" />
-    <text x="44" y="292" class="note">centreline</text>
-
-    <!-- where the operator puts the tool, and where passes start -->
-    <line x1="300" y1="60" x2="300" y2="324" class="ext" />
-    <text x="304" y="327" class="note">Z0 (face)</text>
-    <polygon points="360,109 352,92 368,92" class="tool" />
-    <text x="414" y="86" class="note" text-anchor="end">passes start here</text>
-
-    <!-- Pitch -->
-    <g :class="{ on: highlight === 'pitch' }">
-      <line x1="240" y1="110" x2="240" y2="96" class="ext" />
-      <line x1="270" y1="110" x2="270" y2="96" class="ext" />
-      <line x1="242" y1="99" x2="268" y2="99" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
-      <text x="255" y="92" class="label" text-anchor="middle">Pitch</text>
+    <!-- One pass of the tool, drawn in its own lane above the work (same Z positions). -->
+    <text x="12" y="20" class="note">tool path, one pass</text>
+    <g>
+      <line x1="110" y1="36" x2="368" y2="36" class="rapid" />
+      <line x1="368" y1="36" x2="368" y2="52" class="rapid" />
+      <text x="240" y="30" class="note" text-anchor="middle">rapid back to the start</text>
     </g>
-
-    <!-- XDepth (radial) and ZDepth (sideways): together the infeed direction -->
-    <g :class="{ on: highlight === 'depth' }">
-      <line x1="300" y1="150" x2="336" y2="150" class="ext" />
-      <line x1="330" y1="112" x2="330" y2="148" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
-      <text x="336" y="134" class="label">Depth</text>
-    </g>
-    <g :class="{ on: highlight === 'infeed_deg' || highlight === 'depth' }">
-      <line x1="226" y1="58" x2="216" y2="104" class="infeed" marker-end="url(#arrow-t)" />
-    </g>
+    <polygon points="368,57 361,44 375,44" class="tool" />
+    <text x="414" y="52" class="note" text-anchor="end">start</text>
     <g :class="{ on: highlight === 'infeed_deg' }">
-      <text x="232" y="66" class="label">Infeed ∠</text>
+      <line x1="368" y1="59" x2="358" y2="80" class="infeed" marker-end="url(#arrow-t)" />
+      <text x="414" y="98" class="label" text-anchor="end">Infeed ∠</text>
     </g>
-
-    <!-- Angle: tapered thread -->
-    <g :class="{ on: highlight === 'taper_deg' }">
-      <line x1="300" y1="110" x2="120" y2="100" class="taper" />
-      <text x="124" y="92" class="label">Taper ∠</text>
-    </g>
-
-    <!-- ZEnd: thread length from the tool's Z -->
-    <g :class="{ on: highlight === 'length' }">
-      <line x1="120" y1="110" x2="120" y2="324" class="ext" />
-      <line x1="122" y1="318" x2="298" y2="318" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
-      <text x="210" y="313" class="label" text-anchor="middle">Length</text>
-    </g>
-
-    <!-- end of each pass: the run-out pulls out at an angle, finishing at the thread end; then the
-         retract clears for the rapid return -->
+    <line x1="356" y1="80" x2="152" y2="80" class="cut" marker-end="url(#arrow-t)" />
+    <text x="254" y="74" class="note" text-anchor="middle">cut, synchronized to the spindle</text>
     <g :class="{ on: highlight === 'run_out' }">
-      <line x1="150" y1="150" x2="120" y2="110" class="pullout" />
-      <line x1="150" y1="150" x2="150" y2="172" class="ext" />
-      <line x1="122" y1="168" x2="148" y2="168" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
-      <text x="62" y="186" class="label">Run-out</text>
+      <line x1="150" y1="80" x2="112" y2="59" class="pullout" />
+      <line x1="150" y1="84" x2="150" y2="130" class="ext" />
+      <line x1="110" y1="62" x2="110" y2="130" class="ext" />
+      <line x1="112" y1="100" x2="148" y2="100" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
+      <text x="46" y="104" class="label">Run-out</text>
     </g>
     <g :class="{ on: highlight === 'retract' }">
-      <line x1="120" y1="108" x2="120" y2="44" class="dim" marker-end="url(#arrow-t)" />
-      <text x="58" y="70" class="label">Retract</text>
+      <line x1="110" y1="57" x2="110" y2="40" class="dim" marker-end="url(#arrow-t)" />
+      <text x="56" y="52" class="label">Retract</text>
     </g>
-    <line x1="124" y1="40" x2="360" y2="40" class="rapid" />
-    <text x="226" y="33" class="note" text-anchor="middle">rapid back for the next pass</text>
 
-    <!-- cut depth per pass: 1stCut, then x Mult each pass, never below MinCut; Spring at full depth -->
-    <g transform="translate(150 196)">
+    <!-- The work: full-depth thread from the face, shallowing over the run-out to the end. -->
+    <rect x="14" y="118" width="26" height="182" class="chuck" />
+    <polygon :points="threadOutline" class="part" />
+    <line x1="10" y1="300" x2="410" y2="300" class="centre" />
+    <text x="44" y="292" class="note on-part">centreline</text>
+    <line x1="300" y1="122" x2="300" y2="324" class="ext" />
+    <text x="304" y="327" class="note">Z0 (face)</text>
+
+    <g :class="{ on: highlight === 'pitch' }">
+      <line x1="228" y1="130" x2="228" y2="116" class="ext" />
+      <line x1="252" y1="130" x2="252" y2="116" class="ext" />
+      <line x1="230" y1="119" x2="250" y2="119" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
+      <text x="240" y="112" class="label" text-anchor="middle">Pitch</text>
+    </g>
+    <g :class="{ on: highlight === 'depth' }">
+      <line x1="300" y1="165" x2="330" y2="165" class="ext" />
+      <line x1="300" y1="130" x2="330" y2="130" class="ext" />
+      <line x1="324" y1="132" x2="324" y2="163" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
+      <text x="330" y="152" class="label">Depth</text>
+    </g>
+    <g :class="{ on: highlight === 'length' }">
+      <line x1="110" y1="130" x2="110" y2="324" class="ext" />
+      <line x1="112" y1="318" x2="298" y2="318" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
+      <text x="205" y="313" class="label" text-anchor="middle">Length</text>
+    </g>
+
+    <!-- Taper: the thread is cut on a cone that is turned first. -->
+    <g transform="translate(52 186)" :class="{ on: highlight === 'taper_deg' }">
+      <text x="0" y="0" class="note on-part">Taper ∠: thread on a turned cone</text>
+      <polygon points="0,14 104,30 104,62 0,62" class="cone" />
+      <polyline points="8,15 14,23 20,17 26,25 32,19 38,27 44,21 50,29 56,23 62,31 68,25 74,33 80,27 86,35 92,29" class="cone-thread" />
+      <line x1="104" y1="30" x2="44" y2="30" class="ext" />
+      <path d="M 74 30 A 30 30 0 0 1 74.4 25.4" class="dim" />
+      <text x="56" y="44" class="label small">∠</text>
+    </g>
+
+    <!-- Depth per pass: 1stCut, then x Factor each pass, never below Min cut; Spring at full depth. -->
+    <g transform="translate(232 196)">
       <text x="0" y="0" class="note on-part">depth per pass</text>
       <g :class="{ on: highlight === 'first_cut' }">
         <rect x="0" y="8" width="12" height="40" class="bar" />
@@ -274,6 +308,22 @@ defineProps<{ kind: 'turning' | 'threading'; highlight: string | null }>()
   stroke-dasharray: 6 4;
 }
 
+.cut {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.6;
+}
+
+.cone {
+  fill: var(--control-hover);
+  stroke: var(--text-faint);
+}
+
+.cone-thread {
+  fill: none;
+  stroke: var(--text-dim);
+}
+
 .bar {
   fill: var(--control-hover);
   stroke: var(--text-faint);
@@ -315,6 +365,11 @@ defineProps<{ kind: 'turning' | 'threading'; highlight: string | null }>()
 .on .pullout {
   stroke: var(--entry);
   stroke-width: 2.2;
+}
+
+.on .cone,
+.on .cone-thread {
+  stroke: var(--entry);
 }
 
 .on .bar {
