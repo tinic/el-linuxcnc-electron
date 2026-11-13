@@ -22,3 +22,16 @@ python3 -I oracle/reshape.py golden.json cycles.json
 
 The scripts import the original code, which was removed after the rewrite; run them from a checkout
 of `a587f56` (for example `git worktree add /tmp/elle-original a587f56`).
+
+## Preset data fixed after the golden data was recorded
+
+The cases in `cycles.json` record the planner's *inputs* as well as its outputs, so they keep
+pinning the planner exactly. Some of those inputs came from shipped preset data that was wrong;
+the presets have since been fixed (`ui/src/presets/turningpresets.json`, checked by
+`ui/test/presets.test.ts`), so picking these presets no longer produces the recorded requests:
+
+- **Imperial turning presets:** `feedRate`, `stepDown` and `finalStepDown` were inches while every
+  other value is mm, so they were applied 25.4x too small (e.g. 3/8": feed 0.006, step 0.02).
+  They are now mm (0.1524 mm/rev, 0.508 mm).
+- **Imperial turning targets:** 3/4", 1" and 1-1/4" turned to the radius of the next size up
+  (12.7, 15.88, 19.05 mm); now 9.525, 12.7 and 15.875 mm.
