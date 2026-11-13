@@ -109,6 +109,7 @@ struct TaskClient::Channels {
     std::unique_ptr<RCS_CMD_CHANNEL> command{};
     std::unique_ptr<RCS_STAT_CHANNEL> status{};
     std::unique_ptr<NML> errors{};
+    core::TaskHeartbeat heartbeat{};
     int serial{};
 
     /// The status buffer, if the latest message in it is a task status.
@@ -170,7 +171,8 @@ TaskClient::~TaskClient() = default;
 auto TaskClient::status() -> std::optional<core::TaskStatus>
 {
     const EMC_STAT* stat = channels_->latest_status();
-    if (stat == nullptr) {
+    // linuxcncsvr keeps serving the last status after task has died; that is not a connection.
+    if (stat == nullptr || !channels_->heartbeat.alive(stat->task.heartbeat, Clock::now())) {
         return std::nullopt;
     }
     return core::TaskStatus{
