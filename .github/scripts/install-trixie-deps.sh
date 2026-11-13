@@ -26,5 +26,5 @@ apt-get update
 apt-get install -y --no-install-recommends \
   ninja-build pkg-config dpkg-dev file \
   "linuxcnc-uspace=${linuxcnc_version}" "linuxcnc-uspace-dev=${linuxcnc_version}" \
-  libwebkit2gtk-4.1-dev libgtk-3-dev \
+  libwebkit2gtk-4.1-dev libgtk-3-dev libboost-dev \
   "$@"
