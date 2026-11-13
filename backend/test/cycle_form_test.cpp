@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <iterator>
 #include <cstddef>
 #include <optional>
 #include <string>
@@ -281,4 +282,52 @@ TEST_CASE("an empty allowance cuts to 6g; 0 cuts the basic profile", "[form][thr
     const auto negative = elle::core::threading_request(form, tool);
     REQUIRE(!negative.issues.empty());
     CHECK(negative.issues.front().field == "allowance");
+}
+
+namespace {
+
+struct Passes {
+    std::vector<double> depths{}; ///< radial depth of each pass below `start_x`
+    std::size_t springs{};
+};
+
+/// The depth of each threading pass (from the infeed move after its comment) and how many are
+/// spring passes.
+auto passes_of(const std::vector<std::string>& lines, double start_x) -> Passes
+{
+    Passes passes{};
+    for (std::size_t index = 0; index + 1 < lines.size(); ++index) {
+        if (lines.at(index).starts_with("(Pass")) {
+            passes.depths.push_back(start_x - word(lines.at(index + 1), 'X').value_or(0.0));
+            passes.springs += lines.at(index).ends_with("Spring)") ? 1U : 0U;
+        }
+    }
+    return passes;
+}
+
+} // namespace
+
+TEST_CASE("spring passes repeat the full-depth pass; no pass is shallower after it", "[threading][spring]")
+{
+    // 1/4-20 UNC: full depth comes while the cuts are still above Min cut. The original backed off
+    // one cut and advanced by the next, smaller one: its "spring" pass ended 0.021 mm short.
+    const ThreadingForm form{.pitch = 1.27, .depth = 0.779, .length = 10.32, .run_out = 1.0,
+                             .retract = 0.5, .first_cut = 0.254, .cut_factor = 0.8,
+                             .min_cut = 0.05, .spring_cuts = 2.0};
+    const WorkPosition tool{.x = 3.175, .z = 0.0};
+    const auto converted = elle::core::threading_request(form, tool);
+    REQUIRE(converted.issues.empty());
+    const auto program = elle::core::plan_threading(converted.request, tool);
+    const auto lines = elle::core::threading_gcode(program, Destination::machine);
+    REQUIRE(lines.has_value());
+
+    const auto [pass_depths, springs] = passes_of(*lines, tool.x);
+    const double full = -converted.request.x_depth.value_or(0.0);
+    const auto first_full = std::ranges::find_if(pass_depths, [full](double depth) {
+        return depth == Approx(full);
+    });
+    REQUIRE(first_full != pass_depths.end());
+    CHECK(std::all_of(first_full, pass_depths.end(), [full](double depth) { return depth == Approx(full); }));
+    CHECK(std::distance(first_full, pass_depths.end()) == 3); // the full-depth pass and two springs
+    CHECK(springs == 2);
 }

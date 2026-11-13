@@ -101,7 +101,9 @@ auto append_pass(GcodeLines& lines, int pass_number, const CutState& state, cons
     const auto x_end = format_coordinate(program.x_end);
     const auto pitch = format_coordinate(schedule.pitch);
 
-    lines.push_back(std::format("(Pass {} - Cut size: {:.4f})", pass_number, state.cut_size));
+    lines.push_back(state.cut_size > 0.0
+                        ? std::format("(Pass {} - Cut size: {:.4f})", pass_number, state.cut_size)
+                        : std::format("(Pass {} - Spring)", pass_number));
     lines.push_back(std::format("G1 X{} Z{}", format_coordinate(program.x_start + state.x_cut),
                                 format_coordinate(program.z_start + state.z_cut)));
     if (cycle.destination == Destination::machine) {
@@ -184,22 +186,27 @@ auto threading_gcode(const ThreadingProgram& program, Destination destination)
     lines.push_back(std::format("G0 X{} Z{}", format_coordinate(program.x_start),
                                 format_coordinate(program.z_start)));
 
+    // Cut down to full depth (advance_cut lands exactly on it)...
     CutState state{};
-    int spring_cuts_remaining = program.spring_cuts;
-    for (int pass_number = 1; spring_cuts_remaining >= 0; ++pass_number) {
-        if (pass_number > detail::max_passes) {
+    int pass_number = 0;
+    for (bool full_depth = false; !full_depth;) {
+        if (++pass_number > detail::max_passes) {
             return std::unexpected{CycleError::too_many_passes};
         }
         advance_cut(state, schedule, infeed, program);
         append_pass(lines, pass_number, state, cycle);
-        if (exactly_equal(std::abs(state.x_cut), std::abs(program.x_depth))) {
-            if (spring_cuts_remaining > 0) {
-                // Back off one cut so the spring pass re-cuts the last increment at full depth.
-                state.x_cut = state.x_cut - (state.cut_size * infeed.k_x);
-                state.z_cut = state.z_cut - (state.cut_size * infeed.k_z);
-            }
-            --spring_cuts_remaining;
+        full_depth = exactly_equal(std::abs(state.x_cut), std::abs(program.x_depth));
+    }
+    // ...then the spring passes: the full-depth pass again, with no further infeed, taking off what
+    // the tool and the work sprang back. (The original backed off one cut and advanced by the next,
+    // smaller one, so a "spring" pass ended short of full depth whenever the cuts had not yet
+    // shrunk to the minimum, e.g. 1/4-20: 0.803 after 0.823.)
+    state.cut_size = 0.0;
+    for (int spring = 0; spring < program.spring_cuts; ++spring) {
+        if (++pass_number > detail::max_passes) {
+            return std::unexpected{CycleError::too_many_passes};
         }
+        append_pass(lines, pass_number, state, cycle);
     }
 
     lines.push_back(std::format("G0 X{} Z{}", format_coordinate(program.x_return),

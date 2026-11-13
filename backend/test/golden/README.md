@@ -51,3 +51,15 @@ thread. The planner still reproduces that for those requests, but the panel no l
 it sends a `ThreadingForm`, and `core::threading_request` (`src/core/src/cycle_form.cpp`) makes the
 run-out continue toward the chuck and finish exactly at the thread end (tested in
 `test/cycle_form_test.cpp`: no reversal, the deepest point at -Length).
+
+## Spring passes (deliberate change of the generated G-code)
+
+The original produced its spring passes by backing off one cut and advancing by the next one. The
+next cut is the last one times CutMult, so unless the cuts had already shrunk to MinCut the "spring"
+pass ended short of full depth and another pass followed to get back (found on the lathe with
+1/4-20: 0.823, then 0.803, then 0.823 mm). In the recorded data 44 of 104 threading cases had such a
+pass. A spring pass now repeats the full-depth pass with no further infeed, and is labelled
+`(Pass n - Spring)`. The expected `machine` and `preview` programs of all threading cases were
+regenerated from the fixed generator and checked case by case: everything up to the first
+full-depth pass, and the final return, is unchanged; after it come exactly `spring_cuts` copies of
+the full-depth pass. The planner outputs (`program`) are unchanged.
