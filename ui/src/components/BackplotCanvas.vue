@@ -51,6 +51,8 @@ interface Bounds {
 
 /** Plot coordinates to CSS pixels. */
 interface View {
+  /** Front tool post: X+ toward the operator, drawn downward (the machine view). */
+  front: boolean
   width: number
   height: number
   ratio: number
@@ -125,7 +127,7 @@ function boundsFor(live: DeepReadonly<LiveTool> | null): Bounds {
   return viewBounds
 }
 
-function viewFor(width: number, height: number, ratio: number, bounds: Bounds): View {
+function viewFor(width: number, height: number, ratio: number, bounds: Bounds, front: boolean): View {
   // Cuts are long and shallow, so X is stretched until the path fills at least `minDepthShare` of
   // the height; the factor is printed whenever it is not 1:1.
   const plotWidth = width - margin.left - margin.right
@@ -135,6 +137,7 @@ function viewFor(width: number, height: number, ratio: number, bounds: Bounds): 
   const scaleZ = Math.min(plotWidth / spanZ, plotHeight / spanX)
   const scaleX = Math.max(scaleZ, (minDepthShare * plotHeight) / spanX)
   return {
+    front,
     width,
     height,
     ratio,
@@ -148,7 +151,8 @@ function viewFor(width: number, height: number, ratio: number, bounds: Bounds): 
 }
 
 function screen(view: View, point: { x: number; z: number }): [number, number] {
-  return [view.offsetZ + (point.z - view.min.z) * view.scaleZ, view.offsetX + (view.max.x - point.x) * view.scaleX]
+  const fromTop = view.front ? point.x - view.min.x : view.max.x - point.x
+  return [view.offsetZ + (point.z - view.min.z) * view.scaleZ, view.offsetX + fromTop * view.scaleX]
 }
 
 function layer(existing: HTMLCanvasElement | null, view: View): [HTMLCanvasElement, CanvasRenderingContext2D] | null {
@@ -221,7 +225,9 @@ function drawWork(context: CanvasRenderingContext2D, view: View, colors: Palette
   if (workEnd > view.min.z) {
     const profile = envelope(props.plot.segments, side.value, view.min.z, workEnd, profileSamples)
     const stock = props.start.x
-    const edge = external ? bottom : top
+    // The part fills toward the centreline (external) or away from it (internal), whichever
+    // edge that is in this orientation.
+    const edge = screen(view, { x: external ? view.min.x : view.max.x, z: 0 })[1]
     const sz = (z: number): number => screen(view, { x: 0, z })[0]
     const sx = (x: number): number => screen(view, { x, z: 0 })[1]
     context.save()
@@ -446,7 +452,8 @@ function draw(now: number): void {
 
   const live = props.live ?? null
   const bounds = boundsFor(live)
-  const view = viewFor(width, height, ratio, bounds)
+  const front = !(panel.settings?.back_tool_post ?? false)
+  const view = viewFor(width, height, ratio, bounds, front)
   if (live) {
     liveSegment = segmentAt(props.plot.segments, live.position, liveSegment)
   }
@@ -457,6 +464,7 @@ function draw(now: number): void {
     ratio,
     panel.metric,
     panel.settings?.diameter_mode ?? false,
+    front,
     currentPass,
     bounds.min.x,
     bounds.min.z,

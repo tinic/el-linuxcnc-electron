@@ -24,6 +24,7 @@ function defaultSettings(): Settings {
     thread_preset_tab: 0,
     turning_preset_tab: 0,
     pitch_preset_tabs: [0, 0],
+    back_tool_post: false,
     machine: {
       encoder_scale_z: 0.001,
       encoder_scale_x: -0.001,
@@ -187,6 +188,7 @@ export function createSimulator(): Transport {
         settings.thread_preset_tab = p.thread_preset_tab
         settings.turning_preset_tab = p.turning_preset_tab
         settings.pitch_preset_tabs = p.pitch_preset_tabs
+        settings.back_tool_post = p.back_tool_post
         settings.machine.encoder_scale_z = p.encoder_scale_z
         settings.machine.encoder_scale_x = p.encoder_scale_x
         emit({ type: 'settings', settings: structuredClone(settings) })

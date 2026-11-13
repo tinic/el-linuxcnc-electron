@@ -172,9 +172,10 @@ TEST_CASE("tool and preference changes are saved", "[session]")
     static_cast<void>(fixture.send(
         R"({"type":"set_preferences","preferences":{"diameter_mode":false,"metric_on_startup":false,)"
         R"("thread_preset_tab":1,"turning_preset_tab":2,"pitch_preset_tabs":[1,2],)"
-        R"("encoder_scale_z":0.002,"encoder_scale_x":-0.002}})"));
+        R"("encoder_scale_z":0.002,"encoder_scale_x":-0.002,"back_tool_post":true}})"));
     const auto again = elle::app::load_settings(fixture.settings_file(), "missing.json");
     CHECK(!again.settings.diameter_mode);
+    CHECK(again.settings.back_tool_post);
     CHECK(again.settings.pitch_preset_tabs.at(1) == 2);
     CHECK(again.settings.machine.encoder_scale_z > 0.0019);
 }

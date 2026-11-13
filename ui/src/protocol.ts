@@ -35,6 +35,8 @@ export interface Settings {
   thread_preset_tab: number
   turning_preset_tab: number
   pitch_preset_tabs: [number, number]
+  /** The tool is behind the work: drawings show X+ up. Front (default): X+ toward the operator, down. */
+  back_tool_post: boolean
   machine: MachineSettings
 }
 
@@ -152,6 +154,7 @@ export interface Preferences {
   pitch_preset_tabs: [number, number]
   encoder_scale_z: number
   encoder_scale_x: number
+  back_tool_post: boolean
 }
 
 export type ToMachine =

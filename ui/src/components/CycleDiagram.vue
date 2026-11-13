@@ -1,8 +1,23 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
+import { panel } from '../machine'
+
 // What each canned-cycle field does, drawn on a half-section of the work (chuck on the left, work
 // face on the right, centreline at the bottom; proportions exaggerated for legibility). The field
 // being edited or whose label was tapped is highlighted.
 defineProps<{ kind: 'turning' | 'threading'; highlight: string | null }>()
+
+// The sketches are drawn with X+ up (back tool post). For the usual front tool post X+ points toward
+// the operator and is drawn downward, as LinuxCNC's lathe display does: the sketch is mirrored and
+// each label is flipped back upright about its baseline, shifted by its cap height so it stays on
+// the same side of what it labels.
+const front = computed(() => !(panel.settings?.back_tool_post ?? false))
+const flip = computed(() => (front.value ? 'translate(0 330) scale(1 -1)' : undefined))
+
+function upright(y: number, capHeight: number): string | undefined {
+  return front.value ? `translate(0 ${String(2 * y - capHeight)}) scale(1 -1)` : undefined
+}
 
 // Threading sketch: the work's surface and thread depth, the face (Z0), the thread end (Length)
 // and where the run-out starts, in viewBox units.
@@ -56,80 +71,82 @@ const threadOutline = outline()
         <path d="M0,0 L8,4 L0,8 z" class="arrowhead" />
       </marker>
     </defs>
+    <g :transform="flip">
 
-    <!-- chuck, finished part, material the cycle removes -->
-    <rect x="14" y="58" width="26" height="242" class="chuck" />
-    <polygon points="40,70 150,70 150,145 314,167.8 330,184 330,300 40,300" class="part" />
-    <polygon points="150,70 330,70 330,170 150,145" class="removed" />
-    <line x1="10" y1="300" x2="410" y2="300" class="centre" />
-    <text x="44" y="292" class="note">centreline</text>
+      <!-- chuck, finished part, material the cycle removes -->
+      <rect x="14" y="58" width="26" height="242" class="chuck" />
+      <polygon points="40,70 150,70 150,145 314,167.8 330,184 330,300 40,300" class="part" />
+      <polygon points="150,70 330,70 330,170 150,145" class="removed" />
+      <line x1="10" y1="300" x2="410" y2="300" class="centre" />
+      <text x="44" y="292" class="note" :transform="upright(292, 8)">centreline</text>
 
-    <!-- tool at the stock -->
-    <polygon points="347,69 372,52 380,62" class="tool" />
-    <text x="356" y="44" class="note" text-anchor="middle">tool X = stock</text>
+      <!-- tool at the stock -->
+      <polygon points="347,69 372,52 380,62" class="tool" />
+      <text x="356" y="44" class="note" text-anchor="middle" :transform="upright(44, 8)">tool X = stock</text>
 
-    <!-- roughing passes (Step) and the final pass (Final, Spring) -->
-    <g :class="{ on: highlight === 'step_down' }">
-      <line x1="345" y1="97" x2="150" y2="70" class="pass" />
-      <line x1="345" y1="122" x2="150" y2="95" class="pass" />
-      <line x1="345" y1="147" x2="150" y2="120" class="pass" />
-      <line x1="345" y1="162" x2="150" y2="135" class="pass" />
-      <line x1="362" y1="95" x2="362" y2="120" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)" />
-      <text x="356" y="112" class="label" text-anchor="end">Cut depth</text>
-    </g>
-    <g :class="{ on: highlight === 'final_step_down' || highlight === 'spring_passes' }">
-      <line x1="345" y1="172" x2="150" y2="145" class="final" />
-    </g>
-    <g :class="{ on: highlight === 'final_step_down' }">
-      <line x1="362" y1="160" x2="362" y2="170" class="dim" />
-      <line x1="356" y1="160" x2="368" y2="160" class="dim" />
-      <line x1="356" y1="170" x2="368" y2="170" class="dim" />
-      <text x="368" y="160" class="label">Finish</text>
-    </g>
-    <g :class="{ on: highlight === 'spring_passes' }">
-      <text x="240" y="196" class="label" text-anchor="middle">Spring: final pass repeated</text>
-    </g>
+      <!-- roughing passes (Step) and the final pass (Final, Spring) -->
+      <g :class="{ on: highlight === 'step_down' }">
+        <line x1="345" y1="97" x2="150" y2="70" class="pass" />
+        <line x1="345" y1="122" x2="150" y2="95" class="pass" />
+        <line x1="345" y1="147" x2="150" y2="120" class="pass" />
+        <line x1="345" y1="162" x2="150" y2="135" class="pass" />
+        <line x1="362" y1="95" x2="362" y2="120" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+        <text x="356" y="112" class="label" text-anchor="end" :transform="upright(112, 10)">Cut depth</text>
+      </g>
+      <g :class="{ on: highlight === 'final_step_down' || highlight === 'spring_passes' }">
+        <line x1="345" y1="172" x2="150" y2="145" class="final" />
+      </g>
+      <g :class="{ on: highlight === 'final_step_down' }">
+        <line x1="362" y1="160" x2="362" y2="170" class="dim" />
+        <line x1="356" y1="160" x2="368" y2="160" class="dim" />
+        <line x1="356" y1="170" x2="368" y2="170" class="dim" />
+        <text x="368" y="160" class="label" :transform="upright(160, 10)">Finish</text>
+      </g>
+      <g :class="{ on: highlight === 'spring_passes' }">
+        <text x="240" y="196" class="label" text-anchor="middle" :transform="upright(196, 10)">Spring: final pass repeated</text>
+      </g>
 
-    <!-- Chamfer: 45° on the finished edge at the face -->
-    <g :class="{ on: highlight === 'chamfer' }">
-      <line x1="314" y1="167.8" x2="330" y2="184" class="final" />
-      <text x="322" y="214" class="label" text-anchor="end">Chamfer 45°</text>
-    </g>
+      <!-- Chamfer: 45° on the finished edge at the face -->
+      <g :class="{ on: highlight === 'chamfer' }">
+        <line x1="314" y1="167.8" x2="330" y2="184" class="final" />
+        <text x="322" y="214" class="label" text-anchor="end" :transform="upright(214, 10)">Chamfer 45°</text>
+      </g>
 
-    <!-- Target: finished size at the face -->
-    <g :class="{ on: highlight === 'target' }">
-      <line x1="330" y1="170" x2="398" y2="170" class="ext" />
-      <line x1="392" y1="300" x2="392" y2="172" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)" />
-      <text x="400" y="240" class="label" text-anchor="middle" transform="rotate(-90 400 240)">Target ⌽</text>
-    </g>
+      <!-- Target: finished size at the face -->
+      <g :class="{ on: highlight === 'target' }">
+        <line x1="330" y1="170" x2="398" y2="170" class="ext" />
+        <line x1="392" y1="300" x2="392" y2="172" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+        <text x="386" y="240" class="label" text-anchor="end" :transform="upright(240, 10)">Target</text>
+      </g>
 
-    <!-- Length: from the face (Z0) into the work -->
-    <g :class="{ on: highlight === 'length' }">
-      <line x1="150" y1="145" x2="150" y2="324" class="ext" />
-      <line x1="330" y1="300" x2="330" y2="324" class="ext" />
-      <line x1="152" y1="318" x2="328" y2="318" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)" />
-      <text x="240" y="313" class="label" text-anchor="middle">Length</text>
-      <text x="335" y="327" class="note">Z0 (face)</text>
-    </g>
+      <!-- Length: from the face (Z0) into the work -->
+      <g :class="{ on: highlight === 'length' }">
+        <line x1="150" y1="145" x2="150" y2="324" class="ext" />
+        <line x1="330" y1="300" x2="330" y2="324" class="ext" />
+        <line x1="152" y1="318" x2="328" y2="318" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+        <text x="240" y="313" class="label" text-anchor="middle" :transform="upright(313, 10)">Length</text>
+        <text x="335" y="327" class="note" :transform="upright(327, 8)">Z0 (face)</text>
+      </g>
 
-    <!-- Taper -->
-    <g :class="{ on: highlight === 'taper_angle_deg' }">
-      <line x1="150" y1="145" x2="215" y2="145" class="ext" />
-      <path d="M 205 145 A 55 55 0 0 1 204.5 152.6" class="dim" />
-      <text x="212" y="140" class="label">Taper ∠</text>
-    </g>
+      <!-- Taper -->
+      <g :class="{ on: highlight === 'taper_angle_deg' }">
+        <line x1="150" y1="145" x2="215" y2="145" class="ext" />
+        <path d="M 205 145 A 55 55 0 0 1 204.5 152.6" class="dim" />
+        <text x="212" y="140" class="label" :transform="upright(140, 10)">Taper ∠</text>
+      </g>
 
-    <!-- Feed: tool travel per spindle revolution -->
-    <g :class="{ on: highlight === 'feed_rate' }">
-      <line x1="320" y1="22" x2="210" y2="22" class="dim" marker-end="url(#arrow)" />
-      <text x="265" y="15" class="label" text-anchor="middle">Feed per revolution</text>
-    </g>
+      <!-- Feed: tool travel per spindle revolution -->
+      <g :class="{ on: highlight === 'feed_rate' }">
+        <line x1="320" y1="22" x2="210" y2="22" class="dim" marker-end="url(#arrow)" />
+        <text x="265" y="15" class="label" text-anchor="middle" :transform="upright(15, 10)">Feed per revolution</text>
+      </g>
 
-    <!-- legend -->
-    <line x1="50" y1="16" x2="72" y2="16" class="pass" />
-    <text x="78" y="20" class="note">roughing passes</text>
-    <line x1="50" y1="32" x2="72" y2="32" class="final" />
-    <text x="78" y="36" class="note">final pass</text>
+      <!-- legend -->
+      <line x1="50" y1="16" x2="72" y2="16" class="pass" />
+      <text x="78" y="20" class="note" :transform="upright(20, 8)">roughing passes</text>
+      <line x1="50" y1="32" x2="72" y2="32" class="final" />
+      <text x="78" y="36" class="note" :transform="upright(36, 8)">final pass</text>
+    </g>
   </svg>
 
   <svg v-else class="diagram" viewBox="0 0 420 330" role="img" aria-label="Threading cycle: what the fields mean">
@@ -138,90 +155,92 @@ const threadOutline = outline()
         <path d="M0,0 L8,4 L0,8 z" class="arrowhead" />
       </marker>
     </defs>
+    <g :transform="flip">
 
-    <!-- One pass of the tool, drawn in its own lane above the work (same Z positions). -->
-    <text x="12" y="20" class="note">tool path, one pass</text>
-    <g>
-      <line x1="110" y1="36" x2="368" y2="36" class="rapid" />
-      <line x1="368" y1="36" x2="368" y2="52" class="rapid" />
-      <text x="240" y="30" class="note" text-anchor="middle">rapid back to the start</text>
-    </g>
-    <polygon points="368,57 361,44 375,44" class="tool" />
-    <text x="414" y="52" class="note" text-anchor="end">start</text>
-    <g :class="{ on: highlight === 'infeed_deg' }">
-      <line x1="368" y1="59" x2="358" y2="80" class="infeed" marker-end="url(#arrow-t)" />
-      <text x="414" y="98" class="label" text-anchor="end">Infeed ∠</text>
-    </g>
-    <line x1="356" y1="80" x2="152" y2="80" class="cut" marker-end="url(#arrow-t)" />
-    <text x="254" y="74" class="note" text-anchor="middle">cut, synchronized to the spindle</text>
-    <g :class="{ on: highlight === 'run_out' }">
-      <line x1="150" y1="80" x2="112" y2="59" class="pullout" />
-      <line x1="150" y1="84" x2="150" y2="130" class="ext" />
-      <line x1="110" y1="62" x2="110" y2="130" class="ext" />
-      <line x1="112" y1="100" x2="148" y2="100" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
-      <text x="46" y="104" class="label">Run-out</text>
-    </g>
-    <g :class="{ on: highlight === 'retract' }">
-      <line x1="110" y1="57" x2="110" y2="40" class="dim" marker-end="url(#arrow-t)" />
-      <text x="56" y="52" class="label">Retract</text>
-    </g>
-
-    <!-- The work: full-depth thread from the face, shallowing over the run-out to the end. -->
-    <rect x="14" y="118" width="26" height="182" class="chuck" />
-    <polygon :points="threadOutline" class="part" />
-    <line x1="10" y1="300" x2="410" y2="300" class="centre" />
-    <text x="44" y="292" class="note on-part">centreline</text>
-    <line x1="300" y1="122" x2="300" y2="324" class="ext" />
-    <text x="304" y="327" class="note">Z0 (face)</text>
-
-    <g :class="{ on: highlight === 'pitch' }">
-      <line x1="228" y1="130" x2="228" y2="116" class="ext" />
-      <line x1="252" y1="130" x2="252" y2="116" class="ext" />
-      <line x1="230" y1="119" x2="250" y2="119" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
-      <text x="240" y="112" class="label" text-anchor="middle">Pitch</text>
-    </g>
-    <g :class="{ on: highlight === 'depth' || highlight === 'allowance' }">
-      <line x1="300" y1="165" x2="330" y2="165" class="ext" />
-      <line x1="300" y1="130" x2="330" y2="130" class="ext" />
-      <line x1="324" y1="132" x2="324" y2="163" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
-      <text x="330" y="152" class="label">Depth</text>
-    </g>
-    <g :class="{ on: highlight === 'length' }">
-      <line x1="110" y1="130" x2="110" y2="324" class="ext" />
-      <line x1="112" y1="318" x2="298" y2="318" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
-      <text x="205" y="313" class="label" text-anchor="middle">Length</text>
-    </g>
-
-    <!-- Taper: the thread is cut on a cone that is turned first. -->
-    <g transform="translate(52 186)" :class="{ on: highlight === 'taper_deg' }">
-      <text x="0" y="0" class="note on-part">Taper ∠: thread on a turned cone</text>
-      <polygon points="0,14 104,30 104,62 0,62" class="cone" />
-      <polyline points="8,15 14,23 20,17 26,25 32,19 38,27 44,21 50,29 56,23 62,31 68,25 74,33 80,27 86,35 92,29" class="cone-thread" />
-      <line x1="104" y1="30" x2="44" y2="30" class="ext" />
-      <path d="M 74 30 A 30 30 0 0 1 74.4 25.4" class="dim" />
-      <text x="56" y="44" class="label small">∠</text>
-    </g>
-
-    <!-- Depth per pass: 1stCut, then x Factor each pass, never below Min cut; Spring at full depth. -->
-    <g transform="translate(232 196)">
-      <text x="0" y="0" class="note on-part">depth per pass</text>
-      <g :class="{ on: highlight === 'first_cut' }">
-        <rect x="0" y="8" width="12" height="40" class="bar" />
-        <text x="6" y="62" class="label small" text-anchor="middle">First</text>
+      <!-- One pass of the tool, drawn in its own lane above the work (same Z positions). -->
+      <text x="12" y="20" class="note" :transform="upright(20, 8)">tool path, one pass</text>
+      <g>
+        <line x1="110" y1="36" x2="368" y2="36" class="rapid" />
+        <line x1="368" y1="36" x2="368" y2="52" class="rapid" />
+        <text x="240" y="30" class="note" text-anchor="middle" :transform="upright(30, 8)">rapid back to the start</text>
       </g>
-      <g :class="{ on: highlight === 'cut_factor' }">
-        <rect x="20" y="8" width="12" height="32" class="bar" />
-        <rect x="36" y="8" width="12" height="26" class="bar" />
-        <text x="34" y="76" class="label small" text-anchor="middle">×Factor</text>
+      <polygon points="368,57 361,44 375,44" class="tool" />
+      <text x="414" y="52" class="note" text-anchor="end" :transform="upright(52, 8)">start</text>
+      <g :class="{ on: highlight === 'infeed_deg' }">
+        <line x1="368" y1="59" x2="358" y2="80" class="infeed" marker-end="url(#arrow-t)" />
+        <text x="414" y="98" class="label" text-anchor="end" :transform="upright(98, 10)">Infeed ∠</text>
       </g>
-      <g :class="{ on: highlight === 'min_cut' }">
-        <rect x="56" y="8" width="12" height="20" class="bar" />
-        <rect x="72" y="8" width="12" height="20" class="bar" />
-        <text x="70" y="62" class="label small" text-anchor="middle">Min</text>
+      <line x1="356" y1="80" x2="152" y2="80" class="cut" marker-end="url(#arrow-t)" />
+      <text x="254" y="74" class="note" text-anchor="middle" :transform="upright(74, 8)">cut, synchronized to the spindle</text>
+      <g :class="{ on: highlight === 'run_out' }">
+        <line x1="150" y1="80" x2="112" y2="59" class="pullout" />
+        <line x1="150" y1="84" x2="150" y2="130" class="ext" />
+        <line x1="110" y1="62" x2="110" y2="130" class="ext" />
+        <line x1="112" y1="100" x2="148" y2="100" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
+        <text x="46" y="104" class="label" :transform="upright(104, 10)">Run-out</text>
       </g>
-      <g :class="{ on: highlight === 'spring_cuts' }">
-        <rect x="92" y="8" width="12" height="20" class="bar spring" />
-        <text x="98" y="76" class="label small" text-anchor="middle">Spring</text>
+      <g :class="{ on: highlight === 'retract' }">
+        <line x1="110" y1="57" x2="110" y2="40" class="dim" marker-end="url(#arrow-t)" />
+        <text x="56" y="52" class="label" :transform="upright(52, 10)">Retract</text>
+      </g>
+
+      <!-- The work: full-depth thread from the face, shallowing over the run-out to the end. -->
+      <rect x="14" y="118" width="26" height="182" class="chuck" />
+      <polygon :points="threadOutline" class="part" />
+      <line x1="10" y1="300" x2="410" y2="300" class="centre" />
+      <text x="44" y="292" class="note on-part" :transform="upright(292, 8)">centreline</text>
+      <line x1="300" y1="122" x2="300" y2="324" class="ext" />
+      <text x="304" y="327" class="note" :transform="upright(327, 8)">Z0 (face)</text>
+
+      <g :class="{ on: highlight === 'pitch' }">
+        <line x1="228" y1="130" x2="228" y2="116" class="ext" />
+        <line x1="252" y1="130" x2="252" y2="116" class="ext" />
+        <line x1="230" y1="119" x2="250" y2="119" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
+        <text x="240" y="112" class="label" text-anchor="middle" :transform="upright(112, 10)">Pitch</text>
+      </g>
+      <g :class="{ on: highlight === 'depth' || highlight === 'allowance' }">
+        <line x1="300" y1="165" x2="330" y2="165" class="ext" />
+        <line x1="300" y1="130" x2="330" y2="130" class="ext" />
+        <line x1="324" y1="132" x2="324" y2="163" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
+        <text x="330" y="152" class="label" :transform="upright(152, 10)">Depth</text>
+      </g>
+      <g :class="{ on: highlight === 'length' }">
+        <line x1="110" y1="130" x2="110" y2="324" class="ext" />
+        <line x1="112" y1="318" x2="298" y2="318" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
+        <text x="205" y="313" class="label" text-anchor="middle" :transform="upright(313, 10)">Length</text>
+      </g>
+
+      <!-- Taper: the thread is cut on a cone that is turned first. -->
+      <g transform="translate(52 186)" :class="{ on: highlight === 'taper_deg' }">
+        <text x="0" y="0" class="note on-part" :transform="upright(0, 8)">Taper ∠: thread on a turned cone</text>
+        <polygon points="0,14 104,30 104,62 0,62" class="cone" />
+        <polyline points="8,15 14,23 20,17 26,25 32,19 38,27 44,21 50,29 56,23 62,31 68,25 74,33 80,27 86,35 92,29" class="cone-thread" />
+        <line x1="104" y1="30" x2="44" y2="30" class="ext" />
+        <path d="M 74 30 A 30 30 0 0 1 74.4 25.4" class="dim" />
+        <text x="56" y="44" class="label small" :transform="upright(44, 8)">∠</text>
+      </g>
+
+      <!-- Depth per pass: 1stCut, then x Factor each pass, never below Min cut; Spring at full depth. -->
+      <g transform="translate(232 196)">
+        <text x="0" y="0" class="note on-part" :transform="upright(0, 8)">depth per pass</text>
+        <g :class="{ on: highlight === 'first_cut' }">
+          <rect x="0" y="8" width="12" height="40" class="bar" />
+          <text x="6" y="62" class="label small" text-anchor="middle" :transform="upright(62, 8)">First</text>
+        </g>
+        <g :class="{ on: highlight === 'cut_factor' }">
+          <rect x="20" y="8" width="12" height="32" class="bar" />
+          <rect x="36" y="8" width="12" height="26" class="bar" />
+          <text x="34" y="76" class="label small" text-anchor="middle" :transform="upright(76, 8)">×Factor</text>
+        </g>
+        <g :class="{ on: highlight === 'min_cut' }">
+          <rect x="56" y="8" width="12" height="20" class="bar" />
+          <rect x="72" y="8" width="12" height="20" class="bar" />
+          <text x="70" y="62" class="label small" text-anchor="middle" :transform="upright(62, 8)">Min</text>
+        </g>
+        <g :class="{ on: highlight === 'spring_cuts' }">
+          <rect x="92" y="8" width="12" height="20" class="bar spring" />
+          <text x="98" y="76" class="label small" text-anchor="middle" :transform="upright(76, 8)">Spring</text>
+        </g>
       </g>
     </g>
   </svg>

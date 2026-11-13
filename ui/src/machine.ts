@@ -158,6 +158,7 @@ export function updatePreferences(change: Partial<Preferences>): void {
       pitch_preset_tabs: [...settings.pitch_preset_tabs],
       encoder_scale_z: settings.machine.encoder_scale_z,
       encoder_scale_x: settings.machine.encoder_scale_x,
+      back_tool_post: settings.back_tool_post,
       ...change,
     },
   })

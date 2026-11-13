@@ -125,6 +125,7 @@ auto Session::on(const SetPreferences& message, Clock::time_point /*now*/, Outco
     settings_.thread_preset_tab = preferences.thread_preset_tab;
     settings_.turning_preset_tab = preferences.turning_preset_tab;
     settings_.pitch_preset_tabs = preferences.pitch_preset_tabs;
+    settings_.back_tool_post = preferences.back_tool_post;
     controller_.set_encoder_scales(preferences.encoder_scale_z, preferences.encoder_scale_x);
     save(outcome);
 }

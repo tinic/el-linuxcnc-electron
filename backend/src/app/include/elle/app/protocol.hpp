@@ -75,6 +75,7 @@ struct Preferences {
     std::array<int, 2> pitch_preset_tabs{};
     double encoder_scale_z{};
     double encoder_scale_x{};
+    bool back_tool_post{};
 };
 struct SetPreferences {
     std::string type{};

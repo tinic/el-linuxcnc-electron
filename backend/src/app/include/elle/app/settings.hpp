@@ -16,6 +16,9 @@ struct Settings {
     int thread_preset_tab{};
     int turning_preset_tab{};
     std::array<int, 2> pitch_preset_tabs{}; ///< X, Z
+    /// The tool is behind the work. Drawings then show X+ upward; for the usual front tool post
+    /// X+ points toward the operator and is drawn downward, as LinuxCNC's lathe display does.
+    bool back_tool_post{};
     core::MachineSettings machine{};
 };
 

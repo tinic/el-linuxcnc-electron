@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -114,4 +115,24 @@ TEST_CASE("a damaged settings file is kept aside and defaults are used", "[setti
     const auto loaded = elle::app::load_settings(file, scratch.path() / "missing.json");
     CHECK(elle::app::to_json(loaded.settings) == elle::app::to_json(elle::app::default_settings()));
     CHECK(std::filesystem::exists(scratch.path() / "settings.json.broken"));
+}
+
+TEST_CASE("settings saved before the tool post setting load as a front tool post", "[settings]")
+{
+    const ScratchDirectory scratch{"elle-settings-tool-post"};
+    const auto file = scratch.path() / "elle" / "settings.json";
+    auto settings = elle::app::default_settings();
+    REQUIRE(elle::app::save_settings(settings, file).has_value());
+    std::ifstream saved{file};
+    std::string text{std::istreambuf_iterator<char>{saved}, std::istreambuf_iterator<char>{}};
+    saved.close();
+    const auto key = text.find("\"back_tool_post\"");
+    REQUIRE(key != std::string::npos);
+    const auto comma = text.find(',', key);
+    text.erase(key, comma - key + 1); // an older file without the key
+    write_text(file, text);
+
+    const auto loaded = elle::app::load_settings(file, scratch.path() / "missing.json");
+    CHECK(loaded.note.starts_with("loaded"));
+    CHECK(!loaded.settings.back_tool_post);
 }

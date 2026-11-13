@@ -50,6 +50,16 @@ function shownScale(axis: 'z' | 'x'): string {
         </button>
       </div>
 
+      <span class="label">Tool post</span>
+      <div class="choice">
+        <button class="option" :class="{ selected: !settings.back_tool_post }" @click="choose({ back_tool_post: false })">
+          <span class="dot"></span>Front
+        </button>
+        <button class="option" :class="{ selected: settings.back_tool_post }" @click="choose({ back_tool_post: true })">
+          <span class="dot"></span>Back
+        </button>
+      </div>
+
       <span class="label">Units at start</span>
       <div class="choice">
         <button
