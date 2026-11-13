@@ -35,8 +35,10 @@ the network.
 ## Building
 
 Requirements: GCC 16 (`tools/build-gcc16.sh` builds it into `~/.local/gcc-16`; `bootstrap.sh`
-installs everything else), CMake 4, Ninja, Node 22, LinuxCNC 2.9+ with `linuxcnc-uspace-dev`, and
-`libwebkit2gtk-4.1-dev`. The static analyzers (clang-tidy 19 and cppcheck)
+installs everything else), CMake 4, Ninja, Node 22, LinuxCNC 2.9.10 with `linuxcnc-uspace-dev`
+(from linuxcnc.org's Debian 13 repository), `libboost-dev`, and `libwebkit2gtk-4.1-dev`. Elle reads
+LinuxCNC's NML status structures, so build against the LinuxCNC version the machine runs; the
+package depends on that release series. The static analyzers (clang-tidy 19 and cppcheck)
 are optional for development builds and required by the `analyze` preset.
 
 ```sh
@@ -51,15 +53,21 @@ cpack --config build/release/CPackConfig.cmake      # elle_<version>_amd64.deb
 The presets expect GCC at `~/.local/gcc-16/bin/g++-16`; edit `CMakePresets.json` if yours lives
 elsewhere.
 
+CI builds and tests every push in Debian 13 with GCC 16 and LinuxCNC 2.9.10 (`dev`, `release`,
+`tsan` and `analyze` presets) and packages the `.deb`; a nightly job publishes it as the
+`nightly` pre-release when `main` has new commits.
+
 Every GCC warning that applies is enabled and is an error, clang-tidy runs with all checks
 (exclusions are listed with reasons in `.clang-tidy`), and cppcheck runs with `--enable=all`.
 Debug builds use the checked libstdc++ with AddressSanitizer and UndefinedBehaviorSanitizer.
 
 ## Running
 
-- **On the lathe:** download the `.deb` from the
-  [latest release](https://github.com/tinic/el-linuxcnc-electron/releases/latest),
-  `sudo apt install ./elle_<version>_amd64.deb` (this replaces the Electron `elle-app` package),
+- **On the lathe** (Debian 13 with LinuxCNC 2.9.10 from
+  [linuxcnc.org](https://www.linuxcnc.org/)): download the `.deb` from the
+  [latest release](https://github.com/tinic/el-linuxcnc-electron/releases/latest) (or the
+  untested [nightly](https://github.com/tinic/el-linuxcnc-electron/releases/tag/nightly) build of
+  `main`), `sudo apt install ./elle_<version>_amd64.deb` (this replaces the Electron `elle-app` package),
   copy `/usr/share/elle/machine` to your configuration directory (e.g. `~/linuxcnc/configs/elle`),
   adapt `lathe.hal` to your hardware and start `linuxcnc lathe.ini`.
 - **Anywhere, without a machine:** `elle --demo --windowed` runs the real C++ stack against a
