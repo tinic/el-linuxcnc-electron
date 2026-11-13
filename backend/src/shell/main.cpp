@@ -92,7 +92,9 @@ auto run_program(std::vector<std::string> arguments) -> std::expected<void, std:
 {
     std::vector<char*> argv{};
     argv.reserve(arguments.size() + 1);
+    // posix_spawnp takes char*, which only a non-const std::string gives.
     std::ranges::transform(arguments, std::back_inserter(argv),
+                           // cppcheck-suppress constParameterReference
                            [](std::string& argument) { return argument.data(); });
     argv.push_back(nullptr);
     pid_t child{};

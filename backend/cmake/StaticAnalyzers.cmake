@@ -45,6 +45,7 @@ if(ELLE_ENABLE_CPPCHECK)
         ${ELLE_CPPCHECK}
         --enable=all
         --inconclusive
+        --check-level=exhaustive # every branch, not the default's limited set
         --inline-suppr
         --error-exitcode=2
         --std=c++20 # newest standard cppcheck understands; it parses C++23 code leniently
