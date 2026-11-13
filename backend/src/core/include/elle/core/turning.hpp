@@ -50,4 +50,9 @@ struct TurningProgram {
 [[nodiscard]] auto turning_gcode(const TurningProgram& program, Destination destination)
     -> std::expected<GcodeLines, CycleError>;
 
+/// As above, then a 45° chamfer of `chamfer` (mm, in X and Z) on the finished diameter's edge at
+/// the face (Z0), cut in passes no deeper than the step-down. A chamfer of 0 adds nothing.
+[[nodiscard]] auto turning_gcode(const TurningProgram& program, Destination destination,
+                                 double chamfer) -> std::expected<GcodeLines, CycleError>;
+
 } // namespace elle::core

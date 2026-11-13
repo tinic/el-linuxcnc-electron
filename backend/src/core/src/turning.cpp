@@ -92,6 +92,42 @@ auto describe_pass(const Pass& pass) -> std::string
     return std::format("({} pass)", pass.kind);
 }
 
+/// A 45° chamfer of `chamfer` on the finished diameter's edge at the face, in passes no deeper
+/// than the step-down. Starts and ends with the tool at the retract diameter at Z0.
+auto chamfer_passes(const TurningProgram& program, double chamfer)
+    -> std::expected<GcodeLines, CycleError>
+{
+    if (!std::isfinite(chamfer)) {
+        return std::unexpected{CycleError::non_finite_parameter};
+    }
+    const double step = program.step_down > 0.0 ? program.step_down : chamfer;
+    const double needed = std::ceil(chamfer / step);
+    if (needed > static_cast<double>(detail::max_passes)) {
+        return std::unexpected{CycleError::too_many_passes};
+    }
+    const int passes = detail::saturating_count(needed);
+    const double pitch = std::abs(program.pitch);
+    const double taper = std::tan(radians(program.angle_deg));
+    const double retract_x = program.stock + retract_clearance;
+
+    GcodeLines lines{};
+    for (int pass = 1; pass <= passes; ++pass) {
+        const double size = chamfer * static_cast<double>(pass) / static_cast<double>(passes);
+        // The 45° line through (target - size, Z0) and the finished surface at Z = -size, entered
+        // from in front of the face and never below the centreline.
+        const double lead = std::min(z_lead, program.target - size);
+        lines.push_back(std::format("(chamfer pass {} of {})", pass, passes));
+        lines.push_back(std::format("G0 Z{}", format_coordinate(lead)));
+        lines.push_back(std::format("G0 X{}", format_coordinate(program.target - size - lead)));
+        lines.push_back(std::format("G33 X{} Z{} K{}",
+                                    format_coordinate(program.target + (size * taper)),
+                                    format_coordinate(-size), format_coordinate(pitch)));
+        lines.push_back(std::format("G0 X{}", format_coordinate(retract_x)));
+    }
+    lines.push_back(std::format("G0 Z{}", format_coordinate(z_start)));
+    return lines;
+}
+
 } // namespace
 
 auto plan_turning(const TurningRequest& request, const WorkPosition& position) -> TurningProgram
@@ -157,6 +193,21 @@ auto turning_gcode(const TurningProgram& program, Destination destination)
     lines.push_back(std::format("G0 X{} Z{}", format_coordinate(program.x_return),
                                 format_coordinate(program.z_return)));
     return lines;
+}
+
+auto turning_gcode(const TurningProgram& program, Destination destination, double chamfer)
+    -> std::expected<GcodeLines, CycleError>
+{
+    auto result = turning_gcode(program, destination);
+    if (result.has_value() && chamfer > 0.0) {
+        if (auto passes = chamfer_passes(program, chamfer); passes.has_value()) {
+            // Before the final return to the start position.
+            result->insert(result->end() - 1, passes->begin(), passes->end());
+        } else {
+            result = std::unexpected{passes.error()};
+        }
+    }
+    return result;
 }
 
 } // namespace elle::core

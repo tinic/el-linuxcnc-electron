@@ -313,7 +313,8 @@ function draw(now: number): void {
   context.textAlign = 'left'
   const legend: [string, string, boolean][] = [
     ['rapid', colors.rapid, true],
-    [segments.some((segment) => segment.kind === 'thread') ? 'thread' : 'feed', segments.some((segment) => segment.kind === 'thread') ? colors.thread : colors.feed, false],
+    // Both cycles cut with spindle-synchronized moves (G33); "cut" fits turning and threading.
+    ['cut', segments.some((segment) => segment.kind === 'thread') ? colors.thread : colors.feed, false],
   ]
   let legendX = left + 6
   for (const [name, color, dashed] of legend) {

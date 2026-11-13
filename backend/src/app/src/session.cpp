@@ -151,8 +151,10 @@ auto Session::on(const PlanTurning& message, Clock::time_point /*now*/, Outcome&
     Generated generated{};
     if (issues.empty()) {
         const auto program = core::plan_turning(request, position);
-        generated = {.machine = core::turning_gcode(program, core::Destination::machine),
-                     .preview = core::turning_gcode(program, core::Destination::preview)};
+        const double chamfer = message.form.chamfer.value_or(0.0);
+        generated = {
+            .machine = core::turning_gcode(program, core::Destination::machine, chamfer),
+            .preview = core::turning_gcode(program, core::Destination::preview, chamfer)};
     }
     outcome.replies.push_back(
         plan_message(plan(CycleKind::turning, std::move(issues), generated, position)));

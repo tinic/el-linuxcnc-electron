@@ -59,7 +59,7 @@ const threadOutline = outline()
 
     <!-- chuck, finished part, material the cycle removes -->
     <rect x="14" y="58" width="26" height="242" class="chuck" />
-    <polygon points="40,70 150,70 150,145 330,170 330,300 40,300" class="part" />
+    <polygon points="40,70 150,70 150,145 314,167.8 330,184 330,300 40,300" class="part" />
     <polygon points="150,70 330,70 330,170 150,145" class="removed" />
     <line x1="10" y1="300" x2="410" y2="300" class="centre" />
     <text x="44" y="292" class="note">centreline</text>
@@ -75,7 +75,7 @@ const threadOutline = outline()
       <line x1="345" y1="147" x2="150" y2="120" class="pass" />
       <line x1="345" y1="162" x2="150" y2="135" class="pass" />
       <line x1="362" y1="95" x2="362" y2="120" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)" />
-      <text x="368" y="112" class="label">Cut depth</text>
+      <text x="356" y="112" class="label" text-anchor="end">Cut depth</text>
     </g>
     <g :class="{ on: highlight === 'final_step_down' || highlight === 'spring_passes' }">
       <line x1="345" y1="172" x2="150" y2="145" class="final" />
@@ -88,6 +88,12 @@ const threadOutline = outline()
     </g>
     <g :class="{ on: highlight === 'spring_passes' }">
       <text x="240" y="196" class="label" text-anchor="middle">Spring: final pass repeated</text>
+    </g>
+
+    <!-- Chamfer: 45° on the finished edge at the face -->
+    <g :class="{ on: highlight === 'chamfer' }">
+      <line x1="314" y1="167.8" x2="330" y2="184" class="final" />
+      <text x="322" y="214" class="label" text-anchor="end">Chamfer 45°</text>
     </g>
 
     <!-- Target: finished size at the face -->

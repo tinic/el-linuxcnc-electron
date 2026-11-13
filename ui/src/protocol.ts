@@ -99,6 +99,7 @@ export interface TurningForm {
   final_step_down: number | null
   taper_angle_deg: number | null
   spring_passes: number | null
+  chamfer: number | null
 }
 
 export type CycleKind = 'threading' | 'turning'

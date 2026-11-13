@@ -43,8 +43,9 @@ export const turningFields: (ParamField<TurningKey> | null)[] = [
   { key: 'feed_rate', label: 'Feed', placeholder: '0.2', kind: 'length', help: 'Feed per spindle revolution.' },
   { key: 'taper_angle_deg', label: 'Taper ∠', placeholder: '0', kind: 'angle', help: 'Taper angle in degrees; the size grows toward the chuck. 0 for straight turning.' },
   { key: 'step_down', label: 'Cut depth', placeholder: '0.5', kind: 'length', help: 'Depth of each roughing pass (radius).' },
-  { key: 'final_step_down', label: 'Finish cut', placeholder: '0.1', kind: 'length', help: 'Depth of the finishing pass (radius).' },
+  { key: 'final_step_down', label: 'Finish', placeholder: '0.1', kind: 'length', help: 'Finish cut: depth of the finishing pass (radius).' },
   { key: 'spring_passes', label: 'Spring', placeholder: '0', kind: 'count', help: 'Extra finishing passes at full depth (0 to 10).' },
+  { key: 'chamfer', label: 'Chamfer', placeholder: 'none', kind: 'length', help: '45° chamfer on the edge of the finished size at the face, cut after the finishing pass. Empty or 0: none.' },
 ]
 
 function emptyThreading(): ThreadingForm {
@@ -73,6 +74,7 @@ function emptyTurning(): TurningForm {
     final_step_down: null,
     taper_angle_deg: null,
     spring_passes: null,
+    chamfer: null,
   }
 }
 
@@ -156,6 +158,7 @@ export function applyTurningPreset(preset: TurningPreset): void {
     final_step_down: preset.finalStepDown,
     taper_angle_deg: preset.taperAngle,
     spring_passes: preset.springPasses ?? 0,
+    chamfer: cycles.turning.chamfer, // presets have none; keep the operator's choice
   } satisfies TurningForm)
   cycles.turningPreset = preset.name
 }

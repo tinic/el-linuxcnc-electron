@@ -36,6 +36,7 @@ struct TurningForm {
     std::optional<double> final_step_down{};
     std::optional<double> taper_angle_deg{};
     std::optional<double> spring_passes{};
+    std::optional<double> chamfer{}; ///< 45° chamfer on the face edge of the finished size; empty: none
 };
 
 /// Radial depth of a 60° thread (ISO metric and Unified) per unit of pitch.

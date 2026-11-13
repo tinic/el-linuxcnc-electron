@@ -189,3 +189,67 @@ TEST_CASE("turning takes the length from the face as a positive number", "[form]
     REQUIRE(rejected.issues.size() == 1);
     CHECK(rejected.issues.front().field == "length");
 }
+
+TEST_CASE("a chamfer of zero changes nothing", "[form][turning][chamfer]")
+{
+    const auto program = elle::core::plan_turning({.target = 4.0, .z_end = -20.0}, {.x = 5.0, .z = 0.0});
+    const auto plain = elle::core::turning_gcode(program, Destination::machine);
+    const auto none = elle::core::turning_gcode(program, Destination::machine, 0.0);
+    REQUIRE(plain.has_value());
+    REQUIRE(none.has_value());
+    CHECK(*plain == *none);
+}
+
+namespace {
+
+/// Where each chamfer pass enters: the Z it approaches at and the X it moves in to.
+auto chamfer_entries(const std::vector<std::string>& lines) -> std::vector<Move>
+{
+    std::vector<Move> entries{};
+    for (std::size_t index = 0; index + 2 < lines.size(); ++index) {
+        if (lines.at(index).starts_with("(chamfer")) {
+            entries.push_back({.x = word(lines.at(index + 2), 'X').value_or(-1.0),
+                               .z = word(lines.at(index + 1), 'Z').value_or(-1.0)});
+        }
+    }
+    return entries;
+}
+
+} // namespace
+
+TEST_CASE("a chamfer is cut at 45° onto the finished size at the face", "[form][turning][chamfer]")
+{
+    const auto program = elle::core::plan_turning(
+        {.target = 4.0, .z_end = -20.0, .step_down = 0.5}, {.x = 5.0, .z = 0.0});
+    const auto lines = elle::core::turning_gcode(program, Destination::machine, 1.0);
+    REQUIRE(lines.has_value());
+
+    // 1 mm in steps of at most 0.5 mm, each entered in front of the face, above the centreline.
+    const auto entries = chamfer_entries(*lines);
+    CHECK(entries.size() == 2);
+    CHECK(std::ranges::all_of(entries, [](const Move& entry) { return entry.z > 0.0 && entry.x >= 0.0; }));
+
+    // The last synchronized move ends on the finished diameter, 1 mm from the face.
+    const auto moves = synchronized_moves(*lines);
+    if (moves.empty()) {
+        FAIL("no synchronized moves");
+    } else {
+        CHECK(moves.back().x == Approx(4.0));
+        CHECK(moves.back().z == Approx(-1.0));
+    }
+    // The cycle's final return move stays last.
+    const auto plain = elle::core::turning_gcode(program, Destination::machine);
+    REQUIRE(plain.has_value());
+    CHECK(lines->back() == plain->back());
+}
+
+TEST_CASE("a chamfer must fit the finished part", "[form][turning][chamfer]")
+{
+    const TurningForm form{.target = 2.0, .length = 10.0, .chamfer = 2.0};
+    const auto converted = elle::core::turning_request(form, {.x = 3.0, .z = 0.0});
+    REQUIRE(!converted.issues.empty());
+    CHECK(converted.issues.front().field == "chamfer");
+
+    const TurningForm negative{.target = 2.0, .length = 10.0, .chamfer = -0.5};
+    CHECK(elle::core::turning_request(negative, {.x = 3.0, .z = 0.0}).issues.front().field == "chamfer");
+}

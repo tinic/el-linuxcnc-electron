@@ -184,6 +184,14 @@ auto turning_request(const TurningForm& form, const WorkPosition& position)
             request.z_end = -*form.length;
         }
     }
+    if (const double chamfer = form.chamfer.value_or(0.0); chamfer < 0.0) {
+        result.issues.push_back({.field = "chamfer", .problem = "must not be negative"});
+    } else if (chamfer > 0.0 && chamfer >= form.target.value_or(0.0)) {
+        result.issues.push_back(
+            {.field = "chamfer", .problem = "must be smaller than the finished size (radius)"});
+    } else if (chamfer > 0.0 && chamfer > form.length.value_or(0.0)) {
+        result.issues.push_back({.field = "chamfer", .problem = "must not be longer than the cut"});
+    }
     add_planner_issues(result.issues, validate_turning(request, position), turning_keys);
     return result;
 }
