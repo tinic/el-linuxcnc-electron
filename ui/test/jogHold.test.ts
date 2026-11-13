@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { JogHold, refreshMs, type CaptureTarget, type Timers } from '../src/jogHold'
+import {
+  JogHold,
+  Touches,
+  capturedPress,
+  emulatedMouseWindowMs,
+  refreshMs,
+  type CaptureTarget,
+  type Timers,
+} from '../src/jogHold'
 import type { JogButton } from '../src/protocol'
 
 class FakeTimers implements Timers {
@@ -24,7 +32,7 @@ class FakeTimers implements Timers {
   }
 }
 
-/// A button the pointer is on (down) or not; capture works only while the pointer is down.
+/// A button the mouse pointer is on (down) or not; capture works only while the pointer is down.
 class FakeButton implements CaptureTarget {
   down = true
   captured = false
@@ -60,11 +68,12 @@ function setup(): { hold: JogHold; timers: FakeTimers; sent: [JogButton, boolean
   return { hold, timers, sent }
 }
 
-describe('jog hold', () => {
+describe('jog hold with a mouse', () => {
   it('jogs while the button is held and stops on release', () => {
     const { hold, timers, sent } = setup()
-    const button = new FakeButton()
-    expect(hold.press('z_minus', button, 1)).toBe(true)
+    const stillHeld = capturedPress(new FakeButton(), 1)
+    expect(stillHeld).not.toBeNull()
+    expect(hold.press('z_minus', stillHeld ?? ((): boolean => false))).toBe(true)
     timers.tick()
     timers.tick()
     hold.release('z_minus')
@@ -77,22 +86,16 @@ describe('jog hold', () => {
     expect(timers.active.size).toBe(0)
   })
 
-  it('does not jog when the press arrives after the touch was already released', () => {
-    // WebKitGTK on a touch screen can deliver pointerup before pointerdown.
-    const { hold, timers, sent } = setup()
+  it('does not jog when the press arrives after the pointer was already released', () => {
     const button = new FakeButton()
-    hold.release('z_minus')
     button.lift()
-    expect(hold.press('z_minus', button, 1)).toBe(false)
-    timers.tick()
-    expect(sent).toEqual([])
-    expect(timers.active.size).toBe(0)
+    expect(capturedPress(button, 1)).toBeNull()
   })
 
   it('stops by itself when the release event is lost', () => {
     const { hold, timers, sent } = setup()
     const button = new FakeButton()
-    hold.press('x_plus', button, 7)
+    hold.press('x_plus', capturedPress(button, 7) ?? ((): boolean => false))
     button.lift() // no pointerup, no pointercancel
     timers.tick()
     expect(sent).toEqual([
@@ -103,11 +106,62 @@ describe('jog hold', () => {
     timers.tick()
     expect(sent).toHaveLength(2)
   })
+})
 
+describe('jog hold with touch', () => {
+  it('jogs from touchstart to touchend', () => {
+    const { hold, timers, sent } = setup()
+    const touches = new Touches()
+    hold.press('z_minus', touches.start(3, 1000))
+    timers.tick()
+    touches.end(3, 1500)
+    hold.release('z_minus')
+    expect(sent).toEqual([
+      ['z_minus', true],
+      ['z_minus', true],
+      ['z_minus', false],
+    ])
+  })
+
+  it('stops by itself when the touch ended elsewhere', () => {
+    const { hold, timers, sent } = setup()
+    const touches = new Touches()
+    hold.press('z_plus', touches.start(5, 0))
+    touches.end(5, 100) // seen by the window-level listener, not by the button
+    timers.tick()
+    expect(sent).toEqual([
+      ['z_plus', true],
+      ['z_plus', false],
+    ])
+  })
+
+  it('treats the mouse events WebKit emulates after a touch as part of that touch', () => {
+    // Recorded on the lathe: touchstart 52685, touchend 53156, then pointerdown/up at 53157-53160.
+    const touches = new Touches()
+    touches.start(1, 52685)
+    touches.end(1, 53156)
+    expect(touches.emulatingMouse(53157)).toBe(true)
+    expect(touches.emulatingMouse(53160)).toBe(true)
+    expect(touches.emulatingMouse(53156 + emulatedMouseWindowMs)).toBe(false)
+  })
+
+  it('takes mouse events as a real mouse when no touch happened', () => {
+    expect(new Touches().emulatingMouse(0)).toBe(false)
+  })
+
+  it('a touch on STOP also marks its emulated mouse events', () => {
+    const touches = new Touches()
+    touches.touched(2000)
+    expect(touches.emulatingMouse(2005)).toBe(true)
+  })
+})
+
+describe('jog hold', () => {
   it('stop releases every held button', () => {
     const { hold, sent } = setup()
-    hold.press('z_plus', new FakeButton(), 1)
-    hold.press('x_minus', new FakeButton(), 2)
+    const touches = new Touches()
+    hold.press('z_plus', touches.start(1, 0))
+    hold.press('x_minus', touches.start(2, 0))
     hold.releaseAll()
     expect(sent.filter(([, held]) => !held)).toEqual([
       ['z_plus', false],

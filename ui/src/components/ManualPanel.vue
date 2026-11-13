@@ -4,7 +4,7 @@ import { computed, onBeforeUnmount } from 'vue'
 import { settle } from '../entry'
 import { panel, send } from '../machine'
 import type { Direction, Feed, JogButton } from '../protocol'
-import { JogHold } from '../jogHold'
+import { JogHold, Touches, capturedPress } from '../jogHold'
 import AppIcon from './AppIcon.vue'
 
 const feed = computed(() => panel.status?.feed ?? 'longitudinal')
@@ -64,12 +64,37 @@ const jogHold = new JogHold(
   },
 )
 
-function jogStart(button: JogButton, event: PointerEvent): void {
+const touches = new Touches()
+
+function jogPointerDown(button: JogButton, event: PointerEvent): void {
   settle()
-  if (event.pointerType === 'mouse' && event.button !== 0) {
+  // Touch is handled by the touch events; mouse events right after a touch are WebKit's emulation.
+  if (event.pointerType !== 'mouse' || event.button !== 0 || touches.emulatingMouse(event.timeStamp)) {
     return
   }
-  jogHold.press(button, event.currentTarget as HTMLElement, event.pointerId)
+  const stillHeld = capturedPress(event.currentTarget as HTMLElement, event.pointerId)
+  if (stillHeld !== null) {
+    jogHold.press(button, stillHeld)
+  }
+}
+
+function jogTouchStart(button: JogButton, event: TouchEvent): void {
+  settle()
+  const touch = event.changedTouches.item(0)
+  if (touch !== null) {
+    jogHold.press(button, touches.start(touch.identifier, event.timeStamp))
+  }
+}
+
+function touchesEnded(event: TouchEvent): void {
+  for (const touch of Array.from(event.changedTouches)) {
+    touches.end(touch.identifier, event.timeStamp)
+  }
+}
+
+function jogTouchEnd(button: JogButton, event: TouchEvent): void {
+  touchesEnded(event)
+  jogHold.release(button)
 }
 
 function jogStop(button: JogButton): void {
@@ -80,6 +105,26 @@ function stopAll(): void {
   jogHold.releaseAll()
   send({ type: 'jog_release_all' })
 }
+
+function stopTouch(event: TouchEvent): void {
+  touches.touched(event.timeStamp)
+  stopAll()
+}
+
+function stopPointerDown(event: PointerEvent): void {
+  if (event.pointerType === 'mouse' && !touches.emulatingMouse(event.timeStamp)) {
+    stopAll()
+  }
+}
+
+// A touch that ends anywhere (finger slid off the button, or the end event went elsewhere) ends
+// its jog: the next refresh sees the touch is no longer down.
+window.addEventListener('touchend', touchesEnded, true)
+window.addEventListener('touchcancel', touchesEnded, true)
+onBeforeUnmount(() => {
+  window.removeEventListener('touchend', touchesEnded, true)
+  window.removeEventListener('touchcancel', touchesEnded, true)
+})
 
 onBeforeUnmount(stopAll)
 
@@ -122,7 +167,10 @@ const jogs: { button: JogButton; icon: 'up' | 'down' | 'left' | 'right'; area: s
         v-for="jog in jogs"
         :key="jog.button"
         :style="{ gridArea: jog.area }"
-        @pointerdown="jogStart(jog.button, $event)"
+        @touchstart.prevent="jogTouchStart(jog.button, $event)"
+        @touchend.prevent="jogTouchEnd(jog.button, $event)"
+        @touchcancel="jogTouchEnd(jog.button, $event)"
+        @pointerdown="jogPointerDown(jog.button, $event)"
         @pointerup="jogStop(jog.button)"
         @pointercancel="jogStop(jog.button)"
         @lostpointercapture="jogStop(jog.button)"
@@ -130,7 +178,14 @@ const jogs: { button: JogButton; icon: 'up' | 'down' | 'left' | 'right'; area: s
       >
         <AppIcon :name="jog.icon" :size="34" />
       </button>
-      <button class="stop-jog" style="grid-area: stop" @pointerdown="stopAll">STOP</button>
+      <button
+        class="stop-jog"
+        style="grid-area: stop"
+        @touchstart.prevent="stopTouch"
+        @pointerdown="stopPointerDown"
+      >
+        STOP
+      </button>
     </section>
   </div>
 </template>
