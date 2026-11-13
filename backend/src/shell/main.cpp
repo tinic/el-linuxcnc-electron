@@ -44,6 +44,22 @@
 #include <unistd.h>
 // NOLINTEND(misc-include-cleaner)
 
+#if defined(__SANITIZE_ADDRESS__)
+// LeakSanitizer (dev builds): these libraries keep process-lifetime allocations by design, which
+// LSan reports at exit: fontconfig's and Pango's font caches, JavaScriptCore's atom-string table
+// and the ATK bridge's names. Our own code stays fully leak-checked; nothing broader (GTK, GLib)
+// is suppressed.
+// NOLINTBEGIN(bugprone-reserved-identifier,cert-dcl37-c,cert-dcl51-cpp,readability-identifier-naming,misc-use-internal-linkage,misc-use-anonymous-namespace)
+extern "C" auto __lsan_default_suppressions() -> const char*;
+extern "C" auto __lsan_default_suppressions() -> const char*
+{
+    return "leak:libfontconfig.so\n"
+           "leak:libjavascriptcoregtk-4.1.so\n"
+           "leak:atk_bridge_adaptor_init\n";
+}
+// NOLINTEND(bugprone-reserved-identifier,cert-dcl37-c,cert-dcl51-cpp,readability-identifier-naming,misc-use-internal-linkage,misc-use-anonymous-namespace)
+#endif
+
 namespace {
 
 using elle::app::Options;
