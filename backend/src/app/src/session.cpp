@@ -52,7 +52,7 @@ auto Session::handle(std::string_view json, Clock::time_point now) -> Outcome
     return outcome;
 }
 
-auto Session::on(const Ready& /*message*/, Clock::time_point /*now*/, Outcome& outcome) -> void
+auto Session::on(const Ready& /*message*/, Clock::time_point /*now*/, Outcome& outcome) const -> void
 {
     outcome.replies.push_back(settings_message(settings_));
 }

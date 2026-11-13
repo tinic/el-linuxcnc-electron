@@ -57,7 +57,7 @@ private:
         std::expected<core::GcodeLines, core::CycleError> preview{};
     };
 
-    auto on(const Ready& message, Clock::time_point now, Outcome& outcome) -> void;
+    auto on(const Ready& message, Clock::time_point now, Outcome& outcome) const -> void;
     auto on(const SelectMode& message, Clock::time_point now, Outcome& outcome) -> void;
     auto on(const SetFeed& message, Clock::time_point now, Outcome& outcome) -> void;
     auto on(const SetDirection& message, Clock::time_point now, Outcome& outcome) -> void;
