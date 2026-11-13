@@ -67,17 +67,6 @@
         "CMAKE_BUILD_TYPE": "Debug",
         "ELLE_REQUIRE_ANALYZERS": "ON"
       }
-    },
-    {
-      "name": "gcc-analyzer",
-      "displayName": "Opt-in GCC -fanalyzer build; heavy, do not run on the lathe PC (it froze it)",
-      "inherits": "base",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "ELLE_ENABLE_GCC_ANALYZER": "ON",
-        "ELLE_ENABLE_CLANG_TIDY": "OFF",
-        "ELLE_ENABLE_CPPCHECK": "OFF"
-      }
     }
   ],
   "buildPresets": [
@@ -100,10 +89,6 @@
     {
       "name": "analyze",
       "configurePreset": "analyze"
-    },
-    {
-      "name": "gcc-analyzer",
-      "configurePreset": "gcc-analyzer"
     }
   ],
   "testPresets": [
@@ -142,11 +127,6 @@
       "name": "analyze",
       "inherits": "base",
       "configurePreset": "analyze"
-    },
-    {
-      "name": "gcc-analyzer",
-      "inherits": "base",
-      "configurePreset": "gcc-analyzer"
     }
   ],
   "workflowPresets": [
@@ -219,24 +199,6 @@
         {
           "type": "test",
           "name": "release"
-        }
-      ]
-    },
-    {
-      "name": "check-gcc-analyzer",
-      "displayName": "Configure, build and test: gcc-analyzer",
-      "steps": [
-        {
-          "type": "configure",
-          "name": "gcc-analyzer"
-        },
-        {
-          "type": "build",
-          "name": "gcc-analyzer"
-        },
-        {
-          "type": "test",
-          "name": "gcc-analyzer"
         }
       ]
     }

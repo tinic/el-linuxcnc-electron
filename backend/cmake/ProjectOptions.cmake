@@ -26,7 +26,6 @@ option(ELLE_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ON)
 option(ELLE_ENABLE_HARDENING "Enable -fhardened and related run-time hardening" ON)
 option(ELLE_ENABLE_LIBSTDCXX_DEBUG "Use the checked libstdc++ (_GLIBCXX_DEBUG); changes ABI" OFF)
 option(ELLE_ENABLE_COVERAGE "Instrument for gcov coverage" OFF)
-option(ELLE_ENABLE_GCC_ANALYZER "Run GCC's static analyzer (-fanalyzer) during compilation" OFF)
 set(ELLE_SANITIZERS "" CACHE STRING "Semicolon-separated sanitizers, e.g. address;undefined or thread")
 
 # Binaries built by GCC 16 need its libstdc++ at run time; Debian 12 ships an older one.
@@ -154,8 +153,3 @@ set(ELLE_GCC_WARNINGS
 target_compile_options(elle_project_options INTERFACE ${ELLE_GCC_WARNINGS}
                                                       $<$<BOOL:${ELLE_WARNINGS_AS_ERRORS}>:-Werror>)
 
-if(ELLE_ENABLE_GCC_ANALYZER)
-  # Opt-in only (gcc-analyzer preset). Never part of the routine checks: on the lathe PC it
-  # exhausted memory and froze the machine. Do not raise its exploration --params.
-  target_compile_options(elle_project_options INTERFACE -fanalyzer -Wanalyzer-too-complex)
-endif()
