@@ -70,9 +70,9 @@ auto has_run_cycle(const Outcome& outcome) -> bool
 }
 
 constexpr std::string_view thread_m6 =
-    R"({"type":"plan_threading","request":{"pitch":1,"x_depth":-0.613435,"z_depth":null,)"
-    R"("angle_deg":null,"z_end":-6,"x_pullout":null,"z_pullout":null,"first_cut":null,)"
-    R"("cut_mult":null,"min_cut":null,"spring_cuts":null}})";
+    R"({"type":"plan_threading","form":{"pitch":1,"internal":false,"depth":null,)"
+    R"("infeed_deg":null,"length":6,"taper_deg":null,"run_out":null,"retract":null,)"
+    R"("first_cut":null,"cut_factor":null,"min_cut":null,"spring_cuts":null}})";
 
 } // namespace
 
@@ -110,10 +110,11 @@ TEST_CASE("an invalid thread is answered with its issues", "[session]")
 {
     Fixture fixture{};
     const auto outcome = fixture.send(
-        R"({"type":"plan_threading","request":{"pitch":null,"x_depth":null,"z_depth":null,)"
-        R"("angle_deg":null,"z_end":null,"x_pullout":null,"z_pullout":null,"first_cut":null,)"
-        R"("cut_mult":null,"min_cut":null,"spring_cuts":null}})");
+        R"({"type":"plan_threading","form":{"pitch":null,"internal":false,"depth":null,)"
+        R"("infeed_deg":null,"length":null,"taper_deg":null,"run_out":null,"retract":null,)"
+        R"("first_cut":null,"cut_factor":null,"min_cut":null,"spring_cuts":null}})");
     CHECK(contains(outcome.replies, R"("field":"pitch")"));
+    CHECK(contains(outcome.replies, R"("field":"length")"));
     CHECK(contains(outcome.replies, R"("backplot":null)"));
 }
 

@@ -40,7 +40,7 @@ defineProps<{ kind: 'turning' | 'threading'; highlight: string | null }>()
       <line x1="345" y1="147" x2="150" y2="120" class="pass" />
       <line x1="345" y1="162" x2="150" y2="135" class="pass" />
       <line x1="362" y1="95" x2="362" y2="120" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)" />
-      <text x="368" y="112" class="label">Step</text>
+      <text x="368" y="112" class="label">Cut depth</text>
     </g>
     <g :class="{ on: highlight === 'final_step_down' || highlight === 'spring_passes' }">
       <line x1="345" y1="172" x2="150" y2="145" class="final" />
@@ -49,7 +49,7 @@ defineProps<{ kind: 'turning' | 'threading'; highlight: string | null }>()
       <line x1="362" y1="160" x2="362" y2="170" class="dim" />
       <line x1="356" y1="160" x2="368" y2="160" class="dim" />
       <line x1="356" y1="170" x2="368" y2="170" class="dim" />
-      <text x="368" y="160" class="label">Final</text>
+      <text x="368" y="160" class="label">Finish</text>
     </g>
     <g :class="{ on: highlight === 'spring_passes' }">
       <text x="240" y="196" class="label" text-anchor="middle">Spring: final pass repeated</text>
@@ -63,7 +63,7 @@ defineProps<{ kind: 'turning' | 'threading'; highlight: string | null }>()
     </g>
 
     <!-- Length: from the face (Z0) into the work -->
-    <g :class="{ on: highlight === 'z_end' }">
+    <g :class="{ on: highlight === 'length' }">
       <line x1="150" y1="145" x2="150" y2="324" class="ext" />
       <line x1="330" y1="300" x2="330" y2="324" class="ext" />
       <line x1="152" y1="318" x2="328" y2="318" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)" />
@@ -75,7 +75,7 @@ defineProps<{ kind: 'turning' | 'threading'; highlight: string | null }>()
     <g :class="{ on: highlight === 'taper_angle_deg' }">
       <line x1="150" y1="145" x2="215" y2="145" class="ext" />
       <path d="M 205 145 A 55 55 0 0 1 204.5 152.6" class="dim" />
-      <text x="212" y="140" class="label">Taper</text>
+      <text x="212" y="140" class="label">Taper ∠</text>
     </g>
 
     <!-- Feed: tool travel per spindle revolution -->
@@ -109,9 +109,9 @@ defineProps<{ kind: 'turning' | 'threading'; highlight: string | null }>()
 
     <!-- where the operator puts the tool, and where passes start -->
     <line x1="300" y1="60" x2="300" y2="324" class="ext" />
-    <text x="304" y="327" class="note">tool Z</text>
+    <text x="304" y="327" class="note">Z0 (face)</text>
     <polygon points="360,109 352,92 368,92" class="tool" />
-    <text x="414" y="86" class="note" text-anchor="end">start: 4 pitches out</text>
+    <text x="414" y="86" class="note" text-anchor="end">passes start here</text>
 
     <!-- Pitch -->
     <g :class="{ on: highlight === 'pitch' }">
@@ -122,43 +122,44 @@ defineProps<{ kind: 'turning' | 'threading'; highlight: string | null }>()
     </g>
 
     <!-- XDepth (radial) and ZDepth (sideways): together the infeed direction -->
-    <g :class="{ on: highlight === 'x_depth' }">
+    <g :class="{ on: highlight === 'depth' }">
       <line x1="300" y1="150" x2="336" y2="150" class="ext" />
       <line x1="330" y1="112" x2="330" y2="148" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
-      <text x="336" y="134" class="label">XDepth</text>
+      <text x="336" y="134" class="label">Depth</text>
     </g>
-    <g :class="{ on: highlight === 'z_depth' || highlight === 'x_depth' }">
+    <g :class="{ on: highlight === 'infeed_deg' || highlight === 'depth' }">
       <line x1="226" y1="58" x2="216" y2="104" class="infeed" marker-end="url(#arrow-t)" />
     </g>
-    <g :class="{ on: highlight === 'z_depth' }">
-      <text x="232" y="66" class="label">ZDepth: slant</text>
+    <g :class="{ on: highlight === 'infeed_deg' }">
+      <text x="232" y="66" class="label">Infeed ∠</text>
     </g>
 
     <!-- Angle: tapered thread -->
-    <g :class="{ on: highlight === 'angle_deg' }">
+    <g :class="{ on: highlight === 'taper_deg' }">
       <line x1="300" y1="110" x2="120" y2="100" class="taper" />
-      <text x="124" y="92" class="label">Angle (taper)</text>
+      <text x="124" y="92" class="label">Taper ∠</text>
     </g>
 
     <!-- ZEnd: thread length from the tool's Z -->
-    <g :class="{ on: highlight === 'z_end' }">
-      <line x1="120" y1="150" x2="120" y2="324" class="ext" />
+    <g :class="{ on: highlight === 'length' }">
+      <line x1="120" y1="110" x2="120" y2="324" class="ext" />
       <line x1="122" y1="318" x2="298" y2="318" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
-      <text x="210" y="313" class="label" text-anchor="middle">ZEnd</text>
+      <text x="210" y="313" class="label" text-anchor="middle">Length</text>
     </g>
 
-    <!-- end of each pass: ZPull keeps cutting along Z while leaving the root, then XPull clears -->
-    <g :class="{ on: highlight === 'z_pullout' }">
-      <line x1="120" y1="150" x2="88" y2="110" class="pullout" />
-      <line x1="88" y1="110" x2="88" y2="170" class="ext" />
-      <line x1="90" y1="166" x2="118" y2="166" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
-      <text x="62" y="182" class="label">ZPull</text>
+    <!-- end of each pass: the run-out pulls out at an angle, finishing at the thread end; then the
+         retract clears for the rapid return -->
+    <g :class="{ on: highlight === 'run_out' }">
+      <line x1="150" y1="150" x2="120" y2="110" class="pullout" />
+      <line x1="150" y1="150" x2="150" y2="172" class="ext" />
+      <line x1="122" y1="168" x2="148" y2="168" class="dim" marker-start="url(#arrow-t)" marker-end="url(#arrow-t)" />
+      <text x="62" y="186" class="label">Run-out</text>
     </g>
-    <g :class="{ on: highlight === 'x_pullout' }">
-      <line x1="88" y1="108" x2="88" y2="44" class="dim" marker-end="url(#arrow-t)" />
-      <text x="44" y="70" class="label">XPull</text>
+    <g :class="{ on: highlight === 'retract' }">
+      <line x1="120" y1="108" x2="120" y2="44" class="dim" marker-end="url(#arrow-t)" />
+      <text x="58" y="70" class="label">Retract</text>
     </g>
-    <line x1="92" y1="40" x2="360" y2="40" class="rapid" />
+    <line x1="124" y1="40" x2="360" y2="40" class="rapid" />
     <text x="226" y="33" class="note" text-anchor="middle">rapid back for the next pass</text>
 
     <!-- cut depth per pass: 1stCut, then x Mult each pass, never below MinCut; Spring at full depth -->
@@ -166,21 +167,21 @@ defineProps<{ kind: 'turning' | 'threading'; highlight: string | null }>()
       <text x="0" y="0" class="note on-part">depth per pass</text>
       <g :class="{ on: highlight === 'first_cut' }">
         <rect x="0" y="8" width="12" height="40" class="bar" />
-        <text x="6" y="62" class="label small" text-anchor="middle">1st</text>
+        <text x="6" y="62" class="label small" text-anchor="middle">First</text>
       </g>
-      <g :class="{ on: highlight === 'cut_mult' }">
-        <rect x="16" y="8" width="12" height="32" class="bar" />
-        <rect x="32" y="8" width="12" height="26" class="bar" />
-        <text x="30" y="62" class="label small" text-anchor="middle">×Mult</text>
+      <g :class="{ on: highlight === 'cut_factor' }">
+        <rect x="20" y="8" width="12" height="32" class="bar" />
+        <rect x="36" y="8" width="12" height="26" class="bar" />
+        <text x="34" y="76" class="label small" text-anchor="middle">×Factor</text>
       </g>
       <g :class="{ on: highlight === 'min_cut' }">
-        <rect x="48" y="8" width="12" height="20" class="bar" />
-        <rect x="64" y="8" width="12" height="20" class="bar" />
-        <text x="62" y="62" class="label small" text-anchor="middle">Min</text>
+        <rect x="56" y="8" width="12" height="20" class="bar" />
+        <rect x="72" y="8" width="12" height="20" class="bar" />
+        <text x="70" y="62" class="label small" text-anchor="middle">Min</text>
       </g>
       <g :class="{ on: highlight === 'spring_cuts' }">
-        <rect x="84" y="8" width="12" height="20" class="bar spring" />
-        <text x="90" y="62" class="label small" text-anchor="middle">Spring</text>
+        <rect x="92" y="8" width="12" height="20" class="bar spring" />
+        <text x="98" y="76" class="label small" text-anchor="middle">Spring</text>
       </g>
     </g>
   </svg>

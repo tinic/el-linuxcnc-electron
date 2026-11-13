@@ -7,15 +7,17 @@ import {
   cycles,
   resetThreading,
   resetTurning,
+  setThreadSide,
   setThreading,
   setTurning,
   threadingFields,
   turningFields,
+  type ThreadingKey,
+  type TurningKey,
 } from '../cycles'
 import { activeField, settle } from '../entry'
 import { clearPlan, panel, send, updatePreferences } from '../machine'
 import { threadSections, turningSections, type ThreadPreset, type TurningPreset } from '../presets'
-import type { ThreadingRequest, TurningRequest } from '../protocol'
 import BackplotCanvas from './BackplotCanvas.vue'
 import CycleDiagram from './CycleDiagram.vue'
 import ModalDialog from './ModalDialog.vue'
@@ -39,10 +41,23 @@ const running = computed(() => panel.status?.task.program_running ?? false)
 
 const title = computed(() => (cycles.selected === 'threading' ? 'Threading' : 'Turning'))
 
-/** The picked preset, shown exactly as written: "6g" and "6G" are different thread tolerances. */
-const presetName = computed(() =>
-  cycles.selected === 'threading' ? (cycles.threadingPreset?.name ?? '') : (cycles.turningPreset ?? ''),
-)
+/**
+ * The picked preset, shown exactly as written ("6g" and "6G" are different thread tolerances), with
+ * a thread's major diameter / tap drill.
+ */
+const presetName = computed(() => {
+  if (cycles.selected === 'threading') {
+    const preset = cycles.threadingPreset
+    return preset ? `${preset.name} · Ø ${preset.diameter}` : ''
+  }
+  return cycles.turningPreset ?? ''
+})
+
+function chooseSide(internal: boolean): void {
+  settle()
+  clearPlan()
+  setThreadSide(internal)
+}
 
 /** Field whose label was tapped last (help), for the diagram. */
 const inspected = ref<string | null>(null)
@@ -62,11 +77,11 @@ function choose(kind: 'threading' | 'turning'): void {
   waitingForPlan.value = false
 }
 
-function onThreading(key: keyof ThreadingRequest, value: number | null): void {
+function onThreading(key: ThreadingKey, value: number | null): void {
   setThreading(key, value)
 }
 
-function onTurning(key: keyof TurningRequest, value: number | null): void {
+function onTurning(key: TurningKey, value: number | null): void {
   setTurning(key, value)
 }
 
@@ -85,9 +100,9 @@ function requestPlan(): void {
   clearPlan()
   waitingForPlan.value = true
   if (cycles.selected === 'threading') {
-    send({ type: 'plan_threading', request: { ...cycles.threading } })
+    send({ type: 'plan_threading', form: { ...cycles.threading } })
   } else {
-    send({ type: 'plan_turning', request: { ...cycles.turning } })
+    send({ type: 'plan_turning', form: { ...cycles.turning } })
   }
 }
 
@@ -133,6 +148,10 @@ const previewRows = computed(() => {
             Threading
           </button>
         </nav>
+        <nav v-if="cycles.selected === 'threading'" class="kinds side">
+          <button :class="{ active: !cycles.threading.internal }" @click="chooseSide(false)">External</button>
+          <button :class="{ active: cycles.threading.internal }" @click="chooseSide(true)">Internal</button>
+        </nav>
         <span v-if="presetName" class="preset-name">{{ presetName }}</span>
       </header>
       <ParamGrid
@@ -141,7 +160,6 @@ const previewRows = computed(() => {
         :fields="threadingFields"
         :values="cycles.threading"
         :issues="issues"
-        :info="cycles.threadingPreset?.diameter ?? ''"
         @change="onThreading"
         @inspect="inspected = $event"
       />
@@ -317,7 +335,10 @@ aside {
   height: 60px;
 }
 .preset-name {
+  overflow: hidden;
   color: var(--text-dim);
-  letter-spacing: 0.02em;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 </style>

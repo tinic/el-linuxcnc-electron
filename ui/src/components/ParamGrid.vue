@@ -150,7 +150,7 @@ function showHelp(field: ParamField<Key>, event: MouseEvent): void {
 <style scoped>
 .grid {
   display: grid;
-  grid-template-columns: 84px 1fr 84px 1fr;
+  grid-template-columns: 96px 1fr 96px 1fr;
   grid-auto-rows: 40px;
   gap: 5px 8px;
 }

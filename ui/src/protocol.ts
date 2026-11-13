@@ -71,24 +71,29 @@ export interface MachineStatus {
   task: TaskState
 }
 
-/** Optional fields are null when left empty, which selects the cycle's default. */
-export interface ThreadingRequest {
+/**
+ * The operator's threading entries (conversational style: positive numbers, the side chosen once,
+ * an infeed angle, the length from the face). Null fields select the cycle's default. The backend
+ * turns this into the planner's request.
+ */
+export interface ThreadingForm {
   pitch: number | null
-  x_depth: number | null
-  z_depth: number | null
-  angle_deg: number | null
-  z_end: number | null
-  x_pullout: number | null
-  z_pullout: number | null
+  internal: boolean
+  depth: number | null
+  infeed_deg: number | null
+  length: number | null
+  taper_deg: number | null
+  run_out: number | null
+  retract: number | null
   first_cut: number | null
-  cut_mult: number | null
+  cut_factor: number | null
   min_cut: number | null
   spring_cuts: number | null
 }
 
-export interface TurningRequest {
+export interface TurningForm {
   target: number | null
-  z_end: number | null
+  length: number | null
   feed_rate: number | null
   step_down: number | null
   final_step_down: number | null
@@ -159,8 +164,8 @@ export type ToMachine =
   | { type: 'select_tool'; id: number }
   | { type: 'set_tools'; tools: Tool[] }
   | { type: 'set_preferences'; preferences: Preferences }
-  | { type: 'plan_threading'; request: ThreadingRequest }
-  | { type: 'plan_turning'; request: TurningRequest }
+  | { type: 'plan_threading'; form: ThreadingForm }
+  | { type: 'plan_turning'; form: TurningForm }
   | { type: 'start_cycle' }
   | { type: 'abort_cycle' }
   | { type: 'quit' }

@@ -41,3 +41,13 @@ the presets have since been fixed (`ui/src/presets/turningpresets.json`, checked
   diameter E0 + 0.8p (ASME B1.20.1), lengths match the threading presets, taper 1.7899° as the
   threads. The 2B (internal) presets were removed: the turning cycle only turns outside diameters
   (validation rejects a target above the tool's radius), so they could never run.
+
+## Thread pull-out direction (operator form)
+
+The recorded threading requests carry the original's positive `z_pullout` (presets: 1.0), so the
+pull-out `G33` runs back toward +Z after cutting toward the chuck (e.g. `Z-6` then `Z-5`): a
+spindle-synchronized reversal that drags an opposite-hand helix across the last millimetre of the
+thread. The planner still reproduces that for those requests, but the panel no longer sends them:
+it sends a `ThreadingForm`, and `core::threading_request` (`src/core/src/cycle_form.cpp`) makes the
+run-out continue toward the chuck and finish exactly at the thread end (tested in
+`test/cycle_form_test.cpp`: no reversal, the deepest point at -Length).

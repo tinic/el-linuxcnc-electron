@@ -4,7 +4,8 @@ add_executable(elle_core_tests golden_cycles_test.cpp numbers_test.cpp cycle_err
                                leadscrew_test.cpp jog_test.cpp validation_test.cpp
                                lathe_controller_test.cpp settings_test.cpp backplot_test.cpp
                                session_test.cpp task_worker_test.cpp ini_test.cpp
-                               options_test.cpp task_heartbeat_test.cpp)
+                               options_test.cpp task_heartbeat_test.cpp
+                               cycle_form_test.cpp)
 target_link_libraries(elle_core_tests PRIVATE elle::core elle::app elle::project_options
                                               Catch2::Catch2WithMain glaze::glaze)
 target_compile_definitions(

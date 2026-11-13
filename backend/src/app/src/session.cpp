@@ -5,6 +5,7 @@
 #include <elle/app/task_worker.hpp>
 #include <elle/core/backplot.hpp>
 #include <elle/core/cycle.hpp>
+#include <elle/core/cycle_form.hpp>
 #include <elle/core/lathe_controller.hpp>
 #include <elle/core/threading.hpp>
 #include <elle/core/turning.hpp>
@@ -132,10 +133,10 @@ auto Session::on(const PlanThreading& message, Clock::time_point /*now*/, Outcom
     -> void
 {
     const auto position = controller_.work_position();
-    auto issues = core::validate_threading(message.request);
+    auto [request, issues] = core::threading_request(message.form, position);
     Generated generated{};
     if (issues.empty()) {
-        const auto program = core::plan_threading(message.request, position);
+        const auto program = core::plan_threading(request, position);
         generated = {.machine = core::threading_gcode(program, core::Destination::machine),
                      .preview = core::threading_gcode(program, core::Destination::preview)};
     }
@@ -146,10 +147,10 @@ auto Session::on(const PlanThreading& message, Clock::time_point /*now*/, Outcom
 auto Session::on(const PlanTurning& message, Clock::time_point /*now*/, Outcome& outcome) -> void
 {
     const auto position = controller_.work_position();
-    auto issues = core::validate_turning(message.request, position);
+    auto [request, issues] = core::turning_request(message.form, position);
     Generated generated{};
     if (issues.empty()) {
-        const auto program = core::plan_turning(message.request, position);
+        const auto program = core::plan_turning(request, position);
         generated = {.machine = core::turning_gcode(program, core::Destination::machine),
                      .preview = core::turning_gcode(program, core::Destination::preview)};
     }

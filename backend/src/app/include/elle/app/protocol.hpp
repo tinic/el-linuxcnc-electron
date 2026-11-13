@@ -6,6 +6,7 @@
 #include <elle/app/settings.hpp>
 #include <elle/core/backplot.hpp>
 #include <elle/core/cycle.hpp>
+#include <elle/core/cycle_form.hpp>
 #include <elle/core/jog.hpp>
 #include <elle/core/lathe_controller.hpp>
 #include <elle/core/leadscrew.hpp>
@@ -81,11 +82,11 @@ struct SetPreferences {
 };
 struct PlanThreading {
     std::string type{};
-    core::ThreadingRequest request{};
+    core::ThreadingForm form{};
 };
 struct PlanTurning {
     std::string type{};
-    core::TurningRequest request{};
+    core::TurningForm form{};
 };
 struct StartCycle {
     std::string type{};

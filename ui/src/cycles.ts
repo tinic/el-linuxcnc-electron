@@ -1,10 +1,11 @@
-// Canned-cycle parameters as entered, kept across page switches. Values are mm (X as radius) or
-// plain numbers; null means "use the default".
+// Canned-cycle entries as the operator makes them, kept across page switches. Values are mm (X as
+// radius) or plain numbers; null means "use the default". The backend converts them into the
+// planner's requests (signs, infeed, thread end), see backend/src/core/src/cycle_form.cpp.
 
 import { reactive } from 'vue'
 
-import type { ThreadingRequest, TurningRequest } from './protocol'
 import type { ThreadPreset, TurningPreset } from './presets'
+import type { ThreadingForm, TurningForm } from './protocol'
 
 /** How a parameter is shown and entered. */
 export type ParamKind = 'length' | 'diameter' | 'angle' | 'ratio' | 'count'
@@ -17,53 +18,56 @@ export interface ParamField<Key extends string> {
   kind: ParamKind
 }
 
-export const threadingFields: (ParamField<keyof ThreadingRequest> | null)[] = [
-  { key: 'pitch', label: 'Pitch', placeholder: 'Pitch', kind: 'length', help: 'Thread pitch: distance between threads.' },
-  null, // the major diameter / tap drill column, display only
-  { key: 'z_depth', label: 'ZDepth', placeholder: '0', kind: 'length', help: 'Longitudinal infeed depth for compound infeed. Zero for straight infeed.' },
-  { key: 'x_depth', label: 'XDepth', placeholder: 'X Depth', kind: 'length', help: 'Cross-slide thread depth (radius). Negative for external, positive for internal threads.' },
-  { key: 'z_end', label: 'ZEnd', placeholder: 'Z End', kind: 'length', help: 'Thread length from the tool position. Negative for right-hand threads.' },
-  { key: 'angle_deg', label: 'Angle', placeholder: '0', kind: 'angle', help: 'Taper angle in degrees. Zero for straight threads.' },
-  { key: 'z_pullout', label: 'ZPull', placeholder: '0.1', kind: 'length', help: 'Distance the tool keeps moving in Z while pulling out.' },
-  { key: 'x_pullout', label: 'XPull', placeholder: '0.1', kind: 'length', help: 'Cross-slide retract distance. Positive for external, negative for internal threads.' },
-  { key: 'cut_mult', label: 'Mult', placeholder: '0.8', kind: 'ratio', help: 'Each cut is the previous cut times this (0.5 to 1.0).' },
-  { key: 'first_cut', label: '1stCut', placeholder: '0.1', kind: 'length', help: 'Depth of the first cut.' },
-  { key: 'spring_cuts', label: 'Spring', placeholder: '1', kind: 'count', help: 'Finishing passes at full depth (0 to 10).' },
-  { key: 'min_cut', label: 'MinCut', placeholder: '0.05', kind: 'length', help: 'Smallest cut depth; cuts never get shallower than this.' },
+export type ThreadingKey = Exclude<keyof ThreadingForm, 'internal'>
+export type TurningKey = keyof TurningForm
+
+// Two columns, read left to right; null leaves a slot empty.
+export const threadingFields: (ParamField<ThreadingKey> | null)[] = [
+  { key: 'pitch', label: 'Pitch', placeholder: 'Pitch', kind: 'length', help: 'Distance from one thread to the next.' },
+  { key: 'length', label: 'Length', placeholder: 'Length', kind: 'length', help: 'Where the thread ends, measured from the face (Z0) into the work. It starts at the tool.' },
+  { key: 'depth', label: 'Depth', placeholder: 'auto', kind: 'length', help: 'Thread depth (radius). Empty: from the pitch, 0.613 × P external and 0.541 × P internal (60° threads).' },
+  { key: 'taper_deg', label: 'Taper ∠', placeholder: '0', kind: 'angle', help: 'Taper angle in degrees. 0 for straight threads; NPT 1.7899.' },
+  { key: 'infeed_deg', label: 'Infeed ∠', placeholder: '0', kind: 'angle', help: 'Infeed angle: 0 feeds straight in, 29.5 feeds along the flank of a 60° thread so only the leading edge cuts.' },
+  { key: 'spring_cuts', label: 'Spring', placeholder: '1', kind: 'count', help: 'Extra passes at full depth (0 to 10).' },
+  { key: 'first_cut', label: 'First cut', placeholder: '0.1', kind: 'length', help: 'Depth of the first pass.' },
+  { key: 'min_cut', label: 'Min cut', placeholder: '0.05', kind: 'length', help: 'Passes never get shallower than this.' },
+  { key: 'cut_factor', label: 'Factor', placeholder: '0.8', kind: 'ratio', help: 'Cut factor: each pass is the previous one times this (0.5 to 1.0).' },
+  null,
+  { key: 'run_out', label: 'Run-out', placeholder: '1 pitch', kind: 'length', help: 'The tool pulls out at an angle over this distance, finishing at the thread end. Empty: one pitch.' },
+  { key: 'retract', label: 'Retract', placeholder: '0.5', kind: 'length', help: 'Clearance from the thread for the rapid return.' },
 ]
 
-export const turningFields: (ParamField<keyof TurningRequest> | null)[] = [
-  { key: 'target', label: 'Target', placeholder: 'Target', kind: 'diameter', help: 'Finished size, as a diameter in diameter mode. Must be below the stock at the tool position.' },
-  null,
-  { key: 'z_end', label: 'Length', placeholder: 'Length', kind: 'length', help: 'Z position the passes cut to, from the work face (Z0). Negative into the work.' },
-  null,
+export const turningFields: (ParamField<TurningKey> | null)[] = [
+  { key: 'target', label: 'Target', placeholder: 'Target', kind: 'diameter', help: 'Finished size at the face, as a diameter in diameter mode. Must be below the stock at the tool position.' },
+  { key: 'length', label: 'Length', placeholder: 'Length', kind: 'length', help: 'Where the cut ends, measured from the face (Z0) into the work.' },
   { key: 'feed_rate', label: 'Feed', placeholder: '0.2', kind: 'length', help: 'Feed per spindle revolution.' },
-  { key: 'step_down', label: 'Step', placeholder: '0.5', kind: 'length', help: 'Depth of each roughing pass (radius).' },
+  { key: 'taper_angle_deg', label: 'Taper ∠', placeholder: '0', kind: 'angle', help: 'Taper angle in degrees; the size grows toward the chuck. 0 for straight turning.' },
+  { key: 'step_down', label: 'Cut depth', placeholder: '0.5', kind: 'length', help: 'Depth of each roughing pass (radius).' },
+  { key: 'final_step_down', label: 'Finish cut', placeholder: '0.1', kind: 'length', help: 'Depth of the finishing pass (radius).' },
   { key: 'spring_passes', label: 'Spring', placeholder: '0', kind: 'count', help: 'Extra finishing passes at full depth (0 to 10).' },
-  { key: 'final_step_down', label: 'Final', placeholder: '0.1', kind: 'length', help: 'Depth of the finishing pass (radius).' },
-  { key: 'taper_angle_deg', label: 'Taper', placeholder: '0', kind: 'angle', help: 'Taper angle in degrees. Zero for straight turning.' },
 ]
 
-function emptyThreading(): ThreadingRequest {
+function emptyThreading(): ThreadingForm {
   return {
     pitch: null,
-    x_depth: null,
-    z_depth: null,
-    angle_deg: null,
-    z_end: null,
-    x_pullout: null,
-    z_pullout: null,
+    internal: false,
+    depth: null,
+    infeed_deg: null,
+    length: null,
+    taper_deg: null,
+    run_out: null,
+    retract: null,
     first_cut: null,
-    cut_mult: null,
+    cut_factor: null,
     min_cut: null,
     spring_cuts: null,
   }
 }
 
-function emptyTurning(): TurningRequest {
+function emptyTurning(): TurningForm {
   return {
     target: null,
-    z_end: null,
+    length: null,
     feed_rate: null,
     step_down: null,
     final_step_down: null,
@@ -74,9 +78,9 @@ function emptyTurning(): TurningRequest {
 
 interface CycleEntries {
   selected: 'threading' | 'turning'
-  threading: ThreadingRequest
+  threading: ThreadingForm
   threadingPreset: { name: string; diameter: string } | null
-  turning: TurningRequest
+  turning: TurningForm
   turningPreset: string | null
 }
 
@@ -88,12 +92,20 @@ export const cycles = reactive<CycleEntries>({
   turningPreset: null,
 })
 
-export function setThreading(key: keyof ThreadingRequest, value: number | null): void {
+export function setThreading(key: ThreadingKey, value: number | null): void {
   cycles.threading[key] = value
   cycles.threadingPreset = null
 }
 
-export function setTurning(key: keyof TurningRequest, value: number | null): void {
+/** External or internal thread. A preset is for one side, so choosing the other forgets it. */
+export function setThreadSide(internal: boolean): void {
+  if (cycles.threading.internal !== internal) {
+    cycles.threading.internal = internal
+    cycles.threadingPreset = null
+  }
+}
+
+export function setTurning(key: TurningKey, value: number | null): void {
   cycles.turning[key] = value
   cycles.turningPreset = null
 }
@@ -108,32 +120,42 @@ export function resetTurning(): void {
   cycles.turningPreset = null
 }
 
+/** Degrees, rounded to 0.01: the infeed angle a preset's compound depths imply. */
+function infeedAngle(xDepth: number, zDepth: number): number {
+  return xDepth === 0 ? 0 : Math.round((Math.atan(Math.abs(zDepth / xDepth)) * 18000) / Math.PI) / 100
+}
+
+/**
+ * The presets keep the original's signed planner values, with the tool at the face (ZEnd measured
+ * from Z0); they are entered here in the form's terms.
+ */
 export function applyThreadPreset(preset: ThreadPreset): void {
   Object.assign(cycles.threading, {
     pitch: preset.Pitch,
-    x_depth: preset.XDepth,
-    z_depth: preset.ZDepth,
-    angle_deg: preset.Angle,
-    z_end: preset.ZEnd,
-    x_pullout: preset.XPullout,
-    z_pullout: preset.ZPullout,
+    internal: preset.XDepth > 0,
+    depth: Math.abs(preset.XDepth),
+    infeed_deg: infeedAngle(preset.XDepth, preset.ZDepth),
+    length: Math.abs(preset.ZEnd),
+    taper_deg: preset.Angle,
+    run_out: Math.abs(preset.ZPullout),
+    retract: Math.abs(preset.XPullout),
     first_cut: preset.FirstCut,
-    cut_mult: preset.CutMult,
+    cut_factor: preset.CutMult,
     min_cut: preset.MinCut,
     spring_cuts: preset.SpringCuts,
-  } satisfies ThreadingRequest)
+  } satisfies ThreadingForm)
   cycles.threadingPreset = { name: preset.name, diameter: preset.Diameter }
 }
 
 export function applyTurningPreset(preset: TurningPreset): void {
   Object.assign(cycles.turning, {
     target: preset.target,
-    z_end: preset.zEnd,
+    length: Math.abs(preset.zEnd),
     feed_rate: preset.feedRate,
     step_down: preset.stepDown,
     final_step_down: preset.finalStepDown,
     taper_angle_deg: preset.taperAngle,
     spring_passes: preset.springPasses ?? 0,
-  } satisfies TurningRequest)
+  } satisfies TurningForm)
   cycles.turningPreset = preset.name
 }
