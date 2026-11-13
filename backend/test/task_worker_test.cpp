@@ -174,16 +174,31 @@ TEST_CASE("a cycle is not started while LinuxCNC is in E-stop", "[task][safety]"
     CHECK(alerts.front() == "Cycle not started: LinuxCNC is in E-stop");
 }
 
+TEST_CASE("resync is skipped while the machine is off", "[task]")
+{
+    // At start-up the panel resyncs before anyone turned the machine on; that is not a failure.
+    FakeTask task{};
+    task.set_status({.state = MachineState::off, .interpreter_idle = true});
+    elle::app::TaskWorker worker{task, scratch()};
+    worker.submit(elle::app::ResyncMotion{});
+    worker.submit(elle::app::AbortTask{});
+    static_cast<void>(wait_for_log(worker, 2));
+    const std::vector<std::string> expected{"abort"};
+    CHECK(task.calls() == expected);
+    CHECK(worker.take_alerts().empty());
+}
+
 TEST_CASE("a failed resync is reported to the operator", "[task][safety]")
 {
     FakeTask task{};
-    task.set_status({.state = MachineState::estop, .motion_enabled = true, .interpreter_idle = true});
+    task.set_status({.state = MachineState::on, .motion_enabled = false, .interpreter_idle = true});
     elle::app::TaskWorker worker{task, scratch()};
     worker.submit(elle::app::ResyncMotion{});
     static_cast<void>(wait_for_log(worker, 1));
     const auto alerts = worker.take_alerts();
     REQUIRE(alerts.size() == 1);
-    CHECK(alerts.front() == "LinuxCNC did not take over the new positions: LinuxCNC is in E-stop");
+    CHECK(alerts.front() ==
+          "LinuxCNC did not take over the new positions: LinuxCNC motion is not enabled");
 }
 
 TEST_CASE("resync turns the machine off and on, then resets the interpreter", "[task]")
