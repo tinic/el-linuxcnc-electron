@@ -1,0 +1,77 @@
+name: Nightly
+
+# Every night with new commits on main: the Debian 13 package, published as the rolling "nightly"
+# pre-release (tag moved to the built commit, assets replaced). Releases stay the stable channel.
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly
+
+jobs:
+  changes:
+    name: New commits since the last nightly
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    outputs:
+      build: ${{ steps.check.outputs.build }}
+      suffix: ${{ steps.check.outputs.suffix }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          last=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/nightly" --jq .object.sha 2>/dev/null || true)
+          if [ "${last}" = "${GITHUB_SHA}" ] && [ "${GITHUB_EVENT_NAME}" = schedule ]; then
+            echo "nightly is already ${GITHUB_SHA}"
+            echo build=false >> "${GITHUB_OUTPUT}"
+          else
+            echo build=true >> "${GITHUB_OUTPUT}"
+          fi
+          echo "suffix=+nightly.$(date -u +%Y%m%d).git${GITHUB_SHA::7}" >> "${GITHUB_OUTPUT}"
+
+  package:
+    name: Package
+    needs: changes
+    if: needs.changes.outputs.build == 'true'
+    uses: ./.github/workflows/package.yml
+    with:
+      version-suffix: ${{ needs.changes.outputs.suffix }}
+
+  publish:
+    name: Publish the nightly pre-release
+    needs: package
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: elle-deb
+          path: dist
+      - name: Checksums
+        working-directory: dist
+        run: for deb in *.deb; do sha256sum "${deb}" > "${deb}.sha256"; done
+      - name: Replace the nightly release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.package.outputs.version }}
+        run: |
+          cat > notes.md <<NOTES
+          Automated build of \`main\` at ${GITHUB_SHA} ($(date -u '+%Y-%m-%d %H:%M UTC')), version ${VERSION}.
+
+          For Debian 13 with LinuxCNC 2.9.10 (linuxcnc.org). Built and unit-tested in CI, not tested on a machine: for production use the [latest release](https://github.com/${GITHUB_REPOSITORY}/releases/latest).
+
+          \`\`\`
+          sudo apt install ./elle_${VERSION}_amd64.deb
+          \`\`\`
+          NOTES
+          gh release delete nightly --repo "${GITHUB_REPOSITORY}" --cleanup-tag --yes || true
+          gh release create nightly dist/* --repo "${GITHUB_REPOSITORY}" --target "${GITHUB_SHA}" \
+            --prerelease --latest=false --title "Nightly ${VERSION}" --notes-file notes.md

@@ -1,0 +1,89 @@
+name: Package
+
+# The Debian 13 package: the operator panel, the backend built with GCC 16 against Debian 13's
+# LinuxCNC and WebKitGTK, tested, and packaged. Called by CI (every push) and Nightly.
+
+on:
+  workflow_call:
+    inputs:
+      version-suffix:
+        description: Appended to the project version; "+nightly.<date>.git<sha>" sorts after the release and before the next one
+        type: string
+        default: ''
+    outputs:
+      version:
+        description: The package version
+        value: ${{ jobs.deb.outputs.version }}
+
+permissions:
+  contents: read
+
+jobs:
+  panel:
+    name: Operator panel
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ui-dist
+          path: ui/dist
+          if-no-files-found: error
+
+  deb:
+    name: Debian 13 package
+    needs: panel
+    runs-on: ubuntu-24.04
+    container: gcc:16.2.0-trixie
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ui-dist
+          path: ui/dist
+      - name: Install build dependencies
+        run: ../.github/scripts/install-trixie-deps.sh
+      - name: Version
+        id: version
+        run: |
+          base=$(sed -n 's/^  VERSION \([0-9][0-9.]*\)$/\1/p' CMakeLists.txt)
+          test -n "${base}"
+          echo "version=${base}${{ inputs.version-suffix }}" >> "${GITHUB_OUTPUT}"
+      - name: Configure
+        run: >
+          cmake --preset release
+          -DCMAKE_CXX_COMPILER=g++ -DCMAKE_MAKE_PROGRAM=ninja -DELLE_REQUIRE_LINUXCNC=ON
+      - name: Build
+        run: cmake --build --preset release
+      - name: Test
+        run: ctest --preset release
+      - name: Package
+        run: |
+          cpack --config build/release/CPackConfig.cmake -B build/package \
+            -D CPACK_PACKAGE_VERSION=${{ steps.version.outputs.version }}
+          deb=$(ls build/package/*.deb)
+          dpkg-deb --info "${deb}"
+          dpkg-deb --contents "${deb}" | tee contents.txt
+          for path in ./usr/bin/elle ./usr/lib/elle/libstdc++.so.6 ./usr/share/elle/ui/index.html; do
+            grep -q " ${path}\$\| ${path} ->" contents.txt || { echo "missing ${path}"; exit 1; }
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: elle-deb
+          path: backend/build/package/*.deb
+          if-no-files-found: error

@@ -28,33 +28,34 @@ jobs:
   backend:
     name: Backend (${{ matrix.preset }})
     runs-on: ubuntu-24.04
-    # GCC 16 on Debian trixie. LinuxCNC and WebKitGTK are not installed, so the core, app and
-    # their tests are built; the HAL/NML adapters and the window need the real machine's packages.
+    # Debian 13 with GCC 16, LinuxCNC 2.9.10 and WebKitGTK: everything is built, the LinuxCNC
+    # adapters and the elle executable included.
     container: gcc:16.2.0-trixie
     strategy:
       fail-fast: false
       matrix:
-        preset: [dev, release, tsan]
+        include:
+          - preset: dev
+          - preset: release
+          - preset: tsan
+          - preset: analyze
+            packages: clang-tidy-19 cppcheck
     defaults:
       run:
         working-directory: backend
     steps:
       - uses: actions/checkout@v4
-      - name: Install CMake 4 and Ninja
-        working-directory: /tmp
-        run: |
-          curl -fsSLO https://github.com/Kitware/CMake/releases/download/v4.4.5/cmake-4.4.5-linux-x86_64.tar.gz
-          curl -fsSLO https://github.com/Kitware/CMake/releases/download/v4.4.5/cmake-4.4.5-SHA-256.txt
-          grep cmake-4.4.5-linux-x86_64.tar.gz cmake-4.4.5-SHA-256.txt | sha256sum -c -
-          tar -xzf cmake-4.4.5-linux-x86_64.tar.gz -C /opt
-          echo /opt/cmake-4.4.5-linux-x86_64/bin >> "$GITHUB_PATH"
-          apt-get update && apt-get install -y --no-install-recommends ninja-build pkg-config
+      - name: Install build dependencies
+        run: ../.github/scripts/install-trixie-deps.sh ${{ matrix.packages }}
       - name: Configure
         run: >
           cmake --preset ${{ matrix.preset }}
-          -DCMAKE_CXX_COMPILER=g++ -DCMAKE_MAKE_PROGRAM=ninja
-          -DELLE_ENABLE_CLANG_TIDY=OFF -DELLE_ENABLE_CPPCHECK=OFF
+          -DCMAKE_CXX_COMPILER=g++ -DCMAKE_MAKE_PROGRAM=ninja -DELLE_REQUIRE_LINUXCNC=ON
       - name: Build
         run: cmake --build --preset ${{ matrix.preset }}
       - name: Test
         run: ctest --preset ${{ matrix.preset }}
+
+  package:
+    name: Package
+    uses: ./.github/workflows/package.yml

@@ -9,6 +9,9 @@ find_library(ELLE_LINUXCNC_EMC NAMES liblinuxcnc.a linuxcnc)
 find_library(ELLE_LINUXCNC_INI linuxcncini)
 if(NOT (ELLE_LINUXCNC_INCLUDE_DIR AND ELLE_LINUXCNC_HAL AND ELLE_LINUXCNC_NML AND ELLE_LINUXCNC_EMC
         AND ELLE_LINUXCNC_INI))
+  if(ELLE_REQUIRE_LINUXCNC)
+    message(FATAL_ERROR "LinuxCNC development files not found (linuxcnc-uspace-dev)")
+  endif()
   message(WARNING "LinuxCNC development files not found (linuxcnc-uspace-dev): the LinuxCNC "
                   "adapters and the elle executable are not built.")
   return()

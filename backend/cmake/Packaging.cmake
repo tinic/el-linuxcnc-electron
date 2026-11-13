@@ -47,7 +47,31 @@ set(CPACK_PACKAGING_INSTALL_PREFIX /usr)
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
 set(CPACK_STRIP_FILES TRUE)
 set(CPACK_DEBIAN_PACKAGE_SECTION misc)
+# The binary reads LinuxCNC's NML status structures, whose layout belongs to one LinuxCNC series:
+# depend on the series of the linuxcnc-uspace-dev it was built against (>= that version, < the
+# next minor). And on the C library it was built with, as GCC 16 binaries use its newest symbols.
+set(_elle_linuxcnc_depends "linuxcnc-uspace")
+execute_process(
+  COMMAND dpkg-query --show --showformat=\${Version} linuxcnc-uspace-dev
+  OUTPUT_VARIABLE _elle_linuxcnc_version
+  RESULT_VARIABLE _elle_dpkg_query
+  ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+if(_elle_dpkg_query EQUAL 0
+   AND _elle_linuxcnc_version MATCHES "^(([0-9]+:)?([0-9]+)\\.([0-9]+)[^-]*)(-[^-]*)?$")
+  set(_elle_linuxcnc_upstream "${CMAKE_MATCH_1}")
+  math(EXPR _elle_linuxcnc_next_minor "${CMAKE_MATCH_4} + 1")
+  set(_elle_linuxcnc_depends
+      "linuxcnc-uspace (>= ${_elle_linuxcnc_upstream}), linuxcnc-uspace (<< ${CMAKE_MATCH_2}${CMAKE_MATCH_3}.${_elle_linuxcnc_next_minor}~)")
+else()
+  message(STATUS "linuxcnc-uspace-dev is not an installed package; the package depends on any LinuxCNC")
+endif()
+execute_process(
+  COMMAND getconf GNU_LIBC_VERSION
+  OUTPUT_VARIABLE _elle_libc
+  OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ERROR_IS_FATAL ANY)
+string(REGEX REPLACE "^glibc " "" _elle_libc_version "${_elle_libc}")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS
-    "linuxcnc-uspace (>= 2.9), libwebkit2gtk-4.1-0 (>= 2.40), libgtk-3-0, libc6 (>= 2.36)")
+    "${_elle_linuxcnc_depends}, libwebkit2gtk-4.1-0 (>= 2.40), libgtk-3-0, libc6 (>= ${_elle_libc_version})")
+message(STATUS "Package depends: ${CPACK_DEBIAN_PACKAGE_DEPENDS}")
 set(CPACK_DEBIAN_PACKAGE_CONFLICTS "elle-app")
 include(CPack)

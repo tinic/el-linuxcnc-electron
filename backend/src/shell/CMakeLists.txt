@@ -9,6 +9,9 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(ELLE_WEBKIT IMPORTED_TARGET webkit2gtk-4.1 gtk+-3.0)
 
 if(NOT ELLE_WEBKIT_FOUND)
+  if(ELLE_REQUIRE_LINUXCNC)
+    message(FATAL_ERROR "webkit2gtk-4.1 not found (libwebkit2gtk-4.1-dev)")
+  endif()
   message(WARNING "webkit2gtk-4.1 not found: the elle executable is not built. "
                   "Install libwebkit2gtk-4.1-dev.")
   return()

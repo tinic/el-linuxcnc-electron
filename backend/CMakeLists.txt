@@ -11,6 +11,7 @@ if(PROJECT_SOURCE_DIR STREQUAL PROJECT_BINARY_DIR)
 endif()
 
 option(ELLE_BUILD_TESTS "Build the test suite" ON)
+option(ELLE_REQUIRE_LINUXCNC "Fail configuration unless the LinuxCNC adapters and the elle executable can be built" OFF)
 
 include(cmake/ProjectOptions.cmake)
 include(cmake/Dependencies.cmake)
