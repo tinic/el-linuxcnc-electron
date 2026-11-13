@@ -23,6 +23,9 @@ struct PanelCallbacks {
     std::function<void(std::string_view json)> message;
     /// Called every `refresh` on the UI thread, to push status to the panel.
     std::function<void()> refresh;
+    /// SIGINT, SIGTERM or SIGHUP arrived (LinuxCNC shutting down, Ctrl+C): shut down on the UI
+    /// thread exactly as if the operator had pressed Exit.
+    std::function<void()> terminate;
 };
 
 /// The operator panel: a full-screen WebKitGTK window. The page talks to C++ in-process through

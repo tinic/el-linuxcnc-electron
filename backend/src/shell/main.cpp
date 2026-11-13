@@ -217,7 +217,10 @@ auto run(const Options& options) -> int
         elle::shell::PanelOptions{.ui_directory = ui_directory(options),
                                   .dev_url = options.dev_url,
                                   .windowed = options.windowed},
-        elle::shell::PanelCallbacks{.message = on_message, .refresh = on_refresh});
+        elle::shell::PanelCallbacks{
+            .message = on_message,
+            .refresh = on_refresh,
+            .terminate = [&on_message] { on_message(R"({"type":"quit"})"); }});
     window->run();
     return EXIT_SUCCESS;
 }

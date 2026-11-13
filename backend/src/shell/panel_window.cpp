@@ -14,6 +14,9 @@
 #include <string_view>
 #include <utility>
 
+#include <csignal>
+
+#include <glib-unix.h>
 #include <gtk/gtk.h>
 #include <webkit2/webkit2.h>
 
@@ -82,6 +85,7 @@ struct PanelWindow::Impl {
     GtkWidget* window{};
     WebKitWebView* view{};
     guint refresh_source{};
+    std::array<guint, 3> signal_sources{};
 
     static auto on_message(WebKitUserContentManager* /*manager*/, WebKitJavascriptResult* result,
                            gpointer data) -> void
@@ -98,6 +102,13 @@ struct PanelWindow::Impl {
     static auto on_refresh(gpointer data) -> gboolean
     {
         static_cast<Impl*>(data)->callbacks.refresh();
+        return G_SOURCE_CONTINUE;
+    }
+
+    /// Runs on the UI thread (GLib turns the signal into a main-loop event), never in the handler.
+    static auto on_terminate(gpointer data) -> gboolean
+    {
+        static_cast<Impl*>(data)->callbacks.terminate();
         return G_SOURCE_CONTINUE;
     }
 
@@ -183,12 +194,21 @@ PanelWindow::PanelWindow(PanelOptions options, PanelCallbacks callbacks)
 
     impl.refresh_source = g_timeout_add(static_cast<guint>(refresh_interval.count()),
                                         &Impl::on_refresh, &impl);
+    constexpr auto terminating = std::to_array({SIGINT, SIGTERM, SIGHUP});
+    std::ranges::transform(terminating, impl.signal_sources.begin(), [&impl](int signal_number) {
+        return g_unix_signal_add(signal_number, &Impl::on_terminate, &impl);
+    });
 }
 
 PanelWindow::~PanelWindow()
 {
     if (impl_->refresh_source != 0) {
         g_source_remove(impl_->refresh_source);
+    }
+    for (const guint source : impl_->signal_sources) {
+        if (source != 0) {
+            g_source_remove(source);
+        }
     }
 }
 
