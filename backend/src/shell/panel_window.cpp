@@ -16,6 +16,7 @@
 
 #include <csignal>
 
+#include <gdk/gdkx.h>
 #include <glib-unix.h>
 #include <gtk/gtk.h>
 #include <webkit2/webkit2.h>
@@ -66,6 +67,25 @@ auto resolve(const std::filesystem::path& root, std::string_view request_path)
         return std::nullopt;
     }
     return root / relative;
+}
+
+/// Asks the window manager to keep compositing the window (_NET_WM_BYPASS_COMPOSITOR = 2).
+/// Mutter takes an opaque fullscreen X11 window out of the compositor and lets it draw straight to
+/// the screen; GNOME's screen capture (Mutter ScreenCast, used by gnome-remote-desktop) reads the
+/// compositor's output, so remote desktop then shows a black screen while the monitor looks fine.
+auto keep_composited(GtkWidget* window) -> void
+{
+    gtk_widget_realize(window);
+    GdkWindow* const surface = gtk_widget_get_window(window);
+    if (surface == nullptr || !GDK_IS_X11_WINDOW(surface)) {
+        return;
+    }
+    // Format-32 X properties are passed as an array of long, whatever the width of long.
+    const std::array<gulong, 1> never_bypass{2};
+    gdk_property_change(surface, gdk_atom_intern_static_string("_NET_WM_BYPASS_COMPOSITOR"),
+                        gdk_atom_intern_static_string("CARDINAL"), 32, GDK_PROP_MODE_REPLACE,
+                        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): GDK's API
+                        reinterpret_cast<const guchar*>(never_bypass.data()), 1);
 }
 
 auto read_file(const std::filesystem::path& file) -> std::optional<std::string>
@@ -184,6 +204,7 @@ PanelWindow::PanelWindow(PanelOptions options, PanelCallbacks callbacks)
     gtk_window_set_default_size(GTK_WINDOW(impl.window), default_width, default_height);
     gtk_container_add(GTK_CONTAINER(impl.window), GTK_WIDGET(impl.view));
     g_signal_connect(impl.window, "destroy", G_CALLBACK(&Impl::on_destroy), &impl);
+    keep_composited(impl.window);
     if (!impl.options.windowed) {
         gtk_window_set_decorated(GTK_WINDOW(impl.window), FALSE);
         gtk_window_fullscreen(GTK_WINDOW(impl.window));
