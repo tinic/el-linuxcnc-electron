@@ -182,7 +182,8 @@ TEST_CASE("resync is skipped while the machine is off", "[task]")
     elle::app::TaskWorker worker{task, scratch()};
     worker.submit(elle::app::ResyncMotion{});
     worker.submit(elle::app::AbortTask{});
-    static_cast<void>(wait_for_log(worker, 2));
+    const auto log = wait_for_log(worker, 1); // only "Cycle stopped" from the abort
+    CHECK(log.size() == 1);
     const std::vector<std::string> expected{"abort"};
     CHECK(task.calls() == expected);
     CHECK(worker.take_alerts().empty());

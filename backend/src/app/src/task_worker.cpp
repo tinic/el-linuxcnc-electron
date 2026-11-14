@@ -200,10 +200,10 @@ auto TaskWorker::resync() -> bool
 {
     // Turning the machine on makes motion take the encoder positions as its commanded position.
     // While it is not on there is nothing to resynchronize: that happens when it is next turned
-    // on (a cycle turns it on first).
+    // on (a cycle turns it on first). That is the normal case in manual mode, where every zeroing
+    // of an axis asks for a resync, so it is not worth a line in the operator's log.
     if (const auto status = port_.status();
         status.has_value() && status->state != core::MachineState::on) {
-        log("Resync skipped: the machine is off; LinuxCNC takes the positions when it is turned on");
         return true;
     }
     if (!succeeded(port_.set_mode(core::TaskMode::mdi), "switching to MDI") ||

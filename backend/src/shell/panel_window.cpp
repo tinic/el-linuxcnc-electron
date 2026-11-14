@@ -81,9 +81,11 @@ auto keep_composited(GtkWidget* window) -> void
         return;
     }
     // Format-32 X properties are passed as an array of long, whatever the width of long.
+    constexpr gint format_32_bit = 32;
     const std::array<gulong, 1> never_bypass{2};
     gdk_property_change(surface, gdk_atom_intern_static_string("_NET_WM_BYPASS_COMPOSITOR"),
-                        gdk_atom_intern_static_string("CARDINAL"), 32, GDK_PROP_MODE_REPLACE,
+                        gdk_atom_intern_static_string("CARDINAL"), format_32_bit,
+                        GDK_PROP_MODE_REPLACE,
                         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): GDK's API
                         reinterpret_cast<const guchar*>(never_bypass.data()), 1);
 }
